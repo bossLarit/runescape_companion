@@ -10,7 +10,7 @@
 #   .\scripts\setup_github.ps1
 # ──────────────────────────────────────────────────────────────
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 $owner = "bossLarit"
 $repo = "runescape_companion"
@@ -40,7 +40,7 @@ $branches = @("dev", "qa")
 $defaultBranch = (gh api "repos/$owner/$repo" --jq '.default_branch') 2>&1
 
 foreach ($branch in $branches) {
-    gh api "repos/$owner/$repo/branches/$branch" 2>&1 | Out-Null
+    $null = gh api "repos/$owner/$repo/branches/$branch" 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  Branch '$branch' already exists" -ForegroundColor DarkGray
     }
@@ -97,9 +97,9 @@ function Set-BranchProtection {
 
     $json = $body | ConvertTo-Json -Depth 5 -Compress
 
-    $json | gh api "repos/$owner/$repo/branches/$Branch/protection" `
-        -X PUT `
-        --input - 2>&1 | Out-Null
+    $null = ($json | gh api "repos/$owner/$repo/branches/$Branch/protection" `
+            -X PUT `
+            --input - 2>&1)
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  [OK] Protection set for '$Branch'" -ForegroundColor Green
