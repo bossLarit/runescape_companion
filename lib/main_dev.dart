@@ -9,7 +9,7 @@ void main() {
   runApp(
     ProviderScope(
       overrides: [
-        envConfigProvider.overrideWith((ref) => EnvConfigs.prod),
+        envConfigProvider.overrideWith((ref) => EnvConfigs.dev),
       ],
       child: const OSRSCompanionApp(),
     ),

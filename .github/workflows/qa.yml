@@ -1,0 +1,56 @@
+name: "QA: Build & Pre-release"
+
+on:
+  push:
+    branches:
+      - qa
+    tags:
+      - "v*-rc*" # e.g. v1.2.0-rc1
+
+jobs:
+  build-qa:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: "stable"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build Windows (qa)
+        run: flutter build windows --release -t lib/main_qa.dart
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "OSRS_Companion_QA.zip"
+
+      - name: Upload artifact (on branch push)
+        if: github.ref_type == 'branch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: osrs-companion-qa
+          path: OSRS_Companion_QA.zip
+          retention-days: 14
+
+      - name: Create pre-release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: OSRS_Companion_QA.zip
+          generate_release_notes: true
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

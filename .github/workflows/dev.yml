@@ -1,0 +1,46 @@
+name: "DEV: Build & Test"
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  build-dev:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: "stable"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build Windows (dev)
+        run: flutter build windows --release -t lib/main_dev.dart
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "OSRS_Companion_DEV.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osrs-companion-dev
+          path: OSRS_Companion_DEV.zip
+          retention-days: 7

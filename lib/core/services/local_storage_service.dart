@@ -4,17 +4,23 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../config/environment.dart';
+
 final localStorageServiceProvider = Provider<LocalStorageService>((ref) {
-  return LocalStorageService();
+  final env = ref.watch(envConfigProvider);
+  return LocalStorageService(storageFolder: env.storageFolder);
 });
 
 class LocalStorageService {
+  final String storageFolder;
   String? _basePath;
+
+  LocalStorageService({this.storageFolder = 'osrs_companion'});
 
   Future<String> get basePath async {
     if (_basePath != null) return _basePath!;
     final dir = await getApplicationDocumentsDirectory();
-    _basePath = '${dir.path}/osrs_companion';
+    _basePath = '${dir.path}/$storageFolder';
     final folder = Directory(_basePath!);
     if (!await folder.exists()) {
       await folder.create(recursive: true);

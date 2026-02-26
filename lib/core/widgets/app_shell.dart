@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import '../config/environment.dart';
+import '../constants/app_constants.dart';
 
 const _sidebarWidth = 230.0;
 const _accentColor = Color(0xFFD4A017); // OSRS gold
@@ -7,7 +11,7 @@ const _sidebarBg = Color(0xFF1E1408); // Darkest brown
 const _hoverColor = Color(0xFF3B2A14); // Brown hover
 const _selectedBg = Color(0xFF2D5F27); // Dark green selected
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
 
@@ -131,8 +135,9 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentPath = _currentPath(context);
+    final env = ref.watch(envConfigProvider);
 
     return Scaffold(
       body: Row(
@@ -174,7 +179,7 @@ class AppShell extends StatelessWidget {
                     ],
                   ),
                 ),
-                _buildFooter(),
+                _buildFooter(env),
               ],
             ),
           ),
@@ -286,7 +291,7 @@ class AppShell extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(EnvConfig env) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
@@ -305,11 +310,39 @@ class AppShell extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text('v1.0.0',
+          Text('v${AppConstants.version}',
               style: TextStyle(
                   fontSize: 10,
                   color: Colors.white.withValues(alpha: 0.3),
                   letterSpacing: 0.5)),
+          if (!env.isProd) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: env.isDev
+                    ? const Color(0xFFFF9800).withValues(alpha: 0.2)
+                    : const Color(0xFF2196F3).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(
+                  color: env.isDev
+                      ? const Color(0xFFFF9800).withValues(alpha: 0.4)
+                      : const Color(0xFF2196F3).withValues(alpha: 0.4),
+                ),
+              ),
+              child: Text(
+                env.label,
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w700,
+                  color: env.isDev
+                      ? const Color(0xFFFF9800)
+                      : const Color(0xFF2196F3),
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ],
           const Spacer(),
           Text('Desktop',
               style: TextStyle(
