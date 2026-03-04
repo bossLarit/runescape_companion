@@ -17,6 +17,12 @@ class TrainingMethod {
   final int? sessionAmount;
   final int? xpPerAction;
 
+  /// Item keywords that must exist in the player's bank for this method.
+  /// If empty, the method has no bank requirements (e.g. gathering, combat).
+  /// Matching is case-insensitive substring: if the bank contains an item
+  /// whose name includes any keyword, the method is considered bank-viable.
+  final List<String> requiredItems;
+
   const TrainingMethod({
     required this.minLevel,
     required this.maxLevel,
@@ -28,6 +34,7 @@ class TrainingMethod {
     this.sessionUnit,
     this.sessionAmount,
     this.xpPerAction,
+    this.requiredItems = const [],
   });
 
   bool fitsAccount(bool isIronman) {
@@ -40,6 +47,53 @@ class TrainingMethod {
     if (pref == Intensity.either) return true;
     if (intensity == Intensity.either) return true;
     return intensity == pref;
+  }
+
+  /// Whether this method requires specific bank items.
+  bool get needsBankItems => requiredItems.isNotEmpty;
+
+  /// Check if the player's bank satisfies this method's requirements.
+  /// [bankItems] is a set of lowercase item names.
+  bool bankViable(Set<String> bankItems) {
+    if (requiredItems.isEmpty) return true;
+    for (final keyword in requiredItems) {
+      final kw = keyword.toLowerCase();
+      if (bankItems.any((item) => item.contains(kw))) return true;
+    }
+    return false;
+  }
+
+  /// Sum the total quantity of matching items in bank.
+  /// [bankItemQuantities] is a map of lowercase name to quantity.
+  int bankQuantityAvailable(Map<String, int> bankItemQuantities) {
+    if (requiredItems.isEmpty) return 0;
+    int total = 0;
+    for (final keyword in requiredItems) {
+      final kw = keyword.toLowerCase();
+      for (final entry in bankItemQuantities.entries) {
+        if (entry.key.contains(kw)) total += entry.value;
+      }
+    }
+    return total;
+  }
+
+  /// How many items are needed to gain [xpNeeded] XP with this method.
+  /// Returns null if xpPerAction is not set.
+  int? itemsNeededForXp(int xpNeeded) {
+    if (xpPerAction == null || xpPerAction! <= 0) return null;
+    return (xpNeeded / xpPerAction!).ceil();
+  }
+
+  /// Check if the bank has enough items for the given XP target.
+  /// Returns null if quantity checking is not possible (no xpPerAction).
+  /// Returns true if enough, false if not enough.
+  bool? bankHasEnough(Map<String, int> bankItemQuantities, int xpNeeded) {
+    if (requiredItems.isEmpty) return null;
+    if (xpPerAction == null || xpPerAction! <= 0) return null;
+    final needed = itemsNeededForXp(xpNeeded);
+    if (needed == null) return null;
+    final available = bankQuantityAvailable(bankItemQuantities);
+    return available >= needed;
   }
 }
 
@@ -61,31 +115,52 @@ class SkillTrainingInfo {
   });
 
   TrainingMethod? bestMethodAt(int level,
-      {bool isIronman = false, Intensity pref = Intensity.either}) {
+      {bool isIronman = false,
+      Intensity pref = Intensity.either,
+      Set<String>? bankItems}) {
     TrainingMethod? best;
+    TrainingMethod? bestFallback; // best ignoring bank
     for (final m in methods) {
       if (level >= m.minLevel &&
           level <= m.maxLevel &&
           m.fitsAccount(isIronman) &&
           m.fitsIntensity(pref)) {
+        if (bestFallback == null || m.xpPerHour > bestFallback.xpPerHour) {
+          bestFallback = m;
+        }
+        if (bankItems != null && !m.bankViable(bankItems)) continue;
         if (best == null || m.xpPerHour > best.xpPerHour) {
           best = m;
         }
       }
     }
-    return best;
+    // If bank data was provided but no method is bank-viable, fall back
+    return best ?? bestFallback;
   }
 
   List<TrainingMethod> allMethodsAt(int level,
-      {bool isIronman = false, Intensity pref = Intensity.either}) {
-    return methods
+      {bool isIronman = false,
+      Intensity pref = Intensity.either,
+      Set<String>? bankItems}) {
+    final eligible = methods
         .where((m) =>
             level >= m.minLevel &&
             level <= m.maxLevel &&
             m.fitsAccount(isIronman) &&
             m.fitsIntensity(pref))
-        .toList()
-      ..sort((a, b) => b.xpPerHour.compareTo(a.xpPerHour));
+        .toList();
+    if (bankItems != null) {
+      // Sort: bank-viable first, then by xp/hr
+      eligible.sort((a, b) {
+        final aViable = a.bankViable(bankItems);
+        final bViable = b.bankViable(bankItems);
+        if (aViable != bViable) return bViable ? 1 : -1;
+        return b.xpPerHour.compareTo(a.xpPerHour);
+      });
+    } else {
+      eligible.sort((a, b) => b.xpPerHour.compareTo(a.xpPerHour));
+    }
+    return eligible;
   }
 
   int? nextMilestoneAfter(int level) {
@@ -155,6 +230,15 @@ const Map<String, SkillTrainingInfo> trainingData = {
         intensity: Intensity.afk,
         accountMode: AccountMode.mainOnly,
         notes: 'Dharok/Obsidian — fastest pure melee XP'),
+    TrainingMethod(
+        minLevel: 60,
+        maxLevel: 99,
+        method: 'NMZ Obsidian set',
+        xpPerHour: 75000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Obsidian helm/body/legs + Berserker necklace + Obby sword. Craft own absorption potions. Very AFK once set up.'),
   ], milestones: [
     SkillMilestone(20, 'Mithril equipment'),
     SkillMilestone(30, 'Adamant equipment'),
@@ -199,6 +283,15 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 105000,
         intensity: Intensity.afk,
         accountMode: AccountMode.mainOnly),
+    TrainingMethod(
+        minLevel: 60,
+        maxLevel: 99,
+        method: 'NMZ Obsidian (Aggressive)',
+        xpPerHour: 80000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Obsidian set + Berserker necklace + Obby sword on Aggressive. Craft own absorptions. Best AFK Strength XP for ironmen.'),
   ], milestones: [
     SkillMilestone(40, 'Rune effective'),
     SkillMilestone(50, 'Granite Maul spec'),
@@ -233,6 +326,23 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Defensive Casting (Burst/Barrage)',
         xpPerHour: 80000,
         notes: 'Train Magic + Defence simultaneously'),
+    TrainingMethod(
+        minLevel: 60,
+        maxLevel: 99,
+        method: 'NMZ Obsidian (Defensive)',
+        xpPerHour: 55000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Obsidian set on Defensive. Slower than Attack/Str but very AFK. Good if you need Defence levels for PvM gear.'),
+    TrainingMethod(
+        minLevel: 70,
+        maxLevel: 99,
+        method: 'Defensive Burst/Barrage Slayer',
+        xpPerHour: 60000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Cast on defensive — trains Magic + Defence + Slayer. Conserve runes with burst over barrage.'),
   ], milestones: [
     SkillMilestone(20, 'Mithril armour'),
     SkillMilestone(40, 'Rune armour, Green d\'hide'),
@@ -269,6 +379,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Cannon Slayer tasks',
         xpPerHour: 70000,
         accountMode: AccountMode.mainOnly,
+        requiredItems: ['cannonball'],
         notes: 'Buy cannonballs from GE'),
     TrainingMethod(
         minLevel: 50,
@@ -276,13 +387,16 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Chinning MM1 tunnels (bought)',
         xpPerHour: 200000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy red/grey chins from GE'),
+        requiredItems: ['chinchompa'],
+        notes: 'Buy red/grey chins from GE',
+        xpPerAction: 350),
     TrainingMethod(
         minLevel: 50,
         maxLevel: 69,
         method: 'Chinning MM1 (self-caught)',
         xpPerHour: 80000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['chinchompa'],
         notes: 'Catch red chins first',
         sessionUnit: 'chins',
         sessionAmount: 500,
@@ -293,13 +407,16 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Chinning MM2 tunnels (bought)',
         xpPerHour: 500000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Black chins — fastest Ranged XP in game'),
+        requiredItems: ['chinchompa'],
+        notes: 'Black chins — fastest Ranged XP in game',
+        xpPerAction: 500),
     TrainingMethod(
         minLevel: 70,
         maxLevel: 99,
         method: 'Chinning MM2 (self-caught)',
         xpPerHour: 250000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['chinchompa'],
         notes: 'Catch red/black chins, then chin',
         sessionUnit: 'chins',
         sessionAmount: 1000,
@@ -311,6 +428,23 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 35000,
         intensity: Intensity.afk,
         notes: 'Slower but profitable + Slayer XP'),
+    TrainingMethod(
+        minLevel: 55,
+        maxLevel: 69,
+        method: 'Slayer with broad bolts (Rune C\'bow)',
+        xpPerHour: 20000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Broad bolts from Slayer points. Train Ranged passively through Slayer tasks.'),
+    TrainingMethod(
+        minLevel: 45,
+        maxLevel: 69,
+        method: 'Cannon Slayer (self-made cballs)',
+        xpPerHour: 50000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Smith steel bars → cannonballs at BF. Slower supply than mains but still fast XP.',
+        requiredItems: ['cannonball']),
   ], milestones: [
     SkillMilestone(30, 'Snakeskin, Ava\'s Accumulator'),
     SkillMilestone(40, 'Green d\'hide, Bone Crossbow'),
@@ -336,20 +470,31 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Dragon Bones at Chaos Altar',
         xpPerHour: 600000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy bones — Wilderness, 700% XP avg'),
+        requiredItems: ['dragon bones'],
+        notes: 'Buy bones — Wilderness, 700% XP avg',
+        xpPerAction: 252),
     TrainingMethod(
         minLevel: 1,
         maxLevel: 99,
         method: 'Superior Dragon Bones Chaos Altar',
         xpPerHour: 1000000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Expensive — fastest Prayer XP'),
+        requiredItems: ['superior dragon bones'],
+        notes: 'Expensive — fastest Prayer XP',
+        xpPerAction: 525),
     TrainingMethod(
         minLevel: 1,
         maxLevel: 99,
         method: 'Own bones at Chaos Altar',
         xpPerHour: 500000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: [
+          'dragon bones',
+          'superior dragon bones',
+          'wyvern bones',
+          'lava dragon bones',
+          'dagannoth bones'
+        ],
         notes: 'Kill dragons, use Chaos Altar (700% avg XP)',
         sessionUnit: 'bones',
         sessionAmount: 100,
@@ -360,6 +505,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Ensouled Heads',
         xpPerHour: 50000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['ensouled'],
         notes: 'Collect from Slayer — slow but safe',
         sessionUnit: 'heads',
         sessionAmount: 50,
@@ -370,14 +516,18 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Ectofuntus',
         xpPerHour: 80000,
         accountMode: AccountMode.ironmanOnly,
-        notes: '4x XP per bone — safe for HCIM'),
+        requiredItems: ['dragon bones', 'dagannoth bones', 'wyvern bones'],
+        notes: '4x XP per bone — safe for HCIM',
+        xpPerAction: 288),
     TrainingMethod(
         minLevel: 30,
         maxLevel: 99,
         method: 'Libation Bowl (blessed shards)',
         xpPerHour: 300000,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'Up to 5-6x base XP — requires bone crushing'),
+        requiredItems: ['blessed bone shards'],
+        notes: 'Up to 5-6x base XP — requires bone crushing',
+        xpPerAction: 5),
     TrainingMethod(
         minLevel: 70,
         maxLevel: 99,
@@ -569,6 +719,32 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 20000,
         intensity: Intensity.afk,
         notes: 'Very AFK, amethyst for arrows/darts'),
+    TrainingMethod(
+        minLevel: 10,
+        maxLevel: 99,
+        method: 'Shooting Stars',
+        xpPerHour: 25000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Passive — scout stars between tasks. Stardust → soft clay packs + gems. Great for ironmen.'),
+    TrainingMethod(
+        minLevel: 40,
+        maxLevel: 99,
+        method: 'Gem rocks (Shilo Village)',
+        xpPerHour: 35000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Gems for Crafting (cut → jewellery). Karamja gloves 3 for double gems.'),
+    TrainingMethod(
+        minLevel: 70,
+        maxLevel: 99,
+        method: 'Sandstone mining (Quarry)',
+        xpPerHour: 60000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Grind sandstone → buckets of sand for Superglass Make. Essential Crafting supply.'),
   ], milestones: [
     SkillMilestone(15, 'Iron ore'),
     SkillMilestone(30, 'Motherlode Mine, Coal'),
@@ -645,6 +821,23 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: '2-tick/1.5-tick Teaks',
         xpPerHour: 170000,
         notes: 'Fastest in game'),
+    TrainingMethod(
+        minLevel: 35,
+        maxLevel: 99,
+        method: 'Teak trees (bank for planks)',
+        xpPerHour: 80000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Bank teaks at Fossil Island or Ape Atoll for Construction planks. Use Plank Make spell or sawmill.'),
+    TrainingMethod(
+        minLevel: 50,
+        maxLevel: 99,
+        method: 'Mahogany trees (bank for planks)',
+        xpPerHour: 40000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Bank mahogany logs for Construction. Fossil Island or Hardwood patches. Kingdom of Miscellania also supplies logs.'),
   ], milestones: [
     SkillMilestone(15, 'Oak trees'),
     SkillMilestone(30, 'Willow trees'),
@@ -671,7 +864,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 40000,
         sessionUnit: 'fish',
         sessionAmount: 200,
-        xpPerAction: 70),
+        xpPerAction: 60),
     TrainingMethod(
         minLevel: 35,
         maxLevel: 81,
@@ -687,7 +880,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         notes: '+Agility +Strength XP',
         sessionUnit: 'fish',
         sessionAmount: 200,
-        xpPerAction: 110),
+        xpPerAction: 50),
     TrainingMethod(
         minLevel: 62,
         maxLevel: 99,
@@ -695,7 +888,9 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 35000,
         intensity: Intensity.afk,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'AFK food source for ironmen'),
+        requiredItems: ['monkfish'],
+        notes: 'AFK food source for ironmen',
+        xpPerAction: 120),
     TrainingMethod(
         minLevel: 71,
         maxLevel: 81,
@@ -703,7 +898,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 65000,
         sessionUnit: 'fish',
         sessionAmount: 200,
-        xpPerAction: 130),
+        xpPerAction: 80),
     TrainingMethod(
         minLevel: 82,
         maxLevel: 99,
@@ -724,7 +919,9 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 18000,
         intensity: Intensity.afk,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'AFK food for PvM'),
+        requiredItems: ['raw anglerfish'],
+        notes: 'AFK food for PvM',
+        xpPerAction: 120),
     TrainingMethod(
         minLevel: 65,
         maxLevel: 99,
@@ -732,7 +929,9 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 30000,
         intensity: Intensity.afk,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'Combo food for PvM'),
+        requiredItems: ['raw karambwan'],
+        notes: 'Combo food for PvM',
+        xpPerAction: 50),
   ], milestones: [
     SkillMilestone(20, 'Fly fishing'),
     SkillMilestone(35, 'Tempoross'),
@@ -809,14 +1008,16 @@ const Map<String, SkillTrainingInfo> trainingData = {
     TrainingMethod(
         minLevel: 1, maxLevel: 14, method: 'Shrimp/Meat', xpPerHour: 30000),
     TrainingMethod(
-        minLevel: 15, maxLevel: 29, method: 'Trout/Salmon', xpPerHour: 80000),
+        minLevel: 15, maxLevel: 29, method: 'Trout/Salmon', xpPerHour: 40000),
     TrainingMethod(
         minLevel: 30,
         maxLevel: 64,
         method: 'Wines',
         xpPerHour: 480000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy grapes from GE — fastest cooking XP'),
+        notes: 'Buy grapes from GE — fastest cooking XP',
+        requiredItems: ['grapes', 'jug of water'],
+        xpPerAction: 200),
     TrainingMethod(
         minLevel: 30,
         maxLevel: 64,
@@ -833,9 +1034,10 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 250000,
         accountMode: AccountMode.ironmanOnly,
         notes: 'Cook your karambwan catch — combo food',
+        requiredItems: ['raw karambwan'],
         sessionUnit: 'inventories',
         sessionAmount: 10,
-        xpPerAction: 3780),
+        xpPerAction: 190),
     TrainingMethod(
         minLevel: 65,
         maxLevel: 79,
@@ -847,7 +1049,9 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 99,
         method: '1-tick Karambwans',
         xpPerHour: 490000,
-        notes: 'Fastest cooking method'),
+        notes: 'Fastest cooking method',
+        requiredItems: ['raw karambwan'],
+        xpPerAction: 190),
     TrainingMethod(
         minLevel: 80,
         maxLevel: 99,
@@ -868,12 +1072,13 @@ const Map<String, SkillTrainingInfo> trainingData = {
   // ─── FIREMAKING ────────────────────────────────────────
   'Firemaking': SkillTrainingInfo(skill: 'Firemaking', methods: [
     TrainingMethod(
-        minLevel: 1, maxLevel: 14, method: 'Normal logs', xpPerHour: 45000),
+        minLevel: 1, maxLevel: 14, method: 'Normal logs', xpPerHour: 20000),
     TrainingMethod(
         minLevel: 15,
         maxLevel: 29,
         method: 'Oak logs',
         xpPerHour: 100000,
+        requiredItems: ['oak logs'],
         sessionUnit: 'logs',
         sessionAmount: 100,
         xpPerAction: 60),
@@ -882,11 +1087,17 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 44,
         method: 'Willow logs',
         xpPerHour: 133000,
+        requiredItems: ['willow logs'],
         sessionUnit: 'logs',
         sessionAmount: 100,
         xpPerAction: 90),
     TrainingMethod(
-        minLevel: 45, maxLevel: 49, method: 'Maple logs', xpPerHour: 175000),
+        minLevel: 45,
+        maxLevel: 49,
+        method: 'Maple logs',
+        xpPerHour: 175000,
+        requiredItems: ['maple logs'],
+        xpPerAction: 135),
     TrainingMethod(
         minLevel: 50,
         maxLevel: 99,
@@ -903,14 +1114,18 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Yew/Magic log burning',
         xpPerHour: 300000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy logs from GE — fast line-burning'),
+        requiredItems: ['yew logs', 'magic logs'],
+        notes: 'Buy logs from GE — fast line-burning',
+        xpPerAction: 202),
     TrainingMethod(
         minLevel: 90,
         maxLevel: 99,
         method: 'Redwood logs',
         xpPerHour: 490000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Fastest FM XP — expensive'),
+        requiredItems: ['redwood logs'],
+        notes: 'Fastest FM XP — expensive',
+        xpPerAction: 350),
   ], milestones: [
     SkillMilestone(30, 'Willow logs'),
     SkillMilestone(45, 'Maple logs'),
@@ -943,14 +1158,17 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Gold bars at Blast Furnace',
         xpPerHour: 380000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy gold ore from GE + Goldsmith gauntlets'),
+        requiredItems: ['gold ore'],
+        notes: 'Buy gold ore from GE + Goldsmith gauntlets',
+        xpPerAction: 56),
     TrainingMethod(
         minLevel: 40,
         maxLevel: 99,
         method: 'Gold bars at BF (own ore)',
-        xpPerHour: 100000,
+        xpPerHour: 230000,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'Mine gold ore — MLM or Crafting Guild',
+        requiredItems: ['gold ore'],
+        notes: 'Buy from Ordan + Goldsmith gauntlets — 230k/hr',
         sessionUnit: 'bars',
         sessionAmount: 500,
         xpPerAction: 56),
@@ -961,21 +1179,27 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 80000,
         accountMode: AccountMode.ironmanOnly,
         intensity: Intensity.afk,
-        notes: 'Useful bars — cannonballs, dart tips'),
+        requiredItems: ['iron ore', 'coal'],
+        notes: 'Useful bars — cannonballs, dart tips',
+        xpPerAction: 18),
     TrainingMethod(
         minLevel: 85,
         maxLevel: 99,
         method: 'Rune bars at Blast Furnace',
         xpPerHour: 80000,
         intensity: Intensity.afk,
-        notes: 'Good GP'),
+        requiredItems: ['runite ore', 'coal'],
+        notes: 'Good GP',
+        xpPerAction: 50),
     TrainingMethod(
         minLevel: 88,
         maxLevel: 99,
         method: 'Adamant platebodies',
         xpPerHour: 220000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy bars from GE'),
+        requiredItems: ['adamantite bar'],
+        notes: 'Buy bars from GE',
+        xpPerAction: 313),
   ], milestones: [
     SkillMilestone(29, 'After Knight\'s Sword'),
     SkillMilestone(30, 'Steel bars'),
@@ -996,6 +1220,16 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 45,
         method: 'Cut gems / Jewellery',
         xpPerHour: 60000,
+        requiredItems: [
+          'sapphire',
+          'emerald',
+          'ruby',
+          'diamond',
+          'dragonstone',
+          'opal',
+          'jade',
+          'topaz'
+        ],
         sessionUnit: 'gems',
         sessionAmount: 100,
         xpPerAction: 67),
@@ -1005,6 +1239,14 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'D\'hide bodies (GE hides)',
         xpPerHour: 140000,
         accountMode: AccountMode.mainOnly,
+        requiredItems: [
+          'dragon leather',
+          'green dragon',
+          'blue dragon',
+          'red dragon',
+          'black dragon',
+          'd\'hide'
+        ],
         notes: 'Buy hides from GE'),
     TrainingMethod(
         minLevel: 35,
@@ -1019,6 +1261,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Superglass Make + blow',
         xpPerHour: 85000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['giant seaweed', 'bucket of sand', 'sandstone'],
         notes: 'Giant seaweed from Fossil Island + sandstone',
         sessionUnit: 'inventories',
         sessionAmount: 20,
@@ -1028,13 +1271,23 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 99,
         method: 'Black d\'hide bodies',
         xpPerHour: 170000,
-        accountMode: AccountMode.mainOnly),
+        accountMode: AccountMode.mainOnly,
+        requiredItems: ['black dragon leather', 'black d\'hide']),
     TrainingMethod(
         minLevel: 61,
         maxLevel: 99,
         method: 'Cutting gems',
         xpPerHour: 90000,
-        intensity: Intensity.afk),
+        intensity: Intensity.afk,
+        requiredItems: [
+          'sapphire',
+          'emerald',
+          'ruby',
+          'diamond',
+          'dragonstone',
+          'onyx',
+          'zenyte'
+        ]),
     TrainingMethod(
         minLevel: 87,
         maxLevel: 99,
@@ -1098,6 +1351,46 @@ const Map<String, SkillTrainingInfo> trainingData = {
         accountMode: AccountMode.ironmanOnly,
         notes: 'Cut own logs — AFK'),
     TrainingMethod(
+        minLevel: 20,
+        maxLevel: 49,
+        method: 'Vale Totems (oak/willow)',
+        xpPerHour: 100000,
+        requiredItems: ['oak logs', 'willow logs'],
+        notes: 'Fletching minigame — ~450 logs/hr, great XP per log',
+        xpPerAction: 222),
+    TrainingMethod(
+        minLevel: 50,
+        maxLevel: 64,
+        method: 'Vale Totems (maple)',
+        xpPerHour: 180000,
+        requiredItems: ['maple logs'],
+        notes: 'Fletching minigame — ~450 logs/hr',
+        xpPerAction: 400),
+    TrainingMethod(
+        minLevel: 65,
+        maxLevel: 79,
+        method: 'Vale Totems (yew)',
+        xpPerHour: 250000,
+        requiredItems: ['yew logs'],
+        notes: 'Fletching minigame — ~450 logs/hr',
+        xpPerAction: 556),
+    TrainingMethod(
+        minLevel: 80,
+        maxLevel: 89,
+        method: 'Vale Totems (magic)',
+        xpPerHour: 300000,
+        requiredItems: ['magic logs'],
+        notes: 'Fletching minigame — ~450 logs/hr',
+        xpPerAction: 667),
+    TrainingMethod(
+        minLevel: 90,
+        maxLevel: 99,
+        method: 'Vale Totems (redwood)',
+        xpPerHour: 350000,
+        requiredItems: ['redwood logs'],
+        notes: 'Fletching minigame — ~450 logs/hr, best non-dart method',
+        xpPerAction: 778),
+    TrainingMethod(
         minLevel: 81,
         maxLevel: 99,
         method: 'Dragon darts',
@@ -1113,12 +1406,18 @@ const Map<String, SkillTrainingInfo> trainingData = {
         notes: 'Expensive'),
   ], milestones: [
     SkillMilestone(10, 'Longbows'),
+    SkillMilestone(20, 'Vale Totems (oak)'),
     SkillMilestone(25, 'Oak shortbow/longbow'),
+    SkillMilestone(35, 'Vale Totems (willow)'),
     SkillMilestone(40, 'Willow longbow'),
+    SkillMilestone(50, 'Vale Totems (maple)'),
     SkillMilestone(52, 'Broad arrows'),
     SkillMilestone(55, 'Maple longbow (u)'),
+    SkillMilestone(65, 'Vale Totems (yew)'),
     SkillMilestone(70, 'Yew longbow (u)'),
+    SkillMilestone(80, 'Vale Totems (magic)'),
     SkillMilestone(85, 'Magic longbow (u)'),
+    SkillMilestone(90, 'Vale Totems (redwood) — best non-dart'),
     SkillMilestone(99, 'Fletching Cape'),
   ]),
 
@@ -1135,39 +1434,50 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 37,
         method: 'Attack/Energy potions',
         xpPerHour: 60000,
-        accountMode: AccountMode.mainOnly),
+        accountMode: AccountMode.mainOnly,
+        requiredItems: [
+          'guam leaf',
+          'harralander',
+          'eye of newt',
+          'chocolate dust'
+        ]),
     TrainingMethod(
         minLevel: 3,
         maxLevel: 37,
         method: 'Quests + Kingdom herbs',
         xpPerHour: 20000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['guam leaf', 'marrentill', 'tarromin', 'harralander'],
         notes: 'Herbs from Farming/Kingdom'),
     TrainingMethod(
         minLevel: 38,
         maxLevel: 54,
         method: 'Prayer potions',
         xpPerHour: 120000,
-        accountMode: AccountMode.mainOnly),
+        accountMode: AccountMode.mainOnly,
+        requiredItems: ['ranarr', 'snape grass']),
     TrainingMethod(
         minLevel: 38,
         maxLevel: 54,
         method: 'Prayer pots (own ranarrs)',
         xpPerHour: 35000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['ranarr', 'snape grass'],
         notes: 'Farm ranarrs — limited by herb supply'),
     TrainingMethod(
         minLevel: 55,
         maxLevel: 77,
         method: 'Super restores',
         xpPerHour: 200000,
-        accountMode: AccountMode.mainOnly),
+        accountMode: AccountMode.mainOnly,
+        requiredItems: ['snapdragon', 'red spiders']),
     TrainingMethod(
         minLevel: 55,
         maxLevel: 77,
         method: 'Super restores (own herbs)',
         xpPerHour: 50000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: ['snapdragon', 'red spiders'],
         notes: 'Farm snapegrass + snapdragon'),
     TrainingMethod(
         minLevel: 60,
@@ -1180,13 +1490,24 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 99,
         method: 'Saradomin Brews / Super combats',
         xpPerHour: 350000,
-        accountMode: AccountMode.mainOnly),
+        accountMode: AccountMode.mainOnly,
+        requiredItems: ['toadflax', 'torstol', 'crushed nest']),
     TrainingMethod(
         minLevel: 78,
         maxLevel: 99,
         method: 'Whatever herbs available',
         xpPerHour: 60000,
         accountMode: AccountMode.ironmanOnly,
+        requiredItems: [
+          'toadflax',
+          'snapdragon',
+          'torstol',
+          'ranarr',
+          'kwuarm',
+          'cadantine',
+          'lantadyme',
+          'dwarf weed'
+        ],
         notes: 'Limited by herb supply from Farming/Slayer'),
   ], milestones: [
     SkillMilestone(5, 'Attack potions'),
@@ -1382,6 +1703,14 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 80000,
         notes: 'Fast early Thieving'),
     TrainingMethod(
+        minLevel: 15,
+        maxLevel: 37,
+        method: 'HAM members',
+        xpPerHour: 15000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Easy clue scrolls + jewellery for teleports. Wear full HAM robes to reduce kick rate. Early ironman essential.'),
+    TrainingMethod(
         minLevel: 38,
         maxLevel: 54,
         method: 'Master Farmer',
@@ -1391,6 +1720,14 @@ const Map<String, SkillTrainingInfo> trainingData = {
         sessionUnit: 'pickpockets',
         sessionAmount: 200,
         xpPerAction: 43),
+    TrainingMethod(
+        minLevel: 55,
+        maxLevel: 93,
+        method: 'Master Farmer (with Rogue\'s outfit)',
+        xpPerHour: 65000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Double loot with Rogue\'s outfit. Ranarr/Snapdragon seeds are huge. Do between Slayer tasks.'),
     TrainingMethod(
         minLevel: 45,
         maxLevel: 64,
@@ -1520,6 +1857,36 @@ const Map<String, SkillTrainingInfo> trainingData = {
         sessionUnit: 'tasks',
         sessionAmount: 5,
         xpPerAction: 15000),
+    TrainingMethod(
+        minLevel: 1,
+        maxLevel: 69,
+        method: 'Point boosting (9 Turael + 10th Nieve)',
+        xpPerHour: 12000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Do 9 quick tasks at Turael, then 10th at Nieve/Duradel for bonus Slayer points. Essential for unlocking Slayer helm, blocks, extends.',
+        sessionUnit: 'rotations',
+        sessionAmount: 3,
+        xpPerAction: 8000),
+    TrainingMethod(
+        minLevel: 40,
+        maxLevel: 69,
+        method: 'Vannaka + self-made cannonballs',
+        xpPerHour: 22000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Smith steel bars into cannonballs at Blast Furnace. Cannon Kalphites, Dagannoths. Slower supply than mains.'),
+    TrainingMethod(
+        minLevel: 70,
+        maxLevel: 99,
+        method: 'Duradel (ironman efficient)',
+        xpPerHour: 35000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Burst over barrage to conserve runes. Self-made cannonballs for cannon tasks. Block/skip bad tasks. Prioritise Nechs, Dust Devils, Abby Demons.',
+        sessionUnit: 'tasks',
+        sessionAmount: 5,
+        xpPerAction: 12000),
   ], milestones: [
     SkillMilestone(5, 'Crawling Hands'),
     SkillMilestone(15, 'Banshees'),
@@ -1601,6 +1968,33 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Tithe Farm',
         xpPerHour: 90000,
         notes: 'Minigame — useful for seed box, auto-weed, Farmer outfit'),
+    TrainingMethod(
+        minLevel: 45,
+        maxLevel: 99,
+        method: 'Farming contracts',
+        xpPerHour: 50000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Farming Guild contracts — essential seed source for ironmen. Do every run. Scales with level to give tree/herb seeds.'),
+    TrainingMethod(
+        minLevel: 23,
+        maxLevel: 99,
+        method: 'Giant seaweed runs',
+        xpPerHour: 5000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Plant seaweed spores underwater (Fossil Island). Essential for Superglass Make → Crafting. Do alongside herb runs.'),
+    TrainingMethod(
+        minLevel: 35,
+        maxLevel: 99,
+        method: 'Hardwood tree patches',
+        xpPerHour: 20000,
+        intensity: Intensity.afk,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Plant teak/mahogany in Fossil Island hardwood patches. Passive XP + Construction plank supply via Kingdom.'),
   ], milestones: [
     SkillMilestone(15, 'Trees plantable'),
     SkillMilestone(27, 'Fruit trees'),
@@ -1685,6 +2079,22 @@ const Map<String, SkillTrainingInfo> trainingData = {
         xpPerHour: 240000,
         accountMode: AccountMode.mainOnly,
         notes: 'Paid runners — extremely fast but costly'),
+    TrainingMethod(
+        minLevel: 27,
+        maxLevel: 99,
+        method: 'Guardians of the Rift (ironman)',
+        xpPerHour: 50000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Essential rune supply: death, blood, law, nature runes. Raiments of the Eye set boosts rune yield 60%. Do this regularly.'),
+    TrainingMethod(
+        minLevel: 44,
+        maxLevel: 76,
+        method: 'Nature runes via Abyss',
+        xpPerHour: 22000,
+        accountMode: AccountMode.ironmanOnly,
+        notes:
+            'Craft nature runes for High Alchemy. Slow XP but essential supply for ironmen.'),
   ], milestones: [
     SkillMilestone(14, 'Cosmic runes'),
     SkillMilestone(23, 'Lava runes — fastest RC'),
@@ -1713,6 +2123,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 32,
         method: 'Oak furniture',
         xpPerHour: 200000,
+        requiredItems: ['oak plank'],
         sessionUnit: 'planks',
         sessionAmount: 500,
         xpPerAction: 60),
@@ -1721,6 +2132,7 @@ const Map<String, SkillTrainingInfo> trainingData = {
         maxLevel: 51,
         method: 'Oak Larders',
         xpPerHour: 280000,
+        requiredItems: ['oak plank'],
         sessionUnit: 'planks',
         sessionAmount: 500,
         xpPerAction: 60),
@@ -1730,28 +2142,36 @@ const Map<String, SkillTrainingInfo> trainingData = {
         method: 'Mahogany Tables (GE planks)',
         xpPerHour: 600000,
         accountMode: AccountMode.mainOnly,
-        notes: 'Buy planks from GE — fastest Construction'),
+        requiredItems: ['mahogany plank'],
+        notes: 'Buy planks from GE — fastest Construction',
+        xpPerAction: 140),
     TrainingMethod(
         minLevel: 47,
         maxLevel: 99,
         method: 'Mounted Mythical Capes (teak)',
         xpPerHour: 400000,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'Teak planks from Kingdom/Plank Make'),
+        requiredItems: ['teak plank'],
+        notes: 'Teak planks from Kingdom/Plank Make',
+        xpPerAction: 123),
     TrainingMethod(
         minLevel: 52,
         maxLevel: 99,
         method: 'Oak Dungeon Doors',
         xpPerHour: 350000,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'Oak planks — cheaper than mahogany'),
+        requiredItems: ['oak plank'],
+        notes: 'Oak planks — cheaper than mahogany',
+        xpPerAction: 60),
     TrainingMethod(
         minLevel: 52,
         maxLevel: 99,
         method: 'Mahogany Tables (own planks)',
         xpPerHour: 350000,
         accountMode: AccountMode.ironmanOnly,
-        notes: 'Plank Make spell + Kingdom mahogany'),
+        requiredItems: ['mahogany plank'],
+        notes: 'Plank Make spell + Kingdom mahogany',
+        xpPerAction: 140),
     TrainingMethod(
         minLevel: 1,
         maxLevel: 99,
@@ -1773,5 +2193,117 @@ const Map<String, SkillTrainingInfo> trainingData = {
     SkillMilestone(84, 'Spirit tree in POH'),
     SkillMilestone(90, 'Occult Altar'),
     SkillMilestone(99, 'Construction Cape — POH teleport'),
+  ]),
+
+  // ─── SAILING ────────────────────────────────────────
+  'Sailing': SkillTrainingInfo(skill: 'Sailing', methods: [
+    TrainingMethod(
+        minLevel: 1,
+        maxLevel: 11,
+        method: 'Pandemonium quest + Courier tasks',
+        xpPerHour: 10000,
+        notes:
+            'Complete Pandemonium quest, then courier tasks Port Sarim ↔ Pandemonium'),
+    TrainingMethod(
+        minLevel: 12,
+        maxLevel: 29,
+        method: 'Sea charting',
+        xpPerHour: 10000,
+        notes:
+            'Explore oceans with spyglass + current duck — one-off XP rewards'),
+    TrainingMethod(
+        minLevel: 15,
+        maxLevel: 41,
+        method: 'Shipwreck salvaging',
+        xpPerHour: 15000,
+        intensity: Intensity.afk,
+        notes: 'Low-intensity gathering — salvaging hooks on shipwrecks'),
+    TrainingMethod(
+        minLevel: 30,
+        maxLevel: 54,
+        method: 'Barracuda Trials (Tempor Tantrum)',
+        xpPerHour: 60000,
+        notes: 'Obstacle course at sea — fastest from level 30'),
+    TrainingMethod(
+        minLevel: 30,
+        maxLevel: 54,
+        method: 'Bounty tasks',
+        xpPerHour: 50000,
+        notes: 'Kill sea monsters for bounty items — mid-tier XP'),
+    TrainingMethod(
+        minLevel: 42,
+        maxLevel: 99,
+        method: 'Shipwreck salvaging (with station)',
+        xpPerHour: 40000,
+        intensity: Intensity.afk,
+        notes:
+            'Salvaging station schematic from Chinchompa Island — much faster'),
+    TrainingMethod(
+        minLevel: 46,
+        maxLevel: 54,
+        method: 'Courier tasks (Summer Shore)',
+        xpPerHour: 30000,
+        notes: 'Deliver cargo to The Summer Shore — ~9 trips/hr'),
+    TrainingMethod(
+        minLevel: 55,
+        maxLevel: 71,
+        method: 'Barracuda Trials (Jubbly Jive)',
+        xpPerHour: 100000,
+        notes: 'Second trial — faster XP than Tempor Tantrum'),
+    TrainingMethod(
+        minLevel: 55,
+        maxLevel: 71,
+        method: 'Bounty tasks (optimised)',
+        xpPerHour: 130000,
+        notes: 'Focus on bird + ray tasks from Prifddinas/Rellekka'),
+    TrainingMethod(
+        minLevel: 62,
+        maxLevel: 71,
+        method: 'Courier tasks (Rellekka)',
+        xpPerHour: 70000,
+        notes: 'Aldarin/Sunset Coast → Rellekka — up to 90k/hr at 65+'),
+    TrainingMethod(
+        minLevel: 40,
+        maxLevel: 99,
+        method: 'Deep sea trawling',
+        xpPerHour: 25000,
+        intensity: Intensity.afk,
+        notes: 'Hybrid Fishing + Sailing — trawl shoals with nets'),
+    TrainingMethod(
+        minLevel: 72,
+        maxLevel: 92,
+        method: 'Barracuda Trials (Gwenith Glide)',
+        xpPerHour: 160000,
+        notes: 'Third trial — best XP, requires Song of the Elves area'),
+    TrainingMethod(
+        minLevel: 67,
+        maxLevel: 99,
+        method: 'Bounty tasks (Deepfin Point)',
+        xpPerHour: 200000,
+        notes: 'Birds, rays, low-level sharks — up to 200k/hr BiS ship'),
+    TrainingMethod(
+        minLevel: 93,
+        maxLevel: 99,
+        method: 'Barracuda Trials (Gwenith Glide + Rosewood)',
+        xpPerHour: 200000,
+        notes:
+            'Rosewood hull (93 Sailing, 84 Con) — 200k+/hr with crystal extractor'),
+  ], milestones: [
+    SkillMilestone(1, 'Pandemonium quest — get a raft'),
+    SkillMilestone(12, 'Prying Times — crowbar for sea charting'),
+    SkillMilestone(15, 'Skiff + Shipwreck salvaging'),
+    SkillMilestone(22, 'Current Affairs — current duck for charting'),
+    SkillMilestone(30, 'Barracuda Trials (Tempor Tantrum) + Bounty tasks'),
+    SkillMilestone(31, 'Teak hull — faster boat'),
+    SkillMilestone(38, 'Mermaid guide tasks'),
+    SkillMilestone(42, 'Salvaging station schematic'),
+    SkillMilestone(45, 'Troubled Tortugans quest'),
+    SkillMilestone(55, 'Jubbly Jive trial + Teleport focus'),
+    SkillMilestone(60, 'Sloop — larger boat with more facilities'),
+    SkillMilestone(67, 'Deepfin Point bounties — best bounty XP'),
+    SkillMilestone(72, 'Gwenith Glide trial — fastest Sailing XP'),
+    SkillMilestone(73, 'Crystal extractor — passive 10-15k XP/hr'),
+    SkillMilestone(93, 'Rosewood hull — 200k+/hr Gwenith Glide'),
+    SkillMilestone(99, 'Sailing Cape'),
   ]),
 };

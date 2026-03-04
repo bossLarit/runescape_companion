@@ -3,21 +3,15 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/design_system/design_system.dart';
 import '../../characters/domain/character_model.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
 import 'providers/onboarding_provider.dart';
 
-const _gold = Color(0xFFD4A017);
-const _darkBrown = Color(0xFF2B1D0E);
-const _brown = Color(0xFF3B2A14);
-const _medBrown = Color(0xFF4A3621);
-const _lightBrown = Color(0xFF5C4529);
-const _green = Color(0xFF3B8132);
-const _darkGreen = Color(0xFF2D5F27);
-const _cream = Color(0xFFF5E6C8);
-
 class OnboardingScreen extends HookConsumerWidget {
   const OnboardingScreen({super.key});
+
+  static const _totalSteps = 3;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,49 +19,115 @@ class OnboardingScreen extends HookConsumerWidget {
     final rsnCtrl = useTextEditingController();
     final accountType = useState(CharacterType.main);
     final characterCreated = useState(false);
-    final totalSteps = 4;
+
+    Future<void> finishOnboarding() async {
+      await ref.read(onboardingCompleteProvider.notifier).complete();
+      if (context.mounted) context.go('/dashboard');
+    }
 
     return Scaffold(
-      backgroundColor: _darkBrown,
-      body: Center(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 350),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.05, 0),
-                end: Offset.zero,
-              ).animate(anim),
-              child: child,
+      backgroundColor: kDarkBrown,
+      body: Column(
+        children: [
+          // ── Progress bar + Skip ──
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 20, 32, 0),
+              child: Row(
+                children: [
+                  // Step dots
+                  for (int i = 0; i < _totalSteps; i++) ...[
+                    if (i > 0) const SizedBox(width: 6),
+                    Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: i <= step.value
+                              ? kGold
+                              : kLightBrown.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 16),
+                  // Step label
+                  Text(
+                    '${step.value + 1} / $_totalSteps',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: kCream.withValues(alpha: 0.4),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Skip to Dashboard
+                  if (step.value < _totalSteps - 1)
+                    TextButton(
+                      onPressed: finishOnboarding,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Skip to Dashboard',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: kCream.withValues(alpha: 0.45),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-          child: _buildStep(
-            key: ValueKey(step.value),
-            context: context,
-            ref: ref,
-            step: step,
-            totalSteps: totalSteps,
-            rsnCtrl: rsnCtrl,
-            accountType: accountType,
-            characterCreated: characterCreated,
+          // ── Step content ──
+          Expanded(
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.04, 0),
+                      end: Offset.zero,
+                    ).animate(anim),
+                    child: child,
+                  ),
+                ),
+                child: _buildStep(
+                  key: ValueKey(step.value),
+                  ref: ref,
+                  step: step,
+                  rsnCtrl: rsnCtrl,
+                  accountType: accountType,
+                  characterCreated: characterCreated,
+                  onFinish: finishOnboarding,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildStep({
     required Key key,
-    required BuildContext context,
     required WidgetRef ref,
     required ValueNotifier<int> step,
-    required int totalSteps,
     required TextEditingController rsnCtrl,
     required ValueNotifier<CharacterType> accountType,
     required ValueNotifier<bool> characterCreated,
+    required Future<void> Function() onFinish,
   }) {
     switch (step.value) {
       case 0:
@@ -90,17 +150,13 @@ class OnboardingScreen extends HookConsumerWidget {
             characterCreated.value = true;
           },
           onNext: () => step.value = 2,
-          onSkip: () => step.value = 2,
+          onBack: () => step.value = 0,
         );
       case 2:
-        return _FeatureTourStep(key: key, onNext: () => step.value = 3);
-      case 3:
         return _ReadyStep(
           key: key,
-          onFinish: () async {
-            await ref.read(onboardingCompleteProvider.notifier).complete();
-            if (context.mounted) context.go('/dashboard');
-          },
+          onFinish: onFinish,
+          onBack: () => step.value = 1,
         );
       default:
         return const SizedBox.shrink();
@@ -124,23 +180,23 @@ class _WelcomeStep extends StatelessWidget {
         children: [
           // Logo
           Container(
-            width: 80,
-            height: 80,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFE8C34A), _gold, Color(0xFF9E7A12)],
+                colors: [Color(0xFFE8C34A), kGold, Color(0xFF9E7A12)],
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: const Color(0xFFB8860B).withValues(alpha: 0.8),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _gold.withValues(alpha: 0.4),
-                  blurRadius: 20,
+                  color: kGold.withValues(alpha: 0.35),
+                  blurRadius: 18,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -148,96 +204,82 @@ class _WelcomeStep extends StatelessWidget {
             child: const Stack(
               alignment: Alignment.center,
               children: [
-                Icon(Icons.shield, color: Color(0xFF1E1408), size: 44),
-                Icon(Icons.security, color: Color(0xFF1E1408), size: 38),
+                Icon(Icons.shield, color: Color(0xFF1E1408), size: 40),
+                Icon(Icons.security, color: Color(0xFF1E1408), size: 34),
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           // Title
           ShaderMask(
             shaderCallback: (bounds) => const LinearGradient(
-              colors: [Color(0xFFFFD966), _gold, Color(0xFFFFD966)],
+              colors: [Color(0xFFFFD966), kGold, Color(0xFFFFD966)],
             ).createShader(bounds),
             child: const Text(
               'OSRS COMPANION',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
                 letterSpacing: 4,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Your personal Old School RuneScape toolkit',
             style: TextStyle(
-              fontSize: 14,
-              color: _cream.withValues(alpha: 0.7),
+              fontSize: 13,
+              color: kCream.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 28),
 
-          // Features preview
+          // Compact feature list
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              color: _darkBrown.withValues(alpha: 0.6),
+              color: kDarkBrown.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _lightBrown.withValues(alpha: 0.3)),
+              border: Border.all(color: kLightBrown.withValues(alpha: 0.2)),
             ),
             child: Column(
               children: [
                 _FeatureRow(
-                  icon: Icons.trending_up,
-                  text: 'Track your goals, sessions, and progress',
-                ),
-                const SizedBox(height: 10),
+                    icon: Icons.trending_up,
+                    text: 'Track goals, sessions & progress'),
+                const SizedBox(height: 8),
                 _FeatureRow(
-                  icon: Icons.auto_awesome,
-                  text: 'Get personalized training recommendations',
-                ),
-                const SizedBox(height: 10),
+                    icon: Icons.auto_awesome,
+                    text: 'Personalized training recommendations'),
+                const SizedBox(height: 8),
                 _FeatureRow(
-                  icon: Icons.calculate,
-                  text: 'Skill calculators, GE prices, and wiki search',
-                ),
-                const SizedBox(height: 10),
+                    icon: Icons.calculate,
+                    text: 'Skill calcs, GE prices & wiki search'),
+                const SizedBox(height: 8),
                 _FeatureRow(
-                  icon: Icons.lock_outline,
-                  text: 'Encrypted vault for your account notes',
-                ),
+                    icon: Icons.lock_outline,
+                    text: 'Encrypted vault for account notes'),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'No automation. No botting. No game memory reading.\nJust a helpful companion on your desktop.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.3),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
 
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: onNext,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _darkGreen,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: kDarkGreen,
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Let's Get Started",
+                  Text("Get Started",
                       style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                   SizedBox(width: 8),
                   Icon(Icons.arrow_forward, size: 18),
                 ],
@@ -259,12 +301,12 @@ class _FeatureRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: _gold.withValues(alpha: 0.7)),
-        const SizedBox(width: 12),
+        Icon(icon, size: 16, color: kGold.withValues(alpha: 0.6)),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(text,
               style: TextStyle(
-                  fontSize: 13, color: _cream.withValues(alpha: 0.8))),
+                  fontSize: 12, color: kCream.withValues(alpha: 0.7))),
         ),
       ],
     );
@@ -272,7 +314,7 @@ class _FeatureRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  STEP 1: ADD CHARACTER
+//  STEP 1: ADD CHARACTER (streamlined)
 // ═══════════════════════════════════════════════════════════════════
 
 class _CharacterStep extends StatelessWidget {
@@ -281,7 +323,7 @@ class _CharacterStep extends StatelessWidget {
   final ValueNotifier<bool> characterCreated;
   final VoidCallback onCreateCharacter;
   final VoidCallback onNext;
-  final VoidCallback onSkip;
+  final VoidCallback onBack;
 
   const _CharacterStep({
     super.key,
@@ -290,7 +332,7 @@ class _CharacterStep extends StatelessWidget {
     required this.characterCreated,
     required this.onCreateCharacter,
     required this.onNext,
-    required this.onSkip,
+    required this.onBack,
   });
 
   @override
@@ -305,32 +347,31 @@ class _CharacterStep extends StatelessWidget {
             children: [
               Icon(
                 created ? Icons.check_circle : Icons.person_add,
-                size: 48,
-                color: created ? _green : _gold,
+                size: 40,
+                color: created ? kGreen : kGold,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 created ? 'Character Added!' : 'Add Your Character',
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: _gold,
+                  color: kGold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 created
-                    ? 'Your RuneScape name has been saved. You can add more characters later.'
-                    : 'Enter your RuneScape display name so the app can look up your stats and track your progress.',
+                    ? 'You can add more characters later from the Characters page.'
+                    : 'Enter your display name to look up stats and track progress.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 13,
-                  color: _cream.withValues(alpha: 0.6),
-                  height: 1.5,
+                  fontSize: 12,
+                  color: kCream.withValues(alpha: 0.55),
+                  height: 1.4,
                 ),
               ),
-              const SizedBox(height: 28),
-
+              const SizedBox(height: 22),
               if (!created) ...[
                 // RSN input
                 TextField(
@@ -340,7 +381,7 @@ class _CharacterStep extends StatelessWidget {
                     hintText: 'e.g. Zezima',
                     prefixIcon: const Icon(Icons.person_outline, size: 20),
                     filled: true,
-                    fillColor: _darkBrown.withValues(alpha: 0.8),
+                    fillColor: kDarkBrown.withValues(alpha: 0.8),
                   ),
                   textCapitalization: TextCapitalization.words,
                   onSubmitted: (_) {
@@ -349,7 +390,7 @@ class _CharacterStep extends StatelessWidget {
                     }
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
                 // Account type
                 Column(
@@ -357,8 +398,8 @@ class _CharacterStep extends StatelessWidget {
                   children: [
                     Text('Account Type',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: _cream.withValues(alpha: 0.5),
+                          fontSize: 11,
+                          color: kCream.withValues(alpha: 0.45),
                         )),
                     const SizedBox(height: 8),
                     Wrap(
@@ -381,17 +422,16 @@ class _CharacterStep extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 22),
 
                 // Create button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: rsnCtrl.text.trim().isEmpty
-                        ? null
-                        : onCreateCharacter,
+                    onPressed:
+                        rsnCtrl.text.trim().isEmpty ? null : onCreateCharacter,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _darkGreen,
+                      backgroundColor: kDarkGreen,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: const Text('Add Character',
@@ -399,42 +439,61 @@ class _CharacterStep extends StatelessWidget {
                             fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: onSkip,
-                  child: Text('Skip for now',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.4),
-                      )),
+                const SizedBox(height: 10),
+                // Back + Skip row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: onBack,
+                      child: Text('Back',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.35),
+                          )),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('|',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.15))),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: onNext,
+                      child: Text('Skip for now',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.35),
+                          )),
+                    ),
+                  ],
                 ),
               ] else ...[
                 // Success state
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: _green.withValues(alpha: 0.1),
+                    color: kGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _green.withValues(alpha: 0.3)),
+                    border: Border.all(color: kGreen.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check, color: _green, size: 20),
-                      const SizedBox(width: 12),
+                      const Icon(Icons.check, color: kGreen, size: 18),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(rsnCtrl.text.trim(),
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: _cream,
+                                  color: kCream,
                                 )),
                             Text(accountType.value.displayName,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: _cream.withValues(alpha: 0.5),
+                                  fontSize: 11,
+                                  color: kCream.withValues(alpha: 0.45),
                                 )),
                           ],
                         ),
@@ -442,13 +501,13 @@ class _CharacterStep extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: onNext,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _darkGreen,
+                      backgroundColor: kDarkGreen,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: const Row(
@@ -484,21 +543,21 @@ class _AccountTypeChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? _darkGreen : _medBrown,
+          color: selected ? kDarkGreen : kMedBrown,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: selected ? _green : _lightBrown.withValues(alpha: 0.5),
+            color: selected ? kGreen : kLightBrown.withValues(alpha: 0.5),
           ),
         ),
         child: Text(
           type.displayName,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-            color: selected ? _cream : _cream.withValues(alpha: 0.6),
+            color: selected ? kCream : kCream.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -507,220 +566,13 @@ class _AccountTypeChip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  STEP 2: FEATURE TOUR
-// ═══════════════════════════════════════════════════════════════════
-
-class _FeatureTourStep extends StatelessWidget {
-  final VoidCallback onNext;
-  const _FeatureTourStep({super.key, required this.onNext});
-
-  @override
-  Widget build(BuildContext context) {
-    return _StepContainer(
-      maxWidth: 600,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.explore, size: 44, color: _gold),
-          const SizedBox(height: 16),
-          const Text(
-            'Quick Tour',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: _gold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Here's what you'll find in the sidebar",
-            style: TextStyle(
-              fontSize: 13,
-              color: _cream.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Feature cards in 2x2 grid
-          Row(
-            children: [
-              Expanded(
-                child: _TourCard(
-                  icon: Icons.space_dashboard,
-                  title: 'Dashboard & Account',
-                  items: [
-                    'Dashboard overview',
-                    'Manage characters',
-                    'Command Center for quick actions',
-                  ],
-                  color: _gold,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _TourCard(
-                  icon: Icons.flag,
-                  title: 'Tracking',
-                  items: [
-                    'Set and track goals',
-                    'Log play sessions',
-                    'Keep notes and bingo cards',
-                  ],
-                  color: const Color(0xFF42A5F5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _TourCard(
-                  icon: Icons.account_tree,
-                  title: 'Planning',
-                  items: [
-                    'AI-powered Goal Planner',
-                    'Time Budget calculator',
-                    'Ironman Cookbook guides',
-                  ],
-                  color: _green,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _TourCard(
-                  icon: Icons.calculate,
-                  title: 'Tools',
-                  items: [
-                    'Skill & Drop Rate calculators',
-                    'GE Prices live lookup',
-                    'Wiki Search & Daily Tasks',
-                  ],
-                  color: const Color(0xFFFF9800),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tip: Start with the Goal Planner — it recommends what to train next based on your stats!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: _gold.withValues(alpha: 0.5),
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onNext,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _darkGreen,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Almost Done',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, size: 18),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TourCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final List<String> items;
-  final Color color;
-  const _TourCard({
-    required this.icon,
-    required this.title,
-    required this.items,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _brown,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    )),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          for (final item in items) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: _cream.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(item,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _cream.withValues(alpha: 0.6),
-                          height: 1.4,
-                        )),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  STEP 3: READY
+//  STEP 2: READY — quick tips + go
 // ═══════════════════════════════════════════════════════════════════
 
 class _ReadyStep extends StatelessWidget {
-  final VoidCallback onFinish;
-  const _ReadyStep({super.key, required this.onFinish});
+  final Future<void> Function() onFinish;
+  final VoidCallback onBack;
+  const _ReadyStep({super.key, required this.onFinish, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -729,61 +581,78 @@ class _ReadyStep extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 72,
-            height: 72,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color: _green.withValues(alpha: 0.15),
+              color: kGreen.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-              border: Border.all(color: _green.withValues(alpha: 0.4), width: 2),
+              border:
+                  Border.all(color: kGreen.withValues(alpha: 0.4), width: 2),
             ),
-            child: const Icon(Icons.check_rounded, size: 40, color: _green),
+            child: const Icon(Icons.check_rounded, size: 36, color: kGreen),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           const Text(
             "You're All Set!",
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: _gold,
+              color: kGold,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
-            "Your companion is ready. Here's how to get the most out of it:",
+            'Quick tips to get the most out of the app:',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
-              color: _cream.withValues(alpha: 0.6),
+              fontSize: 12,
+              color: kCream.withValues(alpha: 0.55),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Compact tips
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: kDarkBrown.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: kLightBrown.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                _QuickTip(
+                  icon: Icons.person_search,
+                  text: 'Characters → "Lookup Stats" to pull your live levels.',
+                ),
+                const SizedBox(height: 10),
+                _QuickTip(
+                  icon: Icons.route,
+                  text: 'Goal Planner generates a personalized training plan.',
+                ),
+                const SizedBox(height: 10),
+                _QuickTip(
+                  icon: Icons.inventory_2,
+                  text:
+                      'Import your bank in BiS Gear → Bank for smarter recommendations.',
+                ),
+                const SizedBox(height: 10),
+                _QuickTip(
+                  icon: Icons.timer,
+                  text:
+                      'Start a session timer when you play to track XP gains.',
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
-
-          _QuickTip(
-            number: '1',
-            text:
-                'Go to Characters and click "Lookup Stats" to pull your live levels from the hiscores.',
-          ),
-          const SizedBox(height: 10),
-          _QuickTip(
-            number: '2',
-            text:
-                'Open the Goal Planner — it will generate a personalized training plan based on your stats.',
-          ),
-          const SizedBox(height: 10),
-          _QuickTip(
-            number: '3',
-            text:
-                'Set goals in the Goals tab and start a session timer when you play to track your progress.',
-          ),
-          const SizedBox(height: 32),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: onFinish,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _darkGreen,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: kDarkGreen,
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -792,10 +661,19 @@ class _ReadyStep extends StatelessWidget {
                   SizedBox(width: 8),
                   Text('Go to Dashboard',
                       style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 6),
+          TextButton(
+            onPressed: onBack,
+            child: Text('Back',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.3),
+                )),
           ),
         ],
       ),
@@ -804,37 +682,23 @@ class _ReadyStep extends StatelessWidget {
 }
 
 class _QuickTip extends StatelessWidget {
-  final String number;
+  final IconData icon;
   final String text;
-  const _QuickTip({required this.number, required this.text});
+  const _QuickTip({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: _gold.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(number,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: _gold,
-              )),
-        ),
-        const SizedBox(width: 12),
+        Icon(icon, size: 16, color: kGold.withValues(alpha: 0.6)),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(text,
               style: TextStyle(
                 fontSize: 12,
-                color: _cream.withValues(alpha: 0.7),
-                height: 1.5,
+                color: kCream.withValues(alpha: 0.65),
+                height: 1.4,
               )),
         ),
       ],
@@ -848,20 +712,19 @@ class _QuickTip extends StatelessWidget {
 
 class _StepContainer extends StatelessWidget {
   final Widget child;
-  final double maxWidth;
-  const _StepContainer({required this.child, this.maxWidth = 460});
+  const _StepContainer({required this.child});
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Container(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-        padding: const EdgeInsets.all(36),
+        constraints: const BoxConstraints(maxWidth: 440),
+        margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: _brown,
+          color: kBrown,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _lightBrown.withValues(alpha: 0.5)),
+          border: Border.all(color: kLightBrown.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.4),

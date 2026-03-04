@@ -3,16 +3,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
 import '../../characters/presentation/providers/hiscores_provider.dart';
 import '../data/boss_progression_data.dart';
-
-const _gold = Color(0xFFD4A017);
-const _cream = Color(0xFFF5E6C8);
-const _darkBrown = Color(0xFF2B1D0E);
-const _brown = Color(0xFF3B2A14);
-const _medBrown = Color(0xFF4A3621);
-const _lightBrown = Color(0xFF5C4529);
 
 Color _tierColor(BossTier tier) {
   switch (tier) {
@@ -27,7 +21,7 @@ Color _tierColor(BossTier tier) {
     case BossTier.master:
       return const Color(0xFFFF5252);
     case BossTier.grandmaster:
-      return _gold;
+      return kGold;
   }
 }
 
@@ -97,20 +91,22 @@ class BossProgressionScreen extends HookConsumerWidget {
             // Header
             Row(
               children: [
-                Text('Boss Progression',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Boss Progression',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _gold.withValues(alpha: 0.15),
+                      color: kGold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(activeChar.displayName,
-                        style:
-                            const TextStyle(color: _gold, fontSize: 12)),
+                        style: const TextStyle(color: kGold, fontSize: 12)),
                   ),
                 ],
                 const Spacer(),
@@ -118,12 +114,13 @@ class BossProgressionScreen extends HookConsumerWidget {
                   Row(
                     children: [
                       const Text('Ready only',
-                          style: TextStyle(fontSize: 12, color: Colors.white54)),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.white54)),
                       const SizedBox(width: 6),
                       Switch(
                         value: showOnlyReady.value,
                         onChanged: (v) => showOnlyReady.value = v,
-                        activeColor: _gold,
+                        activeColor: kGold,
                       ),
                     ],
                   ),
@@ -190,8 +187,7 @@ class BossProgressionScreen extends HookConsumerWidget {
                               for (final tier in BossTier.values)
                                 if (grouped.containsKey(tier)) ...[
                                   _TierHeader(
-                                      tier: tier,
-                                      count: grouped[tier]!.length),
+                                      tier: tier, count: grouped[tier]!.length),
                                   for (final boss in grouped[tier]!)
                                     _BossTile(
                                       boss: boss,
@@ -269,10 +265,10 @@ class _TierChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.2) : _medBrown,
+          color: selected ? color.withValues(alpha: 0.2) : kMedBrown,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? color : _lightBrown.withValues(alpha: 0.5),
+            color: selected ? color : kLightBrown.withValues(alpha: 0.5),
           ),
         ),
         child: Row(
@@ -374,7 +370,7 @@ class _BossTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 3),
       child: Material(
-        color: isSelected ? color.withValues(alpha: 0.1) : _brown,
+        color: isSelected ? color.withValues(alpha: 0.1) : kBrown,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           onTap: onTap,
@@ -386,7 +382,7 @@ class _BossTile extends StatelessWidget {
               border: Border.all(
                 color: isSelected
                     ? color.withValues(alpha: 0.4)
-                    : _lightBrown.withValues(alpha: 0.3),
+                    : kLightBrown.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -416,7 +412,7 @@ class _BossTile extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: meetsReqs ? _cream : Colors.white38,
+                                color: meetsReqs ? kCream : Colors.white38,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -434,7 +430,7 @@ class _BossTile extends StatelessWidget {
                               padding: const EdgeInsets.only(left: 4),
                               child: Icon(Icons.construction,
                                   size: 14,
-                                  color: _gold.withValues(alpha: 0.5)),
+                                  color: kGold.withValues(alpha: 0.5)),
                             ),
                           if (boss.groupSize != null)
                             Padding(
@@ -597,7 +593,7 @@ class _BossDetailPanel extends StatelessWidget {
             Text(boss.description,
                 style: TextStyle(
                   fontSize: 13,
-                  color: _cream.withValues(alpha: 0.8),
+                  color: kCream.withValues(alpha: 0.8),
                   height: 1.5,
                 )),
             const SizedBox(height: 20),
@@ -608,7 +604,7 @@ class _BossDetailPanel extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _gold,
+                    color: kGold,
                   )),
               const SizedBox(height: 8),
               Wrap(
@@ -640,25 +636,26 @@ class _BossDetailPanel extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _gold,
+                    color: kGold,
                   )),
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _darkBrown.withValues(alpha: 0.5),
+                  color: kDarkBrown.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: _lightBrown.withValues(alpha: 0.3)),
+                  border: Border.all(color: kLightBrown.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.menu_book, size: 14, color: Colors.white38),
+                    const Icon(Icons.menu_book,
+                        size: 14, color: Colors.white38),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(boss.questReq!,
                           style: TextStyle(
                               fontSize: 12,
-                              color: _cream.withValues(alpha: 0.7))),
+                              color: kCream.withValues(alpha: 0.7))),
                     ),
                   ],
                 ),
@@ -673,8 +670,8 @@ class _BossDetailPanel extends StatelessWidget {
                   const Icon(Icons.group, size: 14, color: Colors.white38),
                   const SizedBox(width: 6),
                   Text('Group: ${boss.groupSize}',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.white54)),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.white54)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -686,7 +683,7 @@ class _BossDetailPanel extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _gold,
+                    color: kGold,
                   )),
               const SizedBox(height: 8),
               Wrap(
@@ -698,15 +695,15 @@ class _BossDetailPanel extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: _gold.withValues(alpha: 0.08),
+                        color: kGold.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(4),
                         border:
-                            Border.all(color: _gold.withValues(alpha: 0.15)),
+                            Border.all(color: kGold.withValues(alpha: 0.15)),
                       ),
                       child: Text(drop,
                           style: TextStyle(
                             fontSize: 11,
-                            color: _cream.withValues(alpha: 0.8),
+                            color: kCream.withValues(alpha: 0.8),
                           )),
                     ),
                 ],
@@ -724,8 +721,8 @@ class _BossDetailPanel extends StatelessWidget {
               icon: const Icon(Icons.open_in_new, size: 14),
               label: const Text('View on OSRS Wiki'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: _gold,
-                side: BorderSide(color: _gold.withValues(alpha: 0.4)),
+                foregroundColor: kGold,
+                side: BorderSide(color: kGold.withValues(alpha: 0.4)),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 textStyle: const TextStyle(fontSize: 12),
@@ -742,8 +739,7 @@ class _ReqChip extends StatelessWidget {
   final String skill;
   final int level;
   final bool met;
-  const _ReqChip(
-      {required this.skill, required this.level, required this.met});
+  const _ReqChip({required this.skill, required this.level, required this.met});
 
   @override
   Widget build(BuildContext context) {

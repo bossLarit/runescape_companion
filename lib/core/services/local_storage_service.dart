@@ -29,6 +29,12 @@ class LocalStorageService {
   }
 
   Future<String> _filePath(String filename) async {
+    // Security: reject path traversal attempts
+    if (filename.contains('..') ||
+        filename.contains('/') ||
+        filename.contains('\\')) {
+      throw ArgumentError('Invalid filename: "$filename"');
+    }
     final base = await basePath;
     return '$base/$filename';
   }

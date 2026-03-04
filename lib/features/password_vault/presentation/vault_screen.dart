@@ -192,8 +192,11 @@ class _VaultContentView extends HookConsumerWidget {
       children: [
         Row(
           children: [
-            Text('Password Vault',
-                style: Theme.of(context).textTheme.headlineMedium),
+            Flexible(
+              child: Text('Password Vault',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  overflow: TextOverflow.ellipsis),
+            ),
             const SizedBox(width: 8),
             const Icon(Icons.lock_open, color: Colors.green, size: 20),
             const Spacer(),

@@ -5,14 +5,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/services/osrs_api_service.dart';
 import '../data/bank_provider.dart';
+import 'gear_loadout_screen.dart';
 import 'slayer_task_helper.dart';
+import 'slayer_block_list_screen.dart';
+import 'gear_upgrade_screen.dart';
 
 class BestSetupScreen extends HookConsumerWidget {
   const BestSetupScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final viewTab = useState(0); // 0 = BiS Gear, 1 = Slayer Task
+    final viewTab = useState(
+        0); // 0 = BiS Gear, 1 = Slayer Task, 2 = Loadouts, 3 = Block List, 4 = Upgrades
     final selectedStyle = useState(CombatStyle.melee);
     final selectedSlot = useState('head');
     final items = useState<List<EquipmentItem>>([]);
@@ -48,26 +52,57 @@ class BestSetupScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header with tabs ──
+            // ── Header ──
+            Text('Best-in-Slot Gear',
+                style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 12),
+            // ── Tabs + controls ──
             Row(
               children: [
-                Text('Best-in-Slot Gear',
-                    style: Theme.of(context).textTheme.headlineMedium),
-                const SizedBox(width: 24),
-                _ViewTabButton(
-                  label: 'BiS Gear',
-                  icon: Icons.shield_outlined,
-                  isActive: viewTab.value == 0,
-                  onTap: () => viewTab.value = 0,
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _ViewTabButton(
+                          label: 'BiS Gear',
+                          icon: Icons.shield_outlined,
+                          isActive: viewTab.value == 0,
+                          onTap: () => viewTab.value = 0,
+                        ),
+                        const SizedBox(width: 8),
+                        _ViewTabButton(
+                          label: 'Slayer Task',
+                          icon: Icons.pest_control,
+                          isActive: viewTab.value == 1,
+                          onTap: () => viewTab.value = 1,
+                        ),
+                        const SizedBox(width: 8),
+                        _ViewTabButton(
+                          label: 'Loadouts',
+                          icon: Icons.inventory_2,
+                          isActive: viewTab.value == 2,
+                          onTap: () => viewTab.value = 2,
+                        ),
+                        const SizedBox(width: 8),
+                        _ViewTabButton(
+                          label: 'Block Lists',
+                          icon: Icons.block,
+                          isActive: viewTab.value == 3,
+                          onTap: () => viewTab.value = 3,
+                        ),
+                        const SizedBox(width: 8),
+                        _ViewTabButton(
+                          label: 'Upgrades',
+                          icon: Icons.trending_up,
+                          isActive: viewTab.value == 4,
+                          onTap: () => viewTab.value = 4,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 8),
-                _ViewTabButton(
-                  label: 'Slayer Task',
-                  icon: Icons.pest_control,
-                  isActive: viewTab.value == 1,
-                  onTap: () => viewTab.value = 1,
-                ),
-                const Spacer(),
                 if (viewTab.value == 0) ...[
                   _BankToggle(
                     enabled: onlyMyItems.value,
@@ -76,7 +111,7 @@ class BestSetupScreen extends HookConsumerWidget {
                     onManageBank: () => _showBankDialog(context, ref),
                   ),
                   const SizedBox(width: 12),
-                  _buildStyleSelector(selectedStyle),
+                  Flexible(child: _buildStyleSelector(selectedStyle)),
                 ],
               ],
             ),
@@ -84,93 +119,116 @@ class BestSetupScreen extends HookConsumerWidget {
 
             // ── Content ──
             Expanded(
-              child: viewTab.value == 1
-                  ? const SlayerTaskHelper()
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Slot sidebar
-                        _SlotSidebar(
-                          selectedSlot: selectedSlot.value,
-                          onSlotChanged: (s) => selectedSlot.value = s,
-                          style: selectedStyle.value,
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Item list
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            children: [
-                              // Search + info
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      decoration: const InputDecoration(
-                                        hintText: 'Filter items...',
-                                        prefixIcon: Icon(Icons.search),
-                                        isDense: true,
-                                      ),
-                                      onChanged: (v) => searchQuery.value = v,
+              child: viewTab.value == 4
+                  ? const GearUpgradeScreen()
+                  : viewTab.value == 3
+                      ? const SlayerBlockListScreen()
+                      : viewTab.value == 2
+                          ? const GearLoadoutScreen()
+                          : viewTab.value == 1
+                              ? const SlayerTaskHelper()
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Slot sidebar
+                                    _SlotSidebar(
+                                      selectedSlot: selectedSlot.value,
+                                      onSlotChanged: (s) =>
+                                          selectedSlot.value = s,
+                                      style: selectedStyle.value,
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: Text(
-                                      '${filtered.length}',
-                                      style: const TextStyle(
-                                          color: Colors.white54, fontSize: 11),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
+                                    const SizedBox(width: 16),
 
-                              // Items
-                              Expanded(
-                                child: isLoading.value
-                                    ? const Center(
-                                        child: CircularProgressIndicator())
-                                    : error.value != null
-                                        ? Center(
-                                            child: Text(error.value!,
-                                                style: const TextStyle(
-                                                    color: Colors.red)))
-                                        : filtered.isEmpty
-                                            ? const Center(
-                                                child: Text('No items found',
-                                                    style: TextStyle(
-                                                        color: Colors.white38)))
-                                            : _ItemList(
-                                                items: filtered,
-                                                style: selectedStyle.value,
-                                                selectedItem:
-                                                    selectedItem.value,
-                                                onSelect: (item) =>
-                                                    selectedItem.value = item,
+                                    // Item list
+                                    Expanded(
+                                      flex: 3,
+                                      child: Column(
+                                        children: [
+                                          // Search + info
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextField(
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    hintText: 'Filter items...',
+                                                    prefixIcon:
+                                                        Icon(Icons.search),
+                                                    isDense: true,
+                                                  ),
+                                                  onChanged: (v) =>
+                                                      searchQuery.value = v,
+                                                ),
                                               ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 8),
+                                                child: Text(
+                                                  '${filtered.length}',
+                                                  style: const TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 11),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
 
-                        // Detail panel
-                        SizedBox(
-                          width: 300,
-                          child: selectedItem.value != null
-                              ? _ItemDetailPanel(
-                                  item: selectedItem.value!,
-                                  style: selectedStyle.value,
-                                )
-                              : const Center(
-                                  child: Text('Select an item',
-                                      style: TextStyle(color: Colors.white38)),
+                                          // Items
+                                          Expanded(
+                                            child: isLoading.value
+                                                ? const Center(
+                                                    child:
+                                                        CircularProgressIndicator())
+                                                : error.value != null
+                                                    ? Center(
+                                                        child: Text(
+                                                            error.value!,
+                                                            style:
+                                                                const TextStyle(
+                                                                    color: Colors
+                                                                        .red)))
+                                                    : filtered.isEmpty
+                                                        ? const Center(
+                                                            child: Text(
+                                                                'No items found',
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .white38)))
+                                                        : _ItemList(
+                                                            items: filtered,
+                                                            style: selectedStyle
+                                                                .value,
+                                                            selectedItem:
+                                                                selectedItem
+                                                                    .value,
+                                                            onSelect: (item) =>
+                                                                selectedItem
+                                                                        .value =
+                                                                    item,
+                                                          ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+
+                                    // Detail panel
+                                    SizedBox(
+                                      width: 300,
+                                      child: selectedItem.value != null
+                                          ? _ItemDetailPanel(
+                                              item: selectedItem.value!,
+                                              style: selectedStyle.value,
+                                            )
+                                          : const Center(
+                                              child: Text('Select an item',
+                                                  style: TextStyle(
+                                                      color: Colors.white38)),
+                                            ),
+                                    ),
+                                  ],
                                 ),
-                        ),
-                      ],
-                    ),
             ),
           ],
         ),

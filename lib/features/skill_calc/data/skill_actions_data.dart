@@ -110,8 +110,7 @@ const Map<String, List<SkillAction>> allSkillActions = {
         category: 'Pizza'),
     SkillAction(
         name: 'Curry', levelReq: 60, xpPerAction: 280, category: 'Other'),
-    SkillAction(
-        name: 'Bread', levelReq: 1, xpPerAction: 40.5, category: 'Other'),
+    SkillAction(name: 'Bread', levelReq: 1, xpPerAction: 40, category: 'Other'),
     SkillAction(
         name: 'Sweetcorn', levelReq: 28, xpPerAction: 104, category: 'Other'),
     SkillAction(
@@ -224,7 +223,7 @@ const Map<String, List<SkillAction>> allSkillActions = {
         name: 'Hallowed Sepulchre (Floor 1-5)',
         levelReq: 92,
         xpPerAction: 5500,
-        xpPerHour: 95000,
+        xpPerHour: 100000,
         category: 'Minigame',
         notes: 'Best Agility XP/hr in game'),
     SkillAction(
@@ -359,18 +358,19 @@ const Map<String, List<SkillAction>> allSkillActions = {
         notes: 'Also gives Hunter XP'),
     SkillAction(
         name: 'Drift net fishing',
-        levelReq: 44,
+        levelReq: 47,
         xpPerAction: 77,
-        xpPerHour: 85000,
+        xpPerHour: 87000,
         category: 'Net',
-        notes: 'Also gives Hunter XP — best rates'),
+        notes:
+            'Requires 44 Hunter. Also gives Hunter XP — best combined rates'),
     SkillAction(
-        name: 'Barbarian fishing (leaping)',
+        name: 'Barbarian fishing (leaping trout)',
         levelReq: 48,
-        xpPerAction: 70,
-        xpPerHour: 50000,
+        xpPerAction: 50,
+        xpPerHour: 45000,
         category: 'Fly',
-        notes: 'Also gives Agility + Strength XP'),
+        notes: 'Also gives Agility + Strength XP. 3-tick = 65k+/hr at 58+'),
   ],
 
   // ═══════════════════════════════════════════════════════════
@@ -2804,5 +2804,116 @@ const Map<String, List<SkillAction>> allSkillActions = {
         xpPerHour: 20000,
         category: 'Task',
         notes: 'Larran\'s keys + emblems'),
+  ],
+
+  // ═══════════════════════════════════════════════════════════
+  //  SAILING
+  // ═══════════════════════════════════════════════════════════
+  'Sailing': [
+    SkillAction(
+        name: 'Courier tasks (early)',
+        levelReq: 1,
+        xpPerAction: 500,
+        xpPerHour: 10000,
+        category: 'Courier',
+        notes: 'Port Sarim ↔ Pandemonium'),
+    SkillAction(
+        name: 'Sea charting',
+        levelReq: 12,
+        xpPerAction: 200,
+        xpPerHour: 10000,
+        category: 'Exploration',
+        notes: 'One-off XP rewards from charting oceans'),
+    SkillAction(
+        name: 'Shipwreck salvaging',
+        levelReq: 15,
+        xpPerAction: 50,
+        xpPerHour: 15000,
+        category: 'Gathering',
+        notes: 'Low-intensity — salvaging hooks'),
+    SkillAction(
+        name: 'Courier tasks (Summer Shore)',
+        levelReq: 46,
+        xpPerAction: 4000,
+        xpPerHour: 30000,
+        category: 'Courier',
+        notes: '~9 trips/hr'),
+    SkillAction(
+        name: 'Shipwreck salvaging (with station)',
+        levelReq: 42,
+        xpPerAction: 80,
+        xpPerHour: 40000,
+        category: 'Gathering',
+        notes: 'Salvaging station from Chinchompa Island'),
+    SkillAction(
+        name: 'Bounty tasks',
+        levelReq: 30,
+        xpPerAction: 5000,
+        xpPerHour: 50000,
+        category: 'Combat',
+        notes: 'Kill sea monsters for bounty items'),
+    SkillAction(
+        name: 'Barracuda Trials (Tempor Tantrum)',
+        levelReq: 30,
+        xpPerAction: 3000,
+        xpPerHour: 60000,
+        category: 'Trials',
+        notes: 'Obstacle course — fastest from 30'),
+    SkillAction(
+        name: 'Courier tasks (Rellekka)',
+        levelReq: 62,
+        xpPerAction: 6000,
+        xpPerHour: 70000,
+        category: 'Courier',
+        notes: 'Up to 90k/hr at 65+'),
+    SkillAction(
+        name: 'Barracuda Trials (Jubbly Jive)',
+        levelReq: 55,
+        xpPerAction: 5000,
+        xpPerHour: 100000,
+        category: 'Trials',
+        notes: 'Second trial — faster than Tempor Tantrum'),
+    SkillAction(
+        name: 'Bounty tasks (optimised)',
+        levelReq: 55,
+        xpPerAction: 8000,
+        xpPerHour: 130000,
+        category: 'Combat',
+        notes: 'Bird + ray tasks from Prifddinas/Rellekka'),
+    SkillAction(
+        name: 'Barracuda Trials (Gwenith Glide)',
+        levelReq: 72,
+        xpPerAction: 8000,
+        xpPerHour: 160000,
+        category: 'Trials',
+        notes: 'Third trial — Song of the Elves area'),
+    SkillAction(
+        name: 'Bounty tasks (Deepfin Point)',
+        levelReq: 67,
+        xpPerAction: 10000,
+        xpPerHour: 200000,
+        category: 'Combat',
+        notes: 'Best bounty XP — up to 200k/hr BiS ship'),
+    SkillAction(
+        name: 'Barracuda Trials (Gwenith + Rosewood)',
+        levelReq: 93,
+        xpPerAction: 10000,
+        xpPerHour: 200000,
+        category: 'Trials',
+        notes: 'Rosewood hull (93 Sail, 84 Con) + crystal extractor'),
+    SkillAction(
+        name: 'Deep sea trawling',
+        levelReq: 40,
+        xpPerAction: 100,
+        xpPerHour: 25000,
+        category: 'Gathering',
+        notes: 'Hybrid Fishing + Sailing'),
+    SkillAction(
+        name: 'Crystal extractor (passive)',
+        levelReq: 73,
+        xpPerAction: 250,
+        xpPerHour: 15000,
+        category: 'Passive',
+        notes: 'Harvest every ~63s — stacks with other methods'),
   ],
 };

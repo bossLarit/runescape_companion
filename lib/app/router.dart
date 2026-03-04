@@ -23,8 +23,12 @@ import '../features/daily_tasks/presentation/daily_tasks_screen.dart';
 import '../features/skill_calc/presentation/skill_calc_screen.dart';
 import '../features/bingo/presentation/bingo_screen.dart';
 import '../features/boss_progression/presentation/boss_progression_screen.dart';
+import '../features/item_lookup/presentation/item_lookup_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../features/pet_hunter/presentation/pet_hunter_screen.dart';
+import '../features/dry_streak/presentation/dry_streak_screen.dart';
+import '../features/ironman_supply/presentation/ironman_supply_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -192,6 +196,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/daily-tasks',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: DailyTasksScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/item-lookup',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ItemLookupScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/pet-hunter',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: PetHunterScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/dry-streak',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DryStreakScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/ironman-supply',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: IronmanSupplyScreen(),
             ),
           ),
           GoRoute(

@@ -43,8 +43,11 @@ class CookbookHomeScreen extends HookConsumerWidget {
           children: [
             Row(
               children: [
-                Text('Build Cookbook',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Build Cookbook',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
                   Chip(label: Text(activeChar.displayName)),

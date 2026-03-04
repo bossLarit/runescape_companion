@@ -27,11 +27,39 @@ class NotesScreen extends HookConsumerWidget {
           children: [
             Row(
               children: [
-                Text('Notes',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Notes',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
-                  Chip(label: Text(activeChar.displayName)),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4A017).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFD4A017).withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person,
+                            size: 13,
+                            color:
+                                const Color(0xFFD4A017).withValues(alpha: 0.7)),
+                        const SizedBox(width: 5),
+                        Text(activeChar.displayName,
+                            style: const TextStyle(
+                                color: Color(0xFFD4A017),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
                 ],
                 const Spacer(),
                 FilterChip(

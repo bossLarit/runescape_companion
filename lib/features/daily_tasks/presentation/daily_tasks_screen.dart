@@ -315,8 +315,11 @@ class DailyTasksScreen extends HookConsumerWidget {
             // Header
             Row(
               children: [
-                Text('Daily Tasks & Timers',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Daily Tasks & Timers',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 const SizedBox(width: 12),
                 if (readyCount > 0)
                   Container(
