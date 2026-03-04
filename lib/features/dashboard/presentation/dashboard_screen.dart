@@ -790,11 +790,11 @@ class _MilestoneCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              const Row(
                 children: [
-                  const Icon(Icons.emoji_events, size: 14, color: _gold),
-                  const SizedBox(width: 6),
-                  const Text('Milestones',
+                  Icon(Icons.emoji_events, size: 14, color: _gold),
+                  SizedBox(width: 6),
+                  Text('Milestones',
                       style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -837,11 +837,11 @@ class _MilestoneCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.emoji_events, size: 14, color: _gold),
-                const SizedBox(width: 6),
-                const Text('Closest Level-Ups',
+                Icon(Icons.emoji_events, size: 14, color: _gold),
+                SizedBox(width: 6),
+                Text('Closest Level-Ups',
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1043,13 +1043,13 @@ class _SupplyChainAlertCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (bottlenecks.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, size: 16, color: _green),
-                    const SizedBox(width: 8),
-                    const Text('No critical bottlenecks!',
+                    Icon(Icons.check_circle, size: 16, color: _green),
+                    SizedBox(width: 8),
+                    Text('No critical bottlenecks!',
                         style: TextStyle(fontSize: 11, color: _green)),
                   ],
                 ),
@@ -1060,7 +1060,7 @@ class _SupplyChainAlertCard extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.block, size: 12, color: _red),
+                        const Icon(Icons.block, size: 12, color: _red),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Column(

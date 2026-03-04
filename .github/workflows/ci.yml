@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main, qa]
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Analyze (lint + static analysis)
+        run: flutter analyze --no-fatal-infos

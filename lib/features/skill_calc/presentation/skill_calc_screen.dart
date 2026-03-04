@@ -856,6 +856,11 @@ class _SuperglassTab extends HookWidget {
     final currentCtrl =
         useTextEditingController(text: '${playerLevels['Crafting'] ?? 1}');
 
+    // Listen to controller changes so results update reactively
+    useListenable(targetCtrl);
+    useListenable(currentCtrl);
+    useListenable(seaweedCount);
+
     final currentMagic = playerLevels['Magic'] ?? 1;
     final hasLunarDiplomacy = currentMagic >= 77;
 

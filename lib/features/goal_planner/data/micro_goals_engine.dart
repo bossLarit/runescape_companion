@@ -112,7 +112,7 @@ class MicroGoalsEngine {
         final unlockText = info.milestoneUnlock(targetLevel) ??
             'Level $targetLevel $skillName';
 
-        int priority = _calculatePriority(
+        final int priority = _calculatePriority(
           skillName,
           currentLevel,
           targetLevel,

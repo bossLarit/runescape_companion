@@ -648,7 +648,7 @@ const List<OsrsGoal> osrsGoals = [
     skillRequirements: {'Ranged': 70},
     priority: 4,
     rewards: 'Ava\'s Assembler — best ranged cape, +2 ranged str',
-    wikiPath: "Ava%27s_assembler",
+    wikiPath: 'Ava%27s_assembler',
   ),
   OsrsGoal(
     id: 'combat_imbued_slayer_helm',

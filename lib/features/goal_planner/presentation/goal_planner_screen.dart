@@ -264,10 +264,10 @@ class GoalPlannerScreen extends HookConsumerWidget {
                       ],
                       selected: {intensityPref.value},
                       onSelectionChanged: (s) => intensityPref.value = s.first,
-                      style: ButtonStyle(
+                      style: const ButtonStyle(
                         visualDensity: VisualDensity.compact,
                         textStyle: WidgetStatePropertyAll(
-                            const TextStyle(fontSize: 11)),
+                            TextStyle(fontSize: 11)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -398,10 +398,10 @@ class GoalPlannerScreen extends HookConsumerWidget {
                         Expanded(
                           flex: 3,
                           child: !hasAnySaved && isMyGoals
-                              ? Center(
+                              ? const Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
+                                    children: [
                                       Icon(Icons.bookmark_border,
                                           size: 48, color: Colors.white24),
                                       SizedBox(height: 12),

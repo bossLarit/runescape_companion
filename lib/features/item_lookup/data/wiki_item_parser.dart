@@ -135,9 +135,9 @@ List<CreationMethod> _parseCreationTemplates(String wikitext) {
       final lvlKey = i == 1 ? 'skill1lvl' : 'skill${i}lvl';
       final xpKey = i == 1 ? 'skill1exp' : 'skill${i}exp';
       // Also try "skills" param which may contain {{Skill clickpic|Name|Level}}
-      String? skillName = params[skillKey];
-      String? skillLvl = params[lvlKey];
-      String? skillXp = params[xpKey];
+      final String? skillName = params[skillKey];
+      final String? skillLvl = params[lvlKey];
+      final String? skillXp = params[xpKey];
 
       if (skillName != null && skillLvl != null) {
         skills.add(SkillReq(

@@ -96,7 +96,7 @@ class GePricesScreen extends HookConsumerWidget {
                     Center(child: Text('Failed to load item data: $e')),
                 data: (mapping) {
                   final prices = pricesAsync.valueOrNull ?? {};
-                  var filtered = mapping.where((item) {
+                  final filtered = mapping.where((item) {
                     if (searchQuery.value.length < 2) return false;
                     if (membersOnly.value && !item.members) return false;
                     return item.name

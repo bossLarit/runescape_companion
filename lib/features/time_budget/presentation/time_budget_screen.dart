@@ -391,7 +391,7 @@ class TimeBudgetScreen extends HookConsumerWidget {
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: !generated.value
-                    ? _EmptyState(key: const ValueKey('empty'))
+                    ? const _EmptyState(key: ValueKey('empty'))
                     : plan.isEmpty
                         ? const Center(
                             key: ValueKey('no-results'),

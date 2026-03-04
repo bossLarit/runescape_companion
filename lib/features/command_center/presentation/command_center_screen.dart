@@ -68,7 +68,7 @@ class CommandCenterScreen extends HookConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('Error: $e')),
                 data: (characters) {
-                  var filtered = characters.where((c) {
+                  final filtered = characters.where((c) {
                     if (filterType.value != null &&
                         c.characterType != filterType.value) {
                       return false;
@@ -212,7 +212,7 @@ class _CommandCard extends HookConsumerWidget {
               const SizedBox(height: 6),
             ],
             if (character.currentGrind.isNotEmpty) ...[
-              Text('Current Grind:',
+              const Text('Current Grind:',
                   style: TextStyle(color: Colors.white38, fontSize: 11)),
               Text(character.currentGrind,
                   style: const TextStyle(fontSize: 13),

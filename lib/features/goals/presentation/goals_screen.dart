@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -12,6 +14,7 @@ import '../../goal_planner/data/osrs_goals_data.dart';
 import '../../goal_planner/data/goal_suggestion_engine.dart';
 import '../../goal_planner/data/micro_goals_engine.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/screen_header.dart';
 
 class GoalsScreen extends HookConsumerWidget {
   const GoalsScreen({super.key});
@@ -83,28 +86,10 @@ class GoalsScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Text('Goals',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                if (activeChar != null) ...[
-                  const SizedBox(width: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4A017).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(activeChar.displayName,
-                        style: const TextStyle(
-                            color: Color(0xFFD4A017), fontSize: 12)),
-                  ),
-                ],
-                const Spacer(),
+            ScreenHeader(
+              title: 'Goals',
+              characterName: activeChar?.displayName,
+              actions: [
                 ElevatedButton.icon(
                   onPressed: activeChar == null
                       ? null
@@ -198,7 +183,7 @@ class GoalsScreen extends HookConsumerWidget {
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(child: Text('Error: $e')),
                     data: (allGoals) {
-                      var goals = allGoals
+                      final goals = allGoals
                           .where((g) =>
                               activeChar == null ||
                               g.characterId == activeChar.id)
@@ -496,7 +481,7 @@ class _GoalTile extends HookConsumerWidget {
                 PopupMenuButton<String>(
                   onSelected: (value) async {
                     if (value == 'complete') {
-                      ref.read(goalsProvider.notifier).update(
+                      await ref.read(goalsProvider.notifier).update(
                             goal.copyWith(
                                 status: GoalStatus.completed,
                                 currentValue: goal.targetValue),
@@ -506,10 +491,10 @@ class _GoalTile extends HookConsumerWidget {
                           title: 'Delete Goal',
                           message: 'Delete "${goal.title}"?');
                       if (confirmed) {
-                        ref.read(goalsProvider.notifier).delete(goal.id);
+                        await ref.read(goalsProvider.notifier).delete(goal.id);
                       }
                     } else if (value == 'edit') {
-                      showDialog(
+                      unawaited(showDialog(
                         context: context,
                         builder: (ctx) => _GoalFormDialog(
                           characterId: goal.characterId,
@@ -517,7 +502,7 @@ class _GoalTile extends HookConsumerWidget {
                           onSave: (g) =>
                               ref.read(goalsProvider.notifier).update(g),
                         ),
-                      );
+                      ));
                     }
                   },
                   itemBuilder: (ctx) => [

@@ -261,7 +261,7 @@ class GearLoadoutScreen extends HookConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'This will analyze every slayer monster\'s recommended gear '
                 'and pick the best item you own for each slot.',
                 style: TextStyle(color: Colors.white70, height: 1.4),
@@ -269,7 +269,7 @@ class GearLoadoutScreen extends HookConsumerWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.inventory_2, size: 14, color: _gold),
+                  const Icon(Icons.inventory_2, size: 14, color: _gold),
                   const SizedBox(width: 6),
                   Text(
                     '${bank.itemNames.length} items in bank',

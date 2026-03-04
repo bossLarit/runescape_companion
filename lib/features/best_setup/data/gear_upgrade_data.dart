@@ -457,12 +457,12 @@ const List<GearUpgradePath> gearUpgradePaths = [
         item: "Ava's accumulator",
         gpCost: 0,
         dpsIncrease: 0,
-        note: "Animal Magnetism quest"),
+        note: 'Animal Magnetism quest'),
     GearTier(
         item: "Ava's assembler",
         gpCost: 0,
         dpsIncrease: 3,
-        note: "DS2 quest — essential"),
+        note: 'DS2 quest — essential'),
     GearTier(
         item: 'Dizana\'s quiver',
         gpCost: 80000000,

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../domain/cookbook_models.dart';
 import 'providers/cookbook_provider.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
+import '../../../core/widgets/screen_header.dart';
 
 class CookbookHomeScreen extends HookConsumerWidget {
   const CookbookHomeScreen({super.key});
@@ -41,18 +42,10 @@ class CookbookHomeScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Text('Build Cookbook',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                if (activeChar != null) ...[
-                  const SizedBox(width: 12),
-                  Chip(label: Text(activeChar.displayName)),
-                ],
-                const Spacer(),
+            ScreenHeader(
+              title: 'Build Cookbook',
+              characterName: activeChar?.displayName,
+              actions: [
                 ElevatedButton.icon(
                   onPressed: () => _showTemplateForm(context, ref),
                   icon: const Icon(Icons.add),
