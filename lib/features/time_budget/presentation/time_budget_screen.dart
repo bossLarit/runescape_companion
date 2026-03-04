@@ -3,11 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/design_system/design_system.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
 import '../../characters/presentation/providers/hiscores_provider.dart';
 import '../../characters/domain/character_model.dart';
 import '../../goal_planner/data/training_methods_data.dart';
 import '../../goal_planner/data/micro_goals_engine.dart';
+import '../../best_setup/data/bank_provider.dart';
+import '../../../shared/widgets/bank_import_dialog.dart';
+
+const _gold = kGold;
+const _green = kAccentGreen;
+const _blue = kAccentBlue;
+const _orange = kAccentOrange;
+
+// Preset time options — better UX than a slider
+const _timePresets = [15, 30, 45, 60, 90, 120, 180, 240];
+
+String _timeLabel(int mins) {
+  if (mins < 60) return '${mins}m';
+  if (mins == 60) return '1 hr';
+  if (mins % 60 == 0) return '${mins ~/ 60} hrs';
+  return '${mins ~/ 60}h ${mins % 60}m';
+}
 
 class TimeBudgetScreen extends HookConsumerWidget {
   const TimeBudgetScreen({super.key});
@@ -16,7 +34,7 @@ class TimeBudgetScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeChar = ref.watch(activeCharacterProvider);
     final hiscoreState = ref.watch(hiscoresProvider);
-    final minutes = useState(60.0);
+    final selectedMinutes = useState(60);
     final intensity = useState(Intensity.either);
     final focusArea = useState<_FocusArea>(_FocusArea.balanced);
     final generated = useState(false);
@@ -28,6 +46,11 @@ class TimeBudgetScreen extends HookConsumerWidget {
           CharacterType.uim,
           CharacterType.gim
         }.contains(activeChar.characterType);
+
+    final bankState = ref.watch(bankProvider);
+    final bankItems = bankState.isLoaded && bankState.itemNames.isNotEmpty
+        ? bankState.itemNames
+        : null;
 
     // Build player levels from hiscores
     final playerLevels = <String, int>{};
@@ -47,18 +70,15 @@ class TimeBudgetScreen extends HookConsumerWidget {
       plan = _generateSessionPlan(
         playerLevels: playerLevels,
         isIronman: isIronman,
-        totalMinutes: minutes.value.round(),
+        totalMinutes: selectedMinutes.value,
         intensity: intensity.value,
         focus: focusArea.value,
+        bankItems: bankItems,
       );
       totalXp = plan.fold(0, (sum, item) => sum + item.xpGain);
     }
 
-    final timeLabel = minutes.value < 60
-        ? '${minutes.value.round()} min'
-        : minutes.value == 60
-            ? '1 hour'
-            : '${(minutes.value / 60).toStringAsFixed(1)} hrs';
+    final hasStats = playerLevels.isNotEmpty;
 
     return Scaffold(
       body: Padding(
@@ -66,93 +86,83 @@ class TimeBudgetScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ── Header ──
             Row(
               children: [
-                Text('Time Budget Planner',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Time Budget Planner',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD4A017).withValues(alpha: 0.15),
+                      color: _gold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(activeChar.displayName,
-                        style: const TextStyle(
-                            color: Color(0xFFD4A017), fontSize: 12)),
+                        style: const TextStyle(color: _gold, fontSize: 12)),
                   ),
                 ],
               ],
             ),
             const SizedBox(height: 20),
 
-            // Input card
+            const BankEmptyBanner(),
+
+            // ── Configuration panel ──
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Time slider
+                    // ── Time presets ──
                     Row(
                       children: [
-                        const Icon(Icons.schedule,
-                            size: 18, color: Color(0xFFD4A017)),
+                        const Icon(Icons.schedule, size: 16, color: _gold),
                         const SizedBox(width: 8),
-                        const Text('How long do you want to play?',
+                        const Text('Session length',
                             style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white70)),
                         const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFFD4A017).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            _timeLabel(selectedMinutes.value),
+                            key: ValueKey(selectedMinutes.value),
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: _gold),
                           ),
-                          child: Text(timeLabel,
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFFD4A017))),
                         ),
                       ],
                     ),
-                    Slider(
-                      value: minutes.value,
-                      min: 15,
-                      max: 240,
-                      divisions: 15,
-                      activeColor: const Color(0xFFD4A017),
-                      onChanged: (v) {
-                        minutes.value = v;
-                        generated.value = false;
-                      },
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _timePresets.map((mins) {
+                        final active = selectedMinutes.value == mins;
+                        return _TimeChip(
+                          label: _timeLabel(mins),
+                          active: active,
+                          onTap: () {
+                            selectedMinutes.value = mins;
+                            generated.value = false;
+                          },
+                        );
+                      }).toList(),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('15m',
-                            style:
-                                TextStyle(fontSize: 10, color: Colors.white30)),
-                        Text('1h',
-                            style:
-                                TextStyle(fontSize: 10, color: Colors.white30)),
-                        Text('2h',
-                            style:
-                                TextStyle(fontSize: 10, color: Colors.white30)),
-                        Text('4h',
-                            style:
-                                TextStyle(fontSize: 10, color: Colors.white30)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Intensity + Focus row
+                    // ── Intensity + Focus ──
                     Row(
                       children: [
                         // Intensity
@@ -167,40 +177,53 @@ class TimeBudgetScreen extends HookConsumerWidget {
                                   SizedBox(width: 4),
                                   Text('Intensity',
                                       style: TextStyle(
-                                          fontSize: 11, color: Colors.white54)),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white54)),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              SegmentedButton<Intensity>(
-                                segments: const [
-                                  ButtonSegment(
-                                      value: Intensity.afk,
-                                      label: Text('AFK',
-                                          style: TextStyle(fontSize: 11)),
-                                      icon: Icon(Icons.weekend, size: 14)),
-                                  ButtonSegment(
-                                      value: Intensity.either,
-                                      label: Text('Mix',
-                                          style: TextStyle(fontSize: 11)),
-                                      icon: Icon(Icons.shuffle, size: 14)),
-                                  ButtonSegment(
-                                      value: Intensity.active,
-                                      label: Text('Active',
-                                          style: TextStyle(fontSize: 11)),
-                                      icon:
-                                          Icon(Icons.directions_run, size: 14)),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  _OptionPill(
+                                    icon: Icons.weekend,
+                                    label: 'AFK',
+                                    active: intensity.value == Intensity.afk,
+                                    color: _blue,
+                                    onTap: () {
+                                      intensity.value = Intensity.afk;
+                                      generated.value = false;
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _OptionPill(
+                                    icon: Icons.shuffle,
+                                    label: 'Mix',
+                                    active: intensity.value == Intensity.either,
+                                    color: _gold,
+                                    onTap: () {
+                                      intensity.value = Intensity.either;
+                                      generated.value = false;
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _OptionPill(
+                                    icon: Icons.directions_run,
+                                    label: 'Active',
+                                    active: intensity.value == Intensity.active,
+                                    color: _orange,
+                                    onTap: () {
+                                      intensity.value = Intensity.active;
+                                      generated.value = false;
+                                    },
+                                  ),
                                 ],
-                                selected: {intensity.value},
-                                onSelectionChanged: (s) {
-                                  intensity.value = s.first;
-                                  generated.value = false;
-                                },
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        // Focus area
+                        const SizedBox(width: 24),
+                        // Focus
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,61 +235,150 @@ class TimeBudgetScreen extends HookConsumerWidget {
                                   SizedBox(width: 4),
                                   Text('Focus',
                                       style: TextStyle(
-                                          fontSize: 11, color: Colors.white54)),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white54)),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  _OptionPill(
+                                    icon: Icons.balance,
+                                    label: 'Balanced',
+                                    active:
+                                        focusArea.value == _FocusArea.balanced,
+                                    color: _green,
+                                    onTap: () {
+                                      focusArea.value = _FocusArea.balanced;
+                                      generated.value = false;
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _OptionPill(
+                                    icon: Icons.trending_up,
+                                    label: 'Max XP',
+                                    active:
+                                        focusArea.value == _FocusArea.xpFocused,
+                                    color: _gold,
+                                    onTap: () {
+                                      focusArea.value = _FocusArea.xpFocused;
+                                      generated.value = false;
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _OptionPill(
+                                    icon: Icons.bolt,
+                                    label: 'Quick Wins',
+                                    active:
+                                        focusArea.value == _FocusArea.quickWins,
+                                    color: _orange,
+                                    onTap: () {
+                                      focusArea.value = _FocusArea.quickWins;
+                                      generated.value = false;
+                                    },
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              SegmentedButton<_FocusArea>(
-                                segments: const [
-                                  ButtonSegment(
-                                      value: _FocusArea.balanced,
-                                      label: Text('Balanced',
-                                          style: TextStyle(fontSize: 11))),
-                                  ButtonSegment(
-                                      value: _FocusArea.xpFocused,
-                                      label: Text('Max XP',
-                                          style: TextStyle(fontSize: 11))),
-                                  ButtonSegment(
-                                      value: _FocusArea.quickWins,
-                                      label: Text('Quick Wins',
-                                          style: TextStyle(fontSize: 11))),
+                              Row(
+                                children: [
+                                  _OptionPill(
+                                    icon: Icons.checklist,
+                                    label: 'Dailies First',
+                                    active: focusArea.value ==
+                                        _FocusArea.dailiesFirst,
+                                    color: _green,
+                                    onTap: () {
+                                      focusArea.value = _FocusArea.dailiesFirst;
+                                      generated.value = false;
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _OptionPill(
+                                    icon: Icons.shield,
+                                    label: 'PvM Prep',
+                                    active:
+                                        focusArea.value == _FocusArea.pvmPrep,
+                                    color: const Color(0xFFE53935),
+                                    onTap: () {
+                                      focusArea.value = _FocusArea.pvmPrep;
+                                      generated.value = false;
+                                    },
+                                  ),
                                 ],
-                                selected: {focusArea.value},
-                                onSelectionChanged: (s) {
-                                  focusArea.value = s.first;
-                                  generated.value = false;
-                                },
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Generate button
+                    // ── Generate button ──
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: playerLevels.isEmpty
-                            ? null
-                            : () => generated.value = true,
-                        icon: const Icon(Icons.auto_awesome, size: 18),
-                        label: const Text('Generate Session Plan'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4A017),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          gradient: hasStats
+                              ? const LinearGradient(colors: [
+                                  Color(0xFF2D5F27),
+                                  Color(0xFF3B8132),
+                                ])
+                              : null,
+                          color: hasStats ? null : Colors.white10,
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap:
+                                hasStats ? () => generated.value = true : null,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.auto_awesome,
+                                      size: 18,
+                                      color: hasStats
+                                          ? Colors.white
+                                          : Colors.white24),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Generate Session Plan',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: hasStats
+                                          ? Colors.white
+                                          : Colors.white24,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    if (playerLevels.isEmpty)
+                    if (!hasStats)
                       const Padding(
-                        padding: EdgeInsets.only(top: 6),
-                        child: Text(
-                            'Select an active character with stats to generate a plan',
-                            style:
-                                TextStyle(fontSize: 11, color: Colors.white38)),
+                        padding: EdgeInsets.only(top: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 12, color: Colors.white30),
+                            SizedBox(width: 4),
+                            Text(
+                                'Add a character with stats to generate a plan',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.white38)),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -274,98 +386,94 @@ class TimeBudgetScreen extends HookConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // Results
+            // ── Results ──
             Expanded(
-              child: !generated.value
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.schedule, size: 64, color: Colors.white12),
-                          SizedBox(height: 12),
-                          Text(
-                              'Set your time and preferences, then generate a plan',
-                              style: TextStyle(color: Colors.white38)),
-                        ],
-                      ),
-                    )
-                  : plan.isEmpty
-                      ? const Center(
-                          child: Text('No suggestions for current settings',
-                              style: TextStyle(color: Colors.white38)),
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Session plan list
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Summary bar
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFD4A017)
-                                          .withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.auto_awesome,
-                                            size: 16, color: Color(0xFFD4A017)),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Session Plan — ${plan.length} activities',
-                                          style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: Color(0xFFD4A017)),
-                                        ),
-                                        const Spacer(),
-                                        _SmallStat(
-                                            icon: Icons.schedule,
-                                            label:
-                                                '${plan.fold<int>(0, (s, i) => s + i.minutes)} min',
-                                            color: const Color(0xFF42A5F5)),
-                                        const SizedBox(width: 12),
-                                        _SmallStat(
-                                            icon: Icons.trending_up,
-                                            label: _fmtXp(totalXp),
-                                            color: const Color(0xFF43A047)),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-
-                                  // Plan items
-                                  Expanded(
-                                    child: ListView.builder(
-                                      itemCount: plan.length,
-                                      itemBuilder: (_, i) => _SessionItemCard(
-                                        item: plan[i],
-                                        index: i,
-                                        totalItems: plan.length,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: !generated.value
+                    ? _EmptyState(key: const ValueKey('empty'))
+                    : plan.isEmpty
+                        ? const Center(
+                            key: ValueKey('no-results'),
+                            child: Text('No suggestions for current settings',
+                                style: TextStyle(color: Colors.white38)),
+                          )
+                        : Row(
+                            key: const ValueKey('results'),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Session plan list
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Summary bar
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: _gold.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color:
+                                                _gold.withValues(alpha: 0.15)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.auto_awesome,
+                                              size: 16, color: _gold),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '${plan.length} activities planned',
+                                            style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: _gold),
+                                          ),
+                                          const Spacer(),
+                                          _SmallStat(
+                                              icon: Icons.schedule,
+                                              label:
+                                                  '${plan.fold<int>(0, (s, i) => s + i.minutes)} min',
+                                              color: _blue),
+                                          const SizedBox(width: 14),
+                                          _SmallStat(
+                                              icon: Icons.trending_up,
+                                              label: _fmtXp(totalXp),
+                                              color: _green),
+                                        ],
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
+                                    const SizedBox(height: 8),
 
-                            // Right: summary panel
-                            SizedBox(
-                              width: 260,
-                              child: _SummaryPanel(
-                                plan: plan,
-                                totalMinutes: minutes.value.round(),
+                                    // Plan items
+                                    Expanded(
+                                      child: ListView.builder(
+                                        itemCount: plan.length,
+                                        itemBuilder: (_, i) => _SessionItemCard(
+                                          item: plan[i],
+                                          index: i,
+                                          totalItems: plan.length,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 16),
+
+                              // Right: summary panel
+                              SizedBox(
+                                width: 260,
+                                child: _SummaryPanel(
+                                  plan: plan,
+                                  totalMinutes: selectedMinutes.value,
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
             ),
           ],
         ),
@@ -374,9 +482,148 @@ class TimeBudgetScreen extends HookConsumerWidget {
   }
 }
 
+// ─── Empty state ─────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: _gold.withValues(alpha: 0.06),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.schedule, size: 36, color: Colors.white12),
+          ),
+          const SizedBox(height: 16),
+          const Text('Ready to plan your session',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white38)),
+          const SizedBox(height: 6),
+          const Text('Choose your time and preferences above, then generate',
+              style: TextStyle(fontSize: 12, color: Colors.white24)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Time chip ───────────────────────────────────────
+
+class _TimeChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _TimeChip(
+      {required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: active
+                  ? _gold.withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: active ? _gold : Colors.white.withValues(alpha: 0.08),
+                width: active ? 1.5 : 1,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? _gold : Colors.white54,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Option pill (intensity / focus) ─────────────────
+
+class _OptionPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final Color color;
+  final VoidCallback onTap;
+  const _OptionPill({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: active
+                  ? color.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: active ? color : Colors.white.withValues(alpha: 0.08),
+                width: active ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, size: 16, color: active ? color : Colors.white30),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    color: active ? color : Colors.white38,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Focus Area ──────────────────────────────────────
 
-enum _FocusArea { balanced, xpFocused, quickWins }
+enum _FocusArea { balanced, xpFocused, quickWins, dailiesFirst, pvmPrep }
 
 // ─── Session Item ────────────────────────────────────
 
@@ -410,6 +657,7 @@ List<_SessionItem> _generateSessionPlan({
   required int totalMinutes,
   required Intensity intensity,
   required _FocusArea focus,
+  Set<String>? bankItems,
 }) {
   final items = <_SessionItem>[];
   int remaining = totalMinutes;
@@ -435,15 +683,24 @@ List<_SessionItem> _generateSessionPlan({
     isIronman: isIronman,
     intensityPref: intensity,
     maxGoalsPerSkill: 1,
+    bankItems: bankItems,
   );
 
-  if (goals.isEmpty) return items;
+  // Filter out methods that require bank items the player doesn't have
+  final viableGoals = bankItems != null
+      ? goals.where((g) {
+          if (!g.bestMethod.needsBankItems) return true;
+          return g.bestMethod.bankViable(bankItems);
+        }).toList()
+      : goals;
+
+  if (viableGoals.isEmpty) return items;
 
   switch (focus) {
     case _FocusArea.balanced:
       // Spread time across 2-4 different skills
       final skillSet = <String>{};
-      for (final g in goals) {
+      for (final g in viableGoals) {
         if (skillSet.length >= 4 || remaining <= 0) break;
         if (skillSet.contains(g.skill)) continue;
         skillSet.add(g.skill);
@@ -467,7 +724,7 @@ List<_SessionItem> _generateSessionPlan({
 
     case _FocusArea.xpFocused:
       // Sort by XP/hr and fill with top methods
-      final sorted = [...goals]..sort(
+      final sorted = [...viableGoals]..sort(
           (a, b) => b.bestMethod.xpPerHour.compareTo(a.bestMethod.xpPerHour));
       final skillSet = <String>{};
       for (final g in sorted) {
@@ -494,7 +751,7 @@ List<_SessionItem> _generateSessionPlan({
 
     case _FocusArea.quickWins:
       // Prioritize goals closest to completion
-      final sorted = [...goals]
+      final sorted = [...viableGoals]
         ..sort((a, b) => a.estimatedHours.compareTo(b.estimatedHours));
       final skillSet = <String>{};
       for (final g in sorted) {
@@ -516,6 +773,156 @@ List<_SessionItem> _generateSessionPlan({
           milestone: 'Lv${g.currentLevel} → ${g.targetLevel}: ${g.milestone}',
           intensity: g.bestMethod.intensity,
           notes: g.bestMethod.notes,
+        ));
+        remaining -= slotMinutes;
+      }
+      break;
+
+    case _FocusArea.dailiesFirst:
+      // Front-load all dailies/weeklies, then fill remaining time
+      final dailies = <_SessionItem>[
+        if (remaining >= 5)
+          const _SessionItem(
+            skill: 'Hunter',
+            method: 'Birdhouse run',
+            minutes: 5,
+            xpGain: 15000,
+            xpPerHour: 0,
+            milestone: 'Passive Hunter XP + bird nests',
+            intensity: Intensity.active,
+            notes: 'Check every 50 min',
+          ),
+        if (remaining >= 10 && isIronman)
+          const _SessionItem(
+            skill: 'Farming',
+            method: 'Farming contracts',
+            minutes: 10,
+            xpGain: 20000,
+            xpPerHour: 0,
+            milestone: 'Seed supply for herb runs',
+            intensity: Intensity.active,
+            notes: 'Guild contract + herb run',
+          ),
+        if (remaining >= 5 && isIronman)
+          const _SessionItem(
+            skill: 'Farming',
+            method: 'Giant seaweed run',
+            minutes: 5,
+            xpGain: 4000,
+            xpPerHour: 0,
+            milestone: 'Crafting supply',
+            intensity: Intensity.active,
+            notes: 'Underwater patches',
+          ),
+        if (remaining >= 5 && isIronman)
+          const _SessionItem(
+            skill: 'Mining',
+            method: 'Sandstone mining',
+            minutes: 5,
+            xpGain: 5000,
+            xpPerHour: 0,
+            milestone: 'Buckets of sand for Superglass Make',
+            intensity: Intensity.active,
+            notes: 'Desert quarry',
+          ),
+        if (remaining >= 5)
+          const _SessionItem(
+            skill: 'Magic',
+            method: 'Daily battlestaves',
+            minutes: 5,
+            xpGain: 0,
+            xpPerHour: 0,
+            milestone: 'Free GP (Varrock diary)',
+            intensity: Intensity.active,
+            notes: 'Buy from Zaff',
+          ),
+      ];
+      // Remove the initial herb+birdhouse if we're adding individual dailies
+      if (dailies.isNotEmpty &&
+          items.isNotEmpty &&
+          items.first.method == 'Herb + Birdhouse Run') {
+        remaining += items.first.minutes;
+        items.removeAt(0);
+      }
+      for (final d in dailies) {
+        if (remaining < d.minutes) continue;
+        items.add(d);
+        remaining -= d.minutes;
+      }
+      // Fill remaining with balanced training
+      if (remaining > 10) {
+        final skillSetD = <String>{};
+        for (final g in viableGoals) {
+          if (skillSetD.length >= 3 || remaining <= 0) break;
+          if (skillSetD.contains(g.skill)) continue;
+          skillSetD.add(g.skill);
+          final slotMinutes = min(remaining, max(15, remaining ~/ 3));
+          final xpGain = (g.bestMethod.xpPerHour * slotMinutes / 60).round();
+          items.add(_SessionItem(
+            skill: g.skill,
+            method: g.bestMethod.method,
+            minutes: slotMinutes,
+            xpGain: xpGain,
+            xpPerHour: g.bestMethod.xpPerHour,
+            milestone: 'Lv${g.currentLevel} → ${g.targetLevel}: ${g.milestone}',
+            intensity: g.bestMethod.intensity,
+            notes: g.bestMethod.notes,
+          ));
+          remaining -= slotMinutes;
+        }
+      }
+      break;
+
+    case _FocusArea.pvmPrep:
+      // Focus on skills that unlock bosses: Herblore for pots, Prayer, range/magic
+      final pvmSkills = [
+        'Herblore',
+        'Prayer',
+        'Ranged',
+        'Magic',
+        'Hitpoints',
+        'Defence'
+      ];
+      // Remove default herb run for PvM focused plan
+      if (items.isNotEmpty && items.first.method == 'Herb + Birdhouse Run') {
+        remaining += items.first.minutes;
+        items.removeAt(0);
+      }
+      // Add herb run back (important for PvM supplies)
+      if (remaining >= 10) {
+        items.add(const _SessionItem(
+          skill: 'Herblore',
+          method: 'Herb run → make potions',
+          minutes: 10,
+          xpGain: 25000,
+          xpPerHour: 0,
+          milestone: 'Prayer pots / Super restores supply',
+          intensity: Intensity.active,
+          notes: 'Farm herbs then make pots',
+        ));
+        remaining -= 10;
+      }
+      final pvmGoals = viableGoals
+          .where((g) => pvmSkills.contains(g.skill))
+          .toList()
+        ..sort(
+            (a, b) => b.bestMethod.xpPerHour.compareTo(a.bestMethod.xpPerHour));
+      final skillSetP = <String>{};
+      for (final g in pvmGoals) {
+        if (skillSetP.length >= 3 || remaining <= 0) break;
+        if (skillSetP.contains(g.skill)) continue;
+        skillSetP.add(g.skill);
+        final slotMinutes = min(remaining, max(20, remaining ~/ 2));
+        final xpGain = (g.bestMethod.xpPerHour * slotMinutes / 60).round();
+        items.add(_SessionItem(
+          skill: g.skill,
+          method: g.bestMethod.method,
+          minutes: slotMinutes,
+          xpGain: xpGain,
+          xpPerHour: g.bestMethod.xpPerHour,
+          milestone: 'Lv${g.currentLevel} → ${g.targetLevel}: ${g.milestone}',
+          intensity: g.bestMethod.intensity,
+          notes: 'PvM prep: ${g.bestMethod.notes}',
         ));
         remaining -= slotMinutes;
       }

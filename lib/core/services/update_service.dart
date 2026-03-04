@@ -188,10 +188,42 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
     }
   }
 
+  /// Sanitize a filename: strip path separators and traversal sequences.
+  static String _sanitizeFileName(String name) {
+    // Remove any directory traversal or separators
+    var safe = name.replaceAll(RegExp(r'[\\/]'), '_');
+    safe = safe.replaceAll('..', '_');
+    // Only allow alphanumeric, dash, underscore, dot
+    safe = safe.replaceAll(RegExp(r'[^a-zA-Z0-9._\-]'), '_');
+    if (safe.isEmpty) safe = 'update.zip';
+    return safe;
+  }
+
+  /// Validate that a URL points to a trusted GitHub domain.
+  static bool _isTrustedDownloadUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    if (uri.scheme != 'https') return false;
+    final host = uri.host.toLowerCase();
+    return host == 'github.com' ||
+        host.endsWith('.github.com') ||
+        host == 'objects.githubusercontent.com' ||
+        host.endsWith('.githubusercontent.com');
+  }
+
   /// Download the release asset to a temp folder.
   Future<void> downloadUpdate() async {
     final url = state.release?.downloadUrl;
     if (url == null) return;
+
+    // Security: only download from trusted GitHub domains
+    if (!_isTrustedDownloadUrl(url)) {
+      state = state.copyWith(
+        status: UpdateStatus.error,
+        errorMessage: 'Untrusted download URL — aborting for security.',
+      );
+      return;
+    }
 
     state = state.copyWith(
       status: UpdateStatus.downloading,
@@ -204,8 +236,9 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
       final contentLength = streamed.contentLength ?? 0;
 
       final tempDir = await getTemporaryDirectory();
-      final zipPath =
-          '${tempDir.path}/${state.release?.assetName ?? 'update.zip'}';
+      final safeName =
+          _sanitizeFileName(state.release?.assetName ?? 'update.zip');
+      final zipPath = '${tempDir.path}/$safeName';
       final file = File(zipPath);
       final sink = file.openWrite();
 
@@ -242,6 +275,28 @@ class UpdateNotifier extends StateNotifier<UpdateState> {
     // Resolve paths
     final exePath = Platform.resolvedExecutable;
     final appDir = File(exePath).parent.path;
+
+    // Security: validate all paths are absolute and contain no suspicious chars
+    if (zipPath.contains('..') ||
+        appDir.contains('..') ||
+        exePath.contains('..')) {
+      state = state.copyWith(
+        status: UpdateStatus.error,
+        errorMessage: 'Invalid update paths detected — aborting.',
+      );
+      return;
+    }
+
+    // Escape paths for safe BAT interpolation (wrap in quotes, reject quotes in paths)
+    if (zipPath.contains('"') ||
+        appDir.contains('"') ||
+        exePath.contains('"')) {
+      state = state.copyWith(
+        status: UpdateStatus.error,
+        errorMessage: 'Paths contain invalid characters — aborting.',
+      );
+      return;
+    }
 
     // Write a small .bat updater script next to the zip
     final tempDir = File(zipPath).parent.path;

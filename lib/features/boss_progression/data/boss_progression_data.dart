@@ -111,7 +111,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Wintertodt',
     tier: BossTier.easy,
-    description: 'Skilling boss — uses Firemaking. Best done at low HP for less damage.',
+    description:
+        'Skilling boss — uses Firemaking. Best done at low HP for less damage.',
     combatReqs: {'Firemaking': 50},
     keyDrops: ['Tome of fire', 'Warm gloves', 'Pyromancer outfit'],
     wikiPath: 'Wintertodt',
@@ -120,7 +121,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Tempoross',
     tier: BossTier.easy,
-    description: 'Skilling boss — uses Fishing. Safe minigame with useful rewards.',
+    description:
+        'Skilling boss — uses Fishing. Safe minigame with useful rewards.',
     combatReqs: {'Fishing': 35},
     keyDrops: ['Tome of water', 'Fish barrel', 'Tackle box'],
     wikiPath: 'Tempoross',
@@ -129,7 +131,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Obor',
     tier: BossTier.easy,
-    description: 'F2P hill giant boss. Requires a Giant key drop from hill giants.',
+    description:
+        'F2P hill giant boss. Requires a Giant key drop from hill giants.',
     keyDrops: ['Hill giant club', 'Rune equipment'],
     wikiPath: 'Obor',
   ),
@@ -143,15 +146,16 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Scurrius',
     tier: BossTier.easy,
-    description: 'Low-level combat boss under Varrock. Good intro to PvM mechanics.',
-    combatReqs: {'Attack': 40},
+    description:
+        'Low-level combat boss under Varrock. Good intro to PvM mechanics.',
     keyDrops: ["Scurrius' spine", 'Runes'],
     wikiPath: 'Scurrius',
   ),
   BossEntry(
     name: 'Giant Mole',
     tier: BossTier.easy,
-    description: 'Simple boss in Falador Park. Bring a Dharok set or ranged for easy kills.',
+    description:
+        'Simple boss in Falador Park. Bring a Dharok set or ranged for easy kills.',
     combatReqs: {'Attack': 40, 'Prayer': 43},
     keyDrops: ['Mole skin', 'Mole claw'],
     wikiPath: 'Giant_Mole',
@@ -167,7 +171,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Barrows',
     tier: BossTier.easy,
-    description: 'Six brothers in crypts. Use Magic to kill efficiently. Great early GP.',
+    description:
+        'Six brothers in crypts. Use Magic to kill efficiently. Great early GP.',
     combatReqs: {'Magic': 50, 'Prayer': 43},
     questReq: 'Priest in Peril',
     keyDrops: ['Barrows equipment', 'Runes'],
@@ -178,7 +183,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Hespori',
     tier: BossTier.medium,
-    description: 'Farming Guild boss. Grows from a Hespori seed, fight when ready.',
+    description:
+        'Farming Guild boss. Grows from a Hespori seed, fight when ready.',
     combatReqs: {'Farming': 65},
     keyDrops: ['Anima seeds', 'Bottomless compost bucket'],
     wikiPath: 'Hespori',
@@ -187,7 +193,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Sarachnis',
     tier: BossTier.medium,
-    description: 'Spider boss in Forthos Dungeon. Good intro to prayer switching.',
+    description:
+        'Spider boss in Forthos Dungeon. Good intro to prayer switching.',
     combatReqs: {'Attack': 65, 'Strength': 65},
     keyDrops: ['Sarachnis cudgel', 'Giant egg sac'],
     wikiPath: 'Sarachnis',
@@ -195,9 +202,10 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'King Black Dragon',
     tier: BossTier.medium,
-    description: 'Classic dragon boss in the Wilderness. Bring an anti-dragon shield.',
+    description:
+        'Classic dragon boss in the Wilderness. Bring an anti-dragon shield.',
     combatReqs: {'Ranged': 61},
-    keyDrops: ['Dragon pickaxe', 'KBD heads', 'Black dragonhide'],
+    keyDrops: ['KBD heads', 'Draconic visage', 'Dragon med helm'],
     wikiPath: 'King_Black_Dragon',
     isWilderness: true,
   ),
@@ -236,7 +244,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Kraken',
     tier: BossTier.medium,
-    description: 'Slayer boss — requires 87 Slayer on task. Easy mechanics, great drops.',
+    description:
+        'Slayer boss — requires 87 Slayer on task. Easy mechanics, great drops.',
     slayerReq: 87,
     keyDrops: ['Trident of the seas', 'Kraken tentacle'],
     wikiPath: 'Kraken',
@@ -252,7 +261,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Zalcano',
     tier: BossTier.medium,
-    description: 'Skilling boss in Prifddinas. Uses Mining, Smithing, and Runecraft.',
+    description:
+        'Skilling boss in Prifddinas. Uses Mining, Smithing, and Runecraft.',
     combatReqs: {'Mining': 70, 'Smithing': 70},
     questReq: 'Song of the Elves',
     keyDrops: ['Crystal tool seed', 'Zalcano shard'],
@@ -269,7 +279,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Moons of Peril',
     tier: BossTier.medium,
-    description: 'Three-moon boss fight. Drops Moon equipment for all combat styles.',
+    description:
+        'Three-moon boss fight. Drops Moon equipment for all combat styles.',
     questReq: 'Perilous Moons',
     keyDrops: ['Blood Moon armour', 'Eclipse Moon armour', 'Blue Moon armour'],
     wikiPath: 'Moons_of_Peril',
@@ -278,7 +289,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'God Wars Dungeon (intro)',
     tier: BossTier.medium,
-    description: 'GWD minions and learning the dungeon. Full bosses are harder.',
+    description:
+        'GWD minions and learning the dungeon. Full bosses are harder.',
     combatReqs: {'Hitpoints': 70, 'Agility': 70},
     keyDrops: ['Godsword shards', 'God equipment'],
     wikiPath: 'God_Wars_Dungeon',
@@ -289,7 +301,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'TzTok-Jad (Fight Caves)',
     tier: BossTier.hard,
-    description: 'Iconic wave-based challenge. Prayer switching is key. Reward: Fire cape.',
+    description:
+        'Iconic wave-based challenge. Prayer switching is key. Reward: Fire cape.',
     combatReqs: {'Ranged': 70, 'Prayer': 43, 'Hitpoints': 70},
     keyDrops: ['Fire cape'],
     wikiPath: 'TzTok-Jad',
@@ -313,7 +326,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Skotizo',
     tier: BossTier.hard,
-    description: 'Catacombs boss — use Arclight. Requires a Dark totem to access.',
+    description:
+        'Catacombs boss — use Arclight. Requires a Dark totem to access.',
     combatReqs: {'Attack': 70},
     keyDrops: ['Ancient shard', 'Dark claw', 'Uncut onyx'],
     wikiPath: 'Skotizo',
@@ -337,7 +351,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: "Vet'ion / Calvar'ion",
     tier: BossTier.hard,
-    description: 'Wilderness undead boss. Calvar\'ion is the singles-plus variant.',
+    description:
+        'Wilderness undead boss. Calvar\'ion is the singles-plus variant.',
     keyDrops: ['Voidwaker blade', 'Dragon pickaxe'],
     wikiPath: "Vet'ion",
     isWilderness: true,
@@ -361,7 +376,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'The Gauntlet',
     tier: BossTier.hard,
-    description: 'Solo dungeon — gather resources and fight the Hunllef. No gear brought in.',
+    description:
+        'Solo dungeon — gather resources and fight the Hunllef. No gear brought in.',
     questReq: 'Song of the Elves',
     keyDrops: ['Crystal shards', 'Crystal armour seed'],
     wikiPath: 'The_Gauntlet',
@@ -393,7 +409,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Cerberus',
     tier: BossTier.hard,
-    description: 'Hellhound Slayer boss. Drops crystals for best-in-slot boots.',
+    description:
+        'Hellhound Slayer boss. Drops crystals for best-in-slot boots.',
     slayerReq: 91,
     keyDrops: ['Primordial crystal', 'Pegasian crystal', 'Eternal crystal'],
     wikiPath: 'Cerberus',
@@ -401,7 +418,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Araxxor',
     tier: BossTier.hard,
-    description: 'Spider boss with enrage mechanics. Drops noxious halberd components.',
+    description:
+        'Spider boss with enrage mechanics. Drops noxious halberd components.',
     combatReqs: {'Attack': 80, 'Strength': 80},
     keyDrops: ['Araxyte fang', 'Noxious halberd', 'Amulet of rancour'],
     wikiPath: 'Araxxor',
@@ -417,7 +435,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Kalphite Queen',
     tier: BossTier.hard,
-    description: 'Two-phase boss — melee then ranged/magic. Drops dragon pickaxe.',
+    description:
+        'Two-phase boss — melee then ranged/magic. Drops dragon pickaxe.',
     combatReqs: {'Attack': 70, 'Defence': 70},
     keyDrops: ['KQ head', 'Dragon pickaxe', 'Dragon chain'],
     wikiPath: 'Kalphite_Queen',
@@ -425,7 +444,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: "K'ril Tsutsaroth",
     tier: BossTier.hard,
-    description: 'Zamorak GWD boss. Drops Staff of the dead and Zamorakian hasta.',
+    description:
+        'Zamorak GWD boss. Drops Staff of the dead and Zamorakian hasta.',
     combatReqs: {'Hitpoints': 70, 'Strength': 70},
     keyDrops: ['Zamorakian hasta', 'Staff of the dead', 'Zamorak hilt'],
     wikiPath: "K'ril_Tsutsaroth",
@@ -443,7 +463,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Zulrah',
     tier: BossTier.elite,
-    description: 'Multi-phase snake boss. Learn rotations for consistent kills.',
+    description:
+        'Multi-phase snake boss. Learn rotations for consistent kills.',
     combatReqs: {'Ranged': 80, 'Magic': 80},
     questReq: 'Regicide',
     keyDrops: ['Tanzanite fang', 'Magic fang', 'Serpentine visage'],
@@ -455,13 +476,18 @@ const List<BossEntry> allBosses = [
     description: 'Undead dragon — consistent GP. Requires Dragon Slayer II.',
     combatReqs: {'Ranged': 80, 'Defence': 70},
     questReq: 'Dragon Slayer II',
-    keyDrops: ["Vorkath's head", 'Superior dragon bones', 'Dragonbone necklace'],
+    keyDrops: [
+      "Vorkath's head",
+      'Superior dragon bones',
+      'Dragonbone necklace'
+    ],
     wikiPath: 'Vorkath',
   ),
   BossEntry(
     name: 'Phantom Muspah',
     tier: BossTier.elite,
-    description: 'Multi-phase boss — melee and ranged forms. Good for Ancient essence.',
+    description:
+        'Multi-phase boss — melee and ranged forms. Good for Ancient essence.',
     questReq: 'Secrets of the North',
     keyDrops: ['Ancient icon', 'Venator shard', 'Ancient essence'],
     wikiPath: 'Phantom_Muspah',
@@ -517,7 +543,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Corrupted Gauntlet',
     tier: BossTier.elite,
-    description: 'Harder Gauntlet variant. Drops enhanced crystal weapon seed for Bowfa.',
+    description:
+        'Harder Gauntlet variant. Drops enhanced crystal weapon seed for Bowfa.',
     questReq: 'Song of the Elves',
     keyDrops: ['Enhanced crystal weapon seed', 'Crystal armour seed'],
     wikiPath: 'The_Gauntlet',
@@ -535,10 +562,16 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Tombs of Amascut',
     tier: BossTier.elite,
-    description: 'Raid with scalable difficulty. Amazing loot at higher invocations.',
+    description:
+        'Raid with scalable difficulty. Amazing loot at higher invocations.',
     combatReqs: {'Attack': 80, 'Ranged': 80, 'Magic': 80},
     questReq: 'Beneath Cursed Sands',
-    keyDrops: ["Osmumten's fang", 'Masori armour', "Tumeken's shadow", "Elidinis' ward"],
+    keyDrops: [
+      "Osmumten's fang",
+      'Masori armour',
+      "Tumeken's shadow",
+      "Elidinis' ward"
+    ],
     wikiPath: 'Tombs_of_Amascut',
     groupSize: 'Solo/Team',
   ),
@@ -547,19 +580,30 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Chambers of Xeric',
     tier: BossTier.master,
-    description: 'The original OSRS raid. Team-based with varied rooms and the Great Olm.',
+    description:
+        'The original OSRS raid. Team-based with varied rooms and the Great Olm.',
     combatReqs: {'Attack': 85, 'Ranged': 85, 'Magic': 85},
-    keyDrops: ['Twisted bow', 'Ancestral robes', 'Dragon claws', 'Dexterous prayer scroll'],
+    keyDrops: [
+      'Twisted bow',
+      'Ancestral robes',
+      'Dragon claws',
+      'Dexterous prayer scroll'
+    ],
     wikiPath: 'Chambers_of_Xeric',
     groupSize: 'Solo/Team',
   ),
   BossEntry(
     name: 'The Nightmare / Phosani',
     tier: BossTier.master,
-    description: 'Positioning-heavy boss. Phosani is the solo variant — harder but better drops.',
+    description:
+        'Positioning-heavy boss. Phosani is the solo variant — harder but better drops.',
     combatReqs: {'Attack': 85, 'Strength': 85, 'Hitpoints': 85},
     questReq: 'Priest in Peril',
-    keyDrops: ["Inquisitor's armour", 'Nightmare staff', 'Eldritch/Harmonised/Volatile orb'],
+    keyDrops: [
+      "Inquisitor's armour",
+      'Nightmare staff',
+      'Eldritch/Harmonised/Volatile orb'
+    ],
     wikiPath: "The_Nightmare",
     groupSize: 'Solo/Team',
   ),
@@ -574,7 +618,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Doom of Mokhaiotl',
     tier: BossTier.master,
-    description: 'Extended encounter with multiple phases. Drops Avernic treads.',
+    description:
+        'Extended encounter with multiple phases. Drops Avernic treads.',
     questReq: 'The Final Dawn',
     keyDrops: ['Avernic treads', 'Eye of ayak', 'Mokhaiotl cloth'],
     wikiPath: 'Doom_of_Mokhaiotl',
@@ -582,16 +627,23 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Theatre of Blood',
     tier: BossTier.master,
-    description: 'Raid with 5 bosses + Verzik Vitur. Requires strong team coordination.',
+    description:
+        'Raid with 5 bosses + Verzik Vitur. Requires strong team coordination.',
     combatReqs: {'Attack': 90, 'Ranged': 90, 'Magic': 90},
-    keyDrops: ['Scythe of vitur', 'Avernic defender hilt', 'Ghrazi rapier', 'Sanguinesti staff'],
+    keyDrops: [
+      'Scythe of vitur',
+      'Avernic defender hilt',
+      'Ghrazi rapier',
+      'Sanguinesti staff'
+    ],
     wikiPath: 'Theatre_of_Blood',
     groupSize: 'Team',
   ),
   BossEntry(
     name: 'TzKal-Zuk (Inferno)',
     tier: BossTier.master,
-    description: 'The hardest solo PvM challenge. 69 waves ending in TzKal-Zuk. Reward: Infernal cape.',
+    description:
+        'The hardest solo PvM challenge. 69 waves ending in TzKal-Zuk. Reward: Infernal cape.',
     combatReqs: {'Ranged': 90, 'Prayer': 77, 'Defence': 70, 'Hitpoints': 85},
     keyDrops: ['Infernal cape'],
     wikiPath: 'TzKal-Zuk',
@@ -599,7 +651,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Sol Heredit (Fortis Colosseum)',
     tier: BossTier.master,
-    description: 'Wave-based arena with modifiers. Final boss drops Dizana\'s quiver.',
+    description:
+        'Wave-based arena with modifiers. Final boss drops Dizana\'s quiver.',
     combatReqs: {'Ranged': 85, 'Defence': 70, 'Prayer': 77},
     questReq: 'Children of the Sun',
     keyDrops: ["Dizana's quiver", 'Sunfire fanatic armour', 'Echo crystal'],
@@ -610,7 +663,8 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: 'Challenge Mode Chambers of Xeric',
     tier: BossTier.grandmaster,
-    description: 'Harder CoX with cosmetic rewards. Requires mastery of all rooms.',
+    description:
+        'Harder CoX with cosmetic rewards. Requires mastery of all rooms.',
     combatReqs: {'Attack': 99, 'Ranged': 99, 'Magic': 99},
     keyDrops: ['Twisted ancestral colour kit', 'Metamorphic dust'],
     wikiPath: 'Chambers_of_Xeric/Challenge_Mode',
@@ -637,14 +691,16 @@ const List<BossEntry> allBosses = [
   BossEntry(
     name: "Yama's Contracts",
     tier: BossTier.grandmaster,
-    description: 'Challenge contracts for Yama boss. Drops radiant Oathplate recolor.',
+    description:
+        'Challenge contracts for Yama boss. Drops radiant Oathplate recolor.',
     keyDrops: ['Radiant oathplate armour'],
     wikiPath: 'Yama',
   ),
   BossEntry(
     name: 'Awakened DT2 Bosses',
     tier: BossTier.grandmaster,
-    description: 'Harder variants of all four DT2 bosses with enrage mechanics.',
+    description:
+        'Harder variants of all four DT2 bosses with enrage mechanics.',
     questReq: 'Desert Treasure II',
     keyDrops: ['Sanguine torva armour'],
     wikiPath: "Awakener's_orb",

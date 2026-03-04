@@ -381,6 +381,42 @@ class OsrsApiService {
     }
   }
 
+  /// Fetch raw wikitext for a page by title.
+  Future<String?> fetchWikiPageWikitext(String pageTitle) async {
+    try {
+      final uri = Uri.parse(_wikiApi).replace(queryParameters: {
+        'action': 'parse',
+        'page': pageTitle,
+        'prop': 'wikitext',
+        'format': 'json',
+      });
+      final response = await http.get(uri, headers: {'User-Agent': _userAgent});
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return (data['parse']?['wikitext']?['*'] as String?) ?? '';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Fetch rendered HTML for a wiki page section.
+  Future<String?> fetchWikiPageHtml(String pageTitle) async {
+    try {
+      final uri = Uri.parse(_wikiApi).replace(queryParameters: {
+        'action': 'parse',
+        'page': pageTitle,
+        'prop': 'text',
+        'format': 'json',
+      });
+      final response = await http.get(uri, headers: {'User-Agent': _userAgent});
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return (data['parse']?['text']?['*'] as String?) ?? '';
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────
   // Wise Old Man API v2  —  https://docs.wiseoldman.net/api
   // ─────────────────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ import '../../../core/services/osrs_api_service.dart';
 // ═══════════════════════════════════════════════════════════════════
 
 /// How to kill this monster.
-enum SlayerStyle { melee, ranged, magic, barrage, hybrid }
+enum SlayerStyle { melee, ranged, magic, barrage, hybrid, prayer }
 
 class SlayerMonster {
   final String name;
@@ -23,6 +23,12 @@ class SlayerMonster {
   final String? notes;
   final String wikiPath;
 
+  /// Fairy ring code to get close to this monster (e.g. 'CKS').
+  final String? fairyRing;
+
+  /// How to get there — teleports, routes, etc.
+  final List<String> travelTips;
+
   const SlayerMonster({
     required this.name,
     required this.slayerLevel,
@@ -36,6 +42,8 @@ class SlayerMonster {
     this.notableDrops = const [],
     this.notes,
     required this.wikiPath,
+    this.fairyRing,
+    this.travelTips = const [],
   });
 
   /// Get the recommended gear for a slot. Uses override if present,
@@ -43,6 +51,17 @@ class SlayerMonster {
   List<String> gearForSlot(String slot) {
     if (gearOverrides.containsKey(slot)) return gearOverrides[slot]!;
     final base = _baseGear[style] ?? _baseGear[SlayerStyle.melee]!;
+    return base[slot] ?? [];
+  }
+
+  /// Get gear for a slot using a specific [overrideStyle] instead of the
+  /// monster's default. Gear overrides are only used when [overrideStyle]
+  /// matches the monster's own style.
+  List<String> gearForSlotWithStyle(String slot, SlayerStyle overrideStyle) {
+    if (overrideStyle == style && gearOverrides.containsKey(slot)) {
+      return gearOverrides[slot]!;
+    }
+    final base = _baseGear[overrideStyle] ?? _baseGear[SlayerStyle.melee]!;
     return base[slot] ?? [];
   }
 
@@ -54,9 +73,28 @@ class SlayerMonster {
     return equipmentSlots.where((s) => allSlots.contains(s)).toList();
   }
 
+  /// Relevant slots for a given style.
+  List<String> relevantSlotsForStyle(SlayerStyle overrideStyle) {
+    final base = _baseGear[overrideStyle] ?? _baseGear[SlayerStyle.melee]!;
+    final keys = overrideStyle == style
+        ? {...base.keys, ...gearOverrides.keys}
+        : base.keys;
+    return equipmentSlots.where((s) => keys.contains(s)).toList();
+  }
+
   /// Find the best item the player owns for a given slot.
   String? bestOwnedForSlot(String slot, Set<String> bankItems) {
     final gear = gearForSlot(slot);
+    for (final item in gear) {
+      if (bankItems.contains(item.toLowerCase())) return item;
+    }
+    return null;
+  }
+
+  /// Find the best item the player owns for a given slot using a specific style.
+  String? bestOwnedForSlotWithStyle(
+      String slot, Set<String> bankItems, SlayerStyle overrideStyle) {
+    final gear = gearForSlotWithStyle(slot, overrideStyle);
     for (final item in gear) {
       if (bankItems.contains(item.toLowerCase())) return item;
     }
@@ -67,6 +105,7 @@ class SlayerMonster {
     switch (style) {
       case SlayerStyle.melee:
       case SlayerStyle.hybrid:
+      case SlayerStyle.prayer:
         return CombatStyle.melee;
       case SlayerStyle.ranged:
         return CombatStyle.ranged;
@@ -85,6 +124,7 @@ const Map<SlayerStyle, Map<String, List<String>>> _baseGear = {
   SlayerStyle.magic: _magicBase,
   SlayerStyle.barrage: _barrageBase,
   SlayerStyle.hybrid: _meleeBase,
+  SlayerStyle.prayer: _proselyteBase,
 };
 
 const _meleeBase = <String, List<String>>{
@@ -366,6 +406,72 @@ const _barrageBase = <String, List<String>>{
   ],
 };
 
+/// Prayer-focused melee template (Proselyte armour).
+/// Used for tasks where you camp protection prayers for AFK/extended trips.
+const _proselyteBase = <String, List<String>>{
+  'head': [
+    'Slayer helmet (i)',
+    'Slayer helmet',
+    'Black mask (i)',
+    'Black mask',
+  ],
+  'cape': [
+    'Infernal cape',
+    'Fire cape',
+    'Ardougne cloak 4',
+    'Ardougne cloak 3',
+  ],
+  'neck': [
+    'Dragonbone necklace',
+    'Amulet of torture',
+    'Amulet of fury',
+    'Amulet of glory',
+  ],
+  'body': [
+    'Proselyte hauberk',
+  ],
+  'legs': [
+    'Proselyte cuisse',
+  ],
+  'weapon': [
+    'Soulreaper axe',
+    'Ghrazi rapier',
+    'Blade of saeldor',
+    'Abyssal tentacle',
+    'Abyssal whip',
+    'Dragon scimitar',
+  ],
+  'shield': [
+    'Avernic defender',
+    'Dragon defender',
+    'Falador shield 4',
+  ],
+  'hands': [
+    'Ferocious gloves',
+    'Barrows gloves',
+    'Dragon gloves',
+    'Combat bracelet',
+  ],
+  'feet': [
+    'Devout boots',
+    'Holy sandals',
+    'Dragon boots',
+    'Climbing boots',
+  ],
+  'ring': [
+    'Ring of the gods (i)',
+    'Ring of the gods',
+    'Berserker ring (i)',
+    'Berserker ring',
+    'Ring of wealth',
+  ],
+  'ammo': [
+    'Holy blessing',
+    "Rada's blessing 4",
+    "Rada's blessing 3",
+  ],
+};
+
 // ─── Slayer monster database ────────────────────────────────────
 
 const List<SlayerMonster> slayerMonsters = [
@@ -381,6 +487,11 @@ const List<SlayerMonster> slayerMonsters = [
     notes:
         'Must wear nose peg or Slayer helmet for protection. Barrage in Catacombs for best XP. Can also melee in Slayer Tower.',
     wikiPath: 'Aberrant_spectre',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Slayer Tower: Fairy ring CKS → run west, or Slayer ring teleport',
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart, enter statue',
+    ],
   ),
   SlayerMonster(
     name: 'Abyssal demons',
@@ -392,12 +503,18 @@ const List<SlayerMonster> slayerMonsters = [
     notes:
         'Barrage in Catacombs for fastest XP. Can melee in Slayer Tower rooftop with cannon for decent rates.',
     wikiPath: 'Abyssal_demon',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Slayer Tower: Fairy ring CKS → run west, or Slayer ring teleport',
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart, enter statue',
+    ],
   ),
   SlayerMonster(
     name: 'Adamant dragons',
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Lithkren Vault',
+    travelTips: ['Digsite pendant → Lithkren'],
     specialItems: ['Anti-dragon shield or Dragonfire ward'],
     gearOverrides: {
       'shield': [
@@ -423,6 +540,10 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Catacombs of Kourend / Stronghold of Security',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Stronghold: Skull sceptre teleport, or Varrock teleport → run south',
+    ],
     gearOverrides: {
       'neck': [
         'Salve amulet(ei)',
@@ -433,7 +554,28 @@ const List<SlayerMonster> slayerMonsters = [
       ],
     },
     notableDrops: ['Blood rune', 'Death rune'],
-    notes: 'Undead — Salve amulet works and stacks better than Slayer helm.',
+    notes:
+        'Undead — Salve amulet(ei) is better than Slayer helm (they do NOT stack — use Salve instead).',
+    wikiPath: 'Ankou',
+  ),
+  SlayerMonster(
+    name: 'Ankou (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    gearOverrides: {
+      'neck': [
+        'Salve amulet(ei)',
+        'Salve amulet (e)',
+        'Salve amulet (i)',
+        'Salve amulet',
+        'Dragonbone necklace',
+      ],
+    },
+    notableDrops: ['Blood rune', 'Death rune', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee in Catacombs. Salve amulet(ei) is better than Slayer helm (they do NOT stack — use Salve instead). Very AFK with prayer gear.',
     wikiPath: 'Ankou',
   ),
   SlayerMonster(
@@ -441,6 +583,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 92,
     style: SlayerStyle.melee,
     location: 'Araxyte Cave',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Fairy ring CKS → run east to Morytania Spider Cave',
+      'Drakan\'s medallion → Ver Sinhaza → run north'
+    ],
     notableDrops: ['Noxious halberd', 'Amulet of rancour (s)', 'Araxyte fang'],
     notes:
         'Kill Araxytes in the cave. Noxious halberd is a strong drop. Melee with best gear.',
@@ -451,6 +598,10 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'God Wars Dungeon / Armadyl area',
+    travelTips: [
+      'Ghommal\'s hilt teleport (Combat Achievements)',
+      'Trollheim teleport → run north to GWD entrance'
+    ],
     alternatives: ["Kree'arra"],
     notableDrops: ['Adamantite bar', 'Noted limestones'],
     notes:
@@ -464,6 +615,10 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 60,
     style: SlayerStyle.melee,
     location: 'Jormungand\'s Prison',
+    travelTips: [
+      'Fremennik sea boots 4 teleport',
+      'Rellekka teleport → boat to Island of Stone'
+    ],
     specialItems: ["Mirror shield or V's shield"],
     gearOverrides: {
       'shield': [
@@ -482,6 +637,10 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Catacombs of Kourend / Taverley Dungeon',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Taverley: POH Taverley portal, or Falador teleport → run west',
+    ],
     alternatives: ['Demonic gorillas', 'Skotizo'],
     gearOverrides: {
       'weapon': [
@@ -498,10 +657,32 @@ const List<SlayerMonster> slayerMonsters = [
     wikiPath: 'Black_demon',
   ),
   SlayerMonster(
+    name: 'Black demons (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    gearOverrides: {
+      'weapon': [
+        'Arclight',
+        'Abyssal whip',
+        'Dragon scimitar',
+      ],
+    },
+    notableDrops: ['Rune chainbody', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee with Arclight in Catacombs. Very AFK — aggressive monsters replenish prayer with bone drops.',
+    wikiPath: 'Black_demon',
+  ),
+  SlayerMonster(
     name: 'Black dragons',
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Taverley Dungeon / Evil Chicken\'s Lair',
+    travelTips: [
+      'Taverley: POH Taverley portal, or Falador teleport → run west',
+      'Evil Chicken: Fairy ring BKQ → Zanaris → chicken shrine',
+    ],
     specialItems: ['Anti-dragon shield or Dragonfire ward'],
     gearOverrides: {
       'shield': [
@@ -529,9 +710,30 @@ const List<SlayerMonster> slayerMonsters = [
     canCannon: true,
     canBarrage: true,
     location: 'Catacombs of Kourend / Slayer Tower',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Slayer Tower: Fairy ring CKS → run west, or Slayer ring teleport',
+    ],
     notableDrops: ['Blood rune', 'Rune med helm'],
     notes:
         'Mutated bloodvelds in Catacombs are aggressive — good AFK with protect from melee. Can also barrage.',
+    wikiPath: 'Bloodveld',
+  ),
+  SlayerMonster(
+    name: 'Bloodveld (prayer)',
+    slayerLevel: 50,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    notableDrops: [
+      'Blood rune',
+      'Rune med helm',
+      'Totem pieces',
+      'Ancient shard'
+    ],
+    notes:
+        'Proselyte + Protect from Melee in Catacombs. Mutated bloodvelds are aggressive — fully AFK with prayer. One of the best prayer-afk tasks.',
     wikiPath: 'Bloodveld',
   ),
   SlayerMonster(
@@ -539,6 +741,10 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Taverley Dungeon / Myths\' Guild',
+    travelTips: [
+      'Taverley: POH Taverley portal, or Falador teleport → run west',
+      'Myths\' Guild: Mythical cape teleport',
+    ],
     specialItems: ['Anti-dragon shield or Dragonfire ward'],
     gearOverrides: {
       'shield': [
@@ -566,6 +772,10 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 58,
     style: SlayerStyle.melee,
     location: 'Mos Le\'Harmless Cave',
+    travelTips: [
+      'Ectophial → charter ship to Mos Le\'Harmless',
+      'POH Mos Le\'Harmless portal'
+    ],
     specialItems: ['Witchwood icon (or Slayer helmet)'],
     notableDrops: ['Black mask'],
     notes:
@@ -577,6 +787,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 87,
     style: SlayerStyle.magic,
     location: 'Kraken Cove',
+    fairyRing: 'AKQ',
+    travelTips: [
+      'Fairy ring AKQ → run south-east to cave entrance',
+      'Piscarilius house teleport → run south'
+    ],
     alternatives: ['Kraken (boss)'],
     notableDrops: ['Trident of the seas'],
     notes:
@@ -588,6 +803,10 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 91,
     style: SlayerStyle.melee,
     location: 'Cerberus\' Lair (Taverley Dungeon)',
+    travelTips: [
+      'Key Master teleport (dropped by Cerberus)',
+      'POH Taverley portal → run through dungeon'
+    ],
     gearOverrides: {
       'weapon': [
         'Arclight',
@@ -612,6 +831,185 @@ const List<SlayerMonster> slayerMonsters = [
     wikiPath: 'Cerberus',
   ),
 
+  SlayerMonster(
+    name: 'Custodian stalkers',
+    slayerLevel: 54,
+    style: SlayerStyle.ranged,
+    canCannon: true,
+    location: 'Stalker Den (Auburnvale)',
+    travelTips: ['Auburnvale teleport scroll'],
+    gearOverrides: {
+      'head': [
+        'Slayer helmet (i)',
+        'Masori mask (f)',
+        'Masori mask',
+      ],
+      'neck': [
+        'Necklace of anguish',
+        'Amulet of fury',
+        'Bonecrusher necklace',
+        'Dragonbone necklace',
+      ],
+      'cape': [
+        "Dizana's quiver",
+        "Ava's assembler",
+        "Ava's accumulator",
+        'Ranging cape(t)',
+      ],
+      'body': [
+        'Masori body (f)',
+        'Masori body',
+        'Hueycoatl hide body',
+      ],
+      'legs': [
+        'Masori chaps (f)',
+        'Masori chaps',
+        'Hueycoatl hide chaps',
+      ],
+      'weapon': [
+        'Venator bow',
+        'Black chinchompa',
+        'Red chinchompa',
+      ],
+      'shield': [
+        'Twisted buckler',
+        'Dragonfire ward',
+        'Odium ward',
+        'Antler guard',
+        'Book of law',
+      ],
+      'ammo': [
+        'Amethyst arrow',
+        "Rada's blessing 4",
+        'Rune arrow',
+        "Rada's blessing 3",
+      ],
+      'hands': [
+        'Bracelet of slaughter',
+        'Zaryte vambraces',
+        'Barrows gloves',
+        'Regen bracelet',
+      ],
+      'feet': [
+        'Devout boots',
+        'Echo boots',
+        "Blessed d'hide boots",
+      ],
+      'ring': [
+        'Venator ring',
+        'Lightbearer',
+        'Ring of the gods (i)',
+        'Ring of suffering (i)',
+        'Ring of wealth',
+      ],
+    },
+    alternatives: [
+      'Juvenile custodian stalker',
+      'Mature custodian stalker',
+      'Elder custodian stalker',
+    ],
+    notableDrops: ['Antler guard', 'Broken antlers', 'Atlatl dart tips'],
+    notes:
+        'Requires Shadows of Custodia quest. Use Protect from Melee; switch to Protect from Magic at low HP for bleed. '
+        'Venator bow is BiS for auto-aggro. Cannon in multicombat SW area. '
+        'Elder stalkers (76 Slayer) can spawn the Ancient Custodian superior.',
+    wikiPath: 'Custodian_stalker',
+  ),
+  SlayerMonster(
+    name: 'Custodian stalkers (barrage)',
+    slayerLevel: 54,
+    style: SlayerStyle.barrage,
+    canBarrage: true,
+    canCannon: true,
+    location: 'Stalker Den (Auburnvale)',
+    travelTips: ['Auburnvale teleport scroll'],
+    gearOverrides: {
+      'head': [
+        'Slayer helmet (i)',
+        'Virtus mask',
+        'Ancestral hat',
+        "Ahrim's hood",
+      ],
+      'neck': [
+        'Occult necklace',
+        'Amulet of fury',
+        'Bonecrusher necklace',
+        'Dragonbone necklace',
+      ],
+      'cape': [
+        'Imbued saradomin cape',
+        'Imbued guthix cape',
+        'Imbued zamorak cape',
+        'Ardougne cloak 4',
+        'Soul cape',
+      ],
+      'body': [
+        'Virtus robe top',
+        'Ancestral robe top',
+        "Ahrim's robetop",
+        'Mystic robe top',
+      ],
+      'legs': [
+        'Virtus robe bottom',
+        'Ancestral robe bottom',
+        "Ahrim's robeskirt",
+        'Mystic robe bottom',
+      ],
+      'weapon': [
+        'Kodai wand',
+        'Nightmare staff',
+        'Ancient sceptre',
+        "Ahrim's staff",
+        'Master wand',
+        'Ancient staff',
+      ],
+      'shield': [
+        "Elidinis' ward (f)",
+        'Arcane spirit shield',
+        "Elidinis' ward",
+        "Mage's book",
+        'Book of darkness',
+        'Antler guard',
+      ],
+      'ammo': [
+        "Rada's blessing 4",
+        'God blessing',
+        "Rada's blessing 3",
+      ],
+      'hands': [
+        'Bracelet of slaughter',
+        'Confliction gauntlets',
+        'Tormented bracelet',
+        'Barrows gloves',
+      ],
+      'feet': [
+        'Eternal boots',
+        'Devout boots',
+        'Holy sandals',
+        'Mystic boots',
+      ],
+      'ring': [
+        'Magus ring',
+        'Lightbearer',
+        'Seers ring (i)',
+        'Ring of the gods (i)',
+        'Brimstone ring',
+        'Ring of wealth',
+      ],
+    },
+    alternatives: [
+      'Juvenile custodian stalker',
+      'Mature custodian stalker',
+      'Elder custodian stalker',
+    ],
+    notableDrops: ['Antler guard', 'Broken antlers', 'Atlatl dart tips'],
+    notes:
+        'Requires Shadows of Custodia quest. Barrage in multicombat SW area. '
+        'Use Protect from Melee; Blood Barrage can sustain HP vs bleeds. '
+        'Bring Crystal/Dragon halberd spec for stacked enemies.',
+    wikiPath: 'Custodian_stalker',
+  ),
+
   // ── D ──
   SlayerMonster(
     name: 'Dagannoth',
@@ -619,10 +1017,27 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Lighthouse / Catacombs of Kourend',
+    fairyRing: 'ALP',
+    travelTips: [
+      'Lighthouse: Fairy ring ALP → run north',
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'DKs: Waterbirth Island → Fairy ring DKS',
+    ],
     alternatives: ['Dagannoth Kings'],
     notableDrops: ['Dagannoth bones'],
     notes:
         'Cannon at Lighthouse for fast task. Can do DKs for berserker/archers/seers rings.',
+    wikiPath: 'Dagannoth',
+  ),
+  SlayerMonster(
+    name: 'Dagannoth (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    notableDrops: ['Dagannoth bones', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee in Catacombs. Aggressive dagannoth — very AFK with prayer bonus gear.',
     wikiPath: 'Dagannoth',
   ),
   SlayerMonster(
@@ -631,16 +1046,35 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canBarrage: true,
     location: 'Mourner Tunnels / Catacombs of Kourend',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Iorwerth Dungeon: Teleport crystal → Prifddinas',
+    ],
     notableDrops: ['Dark bow'],
     notes:
         'Can melee or barrage. Mourner Tunnels after Song of the Elves, or Catacombs.',
     wikiPath: 'Dark_beast',
   ),
   SlayerMonster(
+    name: 'Dark beasts (prayer)',
+    slayerLevel: 90,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    notableDrops: ['Dark bow', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee in Catacombs. AFK — dark beasts are aggressive. Good prayer-extending setup.',
+    wikiPath: 'Dark_beast',
+  ),
+  SlayerMonster(
     name: 'Demonic gorillas',
-    slayerLevel: 69,
+    slayerLevel: 1,
     style: SlayerStyle.hybrid,
     location: 'Crash Site Cavern',
+    travelTips: [
+      'Royal seed pod → Grand Tree → Gnome Glider to Crash Site',
+      'Spirit tree → Tree Gnome Stronghold → run east'
+    ],
     gearOverrides: {
       'weapon': [
         'Arclight',
@@ -673,6 +1107,12 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 84,
     style: SlayerStyle.melee,
     location: 'Karuulm Slayer Dungeon',
+    fairyRing: 'CIR',
+    travelTips: [
+      'Fairy ring CIR → climb Mount Karuulm',
+      'Skills necklace → Farming Guild → run north',
+      'Rada\'s blessing 3/4 → Mount Karuulm teleport',
+    ],
     specialItems: ['Boots of stone/brimstone (or Granite boots)'],
     notableDrops: ['Drake\'s tooth', 'Drake\'s claw'],
     notes:
@@ -685,6 +1125,11 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.barrage,
     canBarrage: true,
     location: 'Catacombs of Kourend / Smoke Dungeon',
+    fairyRing: 'DLQ',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Smoke Dungeon: Fairy ring DLQ → run south-east, or Desert amulet → Pollnivneach',
+    ],
     specialItems: ['Facemask (or Slayer helmet)'],
     notableDrops: ['Dragon chainbody', 'Dust battlestaff'],
     notes:
@@ -698,9 +1143,29 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.melee,
     location: 'Iorwerth Dungeon (Prifddinas)',
-    notableDrops: ['Crystal armour seed', 'Crystal weapon seed', 'Enhanced crystal key'],
+    travelTips: ['Teleport crystal → Prifddinas → Iorwerth Dungeon entrance'],
+    notableDrops: [
+      'Crystal armour seed',
+      'Crystal weapon seed',
+      'Enhanced crystal key'
+    ],
     notes:
         'Requires Song of the Elves. Kill Iorwerth warriors in the dungeon. Good for crystal shards.',
+    wikiPath: 'Slayer_task/Elves',
+  ),
+  SlayerMonster(
+    name: 'Elves (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Iorwerth Dungeon (Prifddinas)',
+    travelTips: ['Teleport crystal → Prifddinas → Iorwerth Dungeon entrance'],
+    notableDrops: [
+      'Crystal armour seed',
+      'Crystal weapon seed',
+      'Enhanced crystal key',
+    ],
+    notes:
+        'Proselyte + Protect from Melee in Iorwerth Dungeon. Warriors are aggressive — AFK with prayer. Good crystal shard source.',
     wikiPath: 'Slayer_task/Elves',
   ),
 
@@ -711,8 +1176,23 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Catacombs of Kourend / Waterfall Dungeon',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Waterfall: Games necklace → Barbarian Assault → run south',
+    ],
     notableDrops: ['Rune scimitar'],
     notes: 'Good cannon task in Waterfall Dungeon or melee in Catacombs.',
+    wikiPath: 'Fire_giant',
+  ),
+  SlayerMonster(
+    name: 'Fire giants (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    notableDrops: ['Rune scimitar', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee in Catacombs. Aggressive — fully AFK with prayer gear. Good for totem/shard farming.',
     wikiPath: 'Fire_giant',
   ),
   SlayerMonster(
@@ -720,6 +1200,7 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 66,
     style: SlayerStyle.melee,
     location: 'Fossil Island Wyvern Cave',
+    travelTips: ['Digsite pendant → Fossil Island → run to Wyvern Cave'],
     specialItems: ['Elemental shield / Mind shield / Dragonfire shield'],
     gearOverrides: {
       'shield': [
@@ -738,6 +1219,7 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Icy seas (Sailing)',
+    travelTips: ['Sailing → Icy seas voyage'],
     specialItems: ['Anti-dragon shield'],
     gearOverrides: {
       'shield': [
@@ -763,6 +1245,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 75,
     style: SlayerStyle.melee,
     location: 'Slayer Tower (rooftop)',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Fairy ring CKS → run west',
+      'Slayer ring teleport → Slayer Tower'
+    ],
     specialItems: ['Rock hammer (or Granite hammer)'],
     alternatives: ['Grotesque Guardians'],
     notableDrops: [
@@ -775,11 +1262,36 @@ const List<SlayerMonster> slayerMonsters = [
     wikiPath: 'Gargoyle',
   ),
   SlayerMonster(
+    name: 'Gargoyles (prayer)',
+    slayerLevel: 75,
+    style: SlayerStyle.prayer,
+    location: 'Slayer Tower (rooftop)',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Fairy ring CKS → run west',
+      'Slayer ring teleport → Slayer Tower'
+    ],
+    specialItems: ['Rock hammer (or Granite hammer)'],
+    notableDrops: [
+      'Granite maul',
+      'Mystic robe top (dark)',
+      'Gold bar (noted)',
+    ],
+    notes:
+        'Proselyte + Protect from Melee on Slayer Tower rooftop. Very AFK and profitable — extends trips significantly with prayer gear.',
+    wikiPath: 'Gargoyle',
+  ),
+  SlayerMonster(
     name: 'Greater demons',
     slayerLevel: 1,
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Catacombs of Kourend / Chasm of Fire',
+    fairyRing: 'DJR',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Chasm of Fire: Fairy ring DJR',
+    ],
     alternatives: ["K'ril Tsutsaroth", 'Tormented Demons'],
     gearOverrides: {
       'weapon': [
@@ -796,10 +1308,33 @@ const List<SlayerMonster> slayerMonsters = [
     wikiPath: 'Greater_demon',
   ),
   SlayerMonster(
+    name: 'Greater demons (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    gearOverrides: {
+      'weapon': [
+        'Arclight',
+        'Abyssal whip',
+        'Dragon scimitar',
+      ],
+    },
+    notableDrops: ['Rune full helm', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee with Arclight in Catacombs. Aggressive — very AFK. Good for totem/shard farming.',
+    wikiPath: 'Greater_demon',
+  ),
+  SlayerMonster(
     name: 'Grotesque Guardians',
     slayerLevel: 75,
     style: SlayerStyle.melee,
     location: 'Slayer Tower (rooftop)',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Fairy ring CKS → run west',
+      'Slayer ring teleport → Slayer Tower'
+    ],
     specialItems: ['Brittle key'],
     notableDrops: [
       'Black tourmaline core',
@@ -817,6 +1352,7 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Various',
+    travelTips: ['Depends on location — check Troubled Tortugans quest areas'],
     notableDrops: [],
     notes: 'Standard melee task.',
     wikiPath: 'Gryphon',
@@ -829,6 +1365,10 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Catacombs of Kourend / Taverley Dungeon',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Taverley: POH Taverley portal, or Falador teleport → run west',
+    ],
     alternatives: ['Cerberus'],
     notableDrops: ['Hard clue scroll', 'Smouldering stone (Cerberus)'],
     notes:
@@ -836,10 +1376,27 @@ const List<SlayerMonster> slayerMonsters = [
     wikiPath: 'Hellhound',
   ),
   SlayerMonster(
+    name: 'Hellhounds (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Catacombs of Kourend',
+    travelTips: ['Xeric\'s talisman → Xeric\'s Heart, enter statue'],
+    notableDrops: ['Hard clue scroll', 'Totem pieces', 'Ancient shard'],
+    notes:
+        'Proselyte + Protect from Melee in Catacombs. Classic AFK prayer task — hellhounds only drop clues. Aggressive for zero-effort kills.',
+    wikiPath: 'Hellhound',
+  ),
+  SlayerMonster(
     name: 'Hydra',
     slayerLevel: 95,
     style: SlayerStyle.ranged,
     location: 'Karuulm Slayer Dungeon (lower level)',
+    fairyRing: 'CIR',
+    travelTips: [
+      'Fairy ring CIR → climb Mount Karuulm',
+      'Rada\'s blessing 3/4 → Mount Karuulm teleport',
+      'Skills necklace → Farming Guild → run north',
+    ],
     specialItems: ['Boots of stone/brimstone'],
     gearOverrides: {
       'weapon': [
@@ -875,9 +1432,16 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Kalphite Lair',
+    fairyRing: 'BIQ',
+    travelTips: [
+      'Fairy ring BIQ → run west to Kalphite Lair',
+      'Desert amulet 4 → Kalphite cave teleport',
+      'Shantay Pass → magic carpet to Pollnivneach → run south',
+    ],
     alternatives: ['Kalphite Queen'],
     notableDrops: ['Dragon chainbody (KQ)', 'Dragon 2h sword (KQ)'],
-    notes: 'Cannon kalphite soldiers/workers for fast task. Can do KQ for boss KC.',
+    notes:
+        'Cannon kalphite soldiers/workers for fast task. Can do KQ for boss KC.',
     wikiPath: 'Kalphite',
   ),
   SlayerMonster(
@@ -885,6 +1449,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 87,
     style: SlayerStyle.magic,
     location: 'Kraken Cove',
+    fairyRing: 'AKQ',
+    travelTips: [
+      'Fairy ring AKQ → run south-east to cave entrance',
+      'Piscarilius house teleport → run south'
+    ],
     gearOverrides: {
       'weapon': [
         'Sanguinesti staff',
@@ -907,6 +1476,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 70,
     style: SlayerStyle.melee,
     location: 'Fremennik Slayer Dungeon',
+    fairyRing: 'AJR',
+    travelTips: [
+      'Fairy ring AJR → Fremennik Slayer Dungeon',
+      'Slayer ring teleport'
+    ],
     specialItems: ['Leaf-bladed weapon required'],
     gearOverrides: {
       'weapon': [
@@ -927,6 +1501,10 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Lizardman Canyon / Lizardman Temple',
+    travelTips: [
+      'Xeric\'s talisman → Xeric\'s Glade → run south to canyon',
+      'Fairy ring DJR → run north-east'
+    ],
     alternatives: ['Lizardman shamans'],
     gearOverrides: {
       'shield': [
@@ -947,6 +1525,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Brimhaven Dungeon / Catacombs of Kourend',
+    fairyRing: 'CKR',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Brimhaven: Fairy ring CKR → run east, or POH Brimhaven portal',
+    ],
     specialItems: ['Extended antifire potion'],
     gearOverrides: {
       'weapon': [
@@ -971,6 +1554,8 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Ancient Cavern',
+    fairyRing: 'BJQ',
+    travelTips: ['Fairy ring BJQ → under Baxtorian Falls (Ancient Cavern)'],
     specialItems: ['Extended antifire potion'],
     gearOverrides: {
       'weapon': [
@@ -986,7 +1571,8 @@ const List<SlayerMonster> slayerMonsters = [
       ],
     },
     notableDrops: ['Dragon full helm', 'Draconic visage', 'Chewed bones'],
-    notes: 'Bring extended antifire + protect from magic. Dragon hunter crossbow recommended.',
+    notes:
+        'Bring extended antifire + protect from magic. Dragon hunter crossbow recommended.',
     wikiPath: 'Mithril_dragon',
   ),
   SlayerMonster(
@@ -994,6 +1580,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 57,
     style: SlayerStyle.melee,
     location: 'Fossil Island / Zanaris',
+    travelTips: [
+      'Enchanted Valley: Fairy ring BKQ (Zygomites spawn here)',
+      'Zanaris: Enter shed in Lumbridge Swamp with Dramen/Lunar staff',
+      'Fossil Island: Digsite pendant → Fossil Island'
+    ],
     specialItems: ['Fungicide spray'],
     notableDrops: ['Mort myre fungus'],
     notes: 'Must use Fungicide spray to finish them off below 7 HP.',
@@ -1007,6 +1598,11 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.barrage,
     canBarrage: true,
     location: 'Catacombs of Kourend / Slayer Tower',
+    fairyRing: 'CKS',
+    travelTips: [
+      'Catacombs: Xeric\'s talisman → Xeric\'s Heart',
+      'Slayer Tower: Fairy ring CKS → run west, or Slayer ring teleport',
+    ],
     notableDrops: ['Rune boots', 'Death rune'],
     notes:
         'Barrage greater nechryael in Catacombs for excellent XP. Stack spawns in corner. One of the best barrage tasks.',
@@ -1019,6 +1615,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Brimhaven Dungeon / Forthos Dungeon',
+    fairyRing: 'CKR',
+    travelTips: [
+      'Brimhaven: Fairy ring CKR → run east, or POH Brimhaven portal',
+      'Forthos Dungeon: Xeric\'s talisman → Xeric\'s Glade'
+    ],
     specialItems: ['Anti-dragon shield'],
     gearOverrides: {
       'weapon': [
@@ -1042,6 +1643,7 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     location: 'Lithkren Vault',
+    travelTips: ['Digsite pendant → Lithkren'],
     specialItems: ['Extended super antifire potion'],
     gearOverrides: {
       'weapon': [
@@ -1072,6 +1674,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 72,
     style: SlayerStyle.ranged,
     location: 'Asgarnian Ice Dungeon',
+    fairyRing: 'AIQ',
+    travelTips: [
+      'Fairy ring AIQ → Asgarnian Ice Dungeon entrance',
+      'POH Rimmington portal → run south'
+    ],
     specialItems: ['Elemental shield / Mind shield / Dragonfire shield'],
     gearOverrides: {
       'shield': [
@@ -1097,6 +1704,8 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.barrage,
     canBarrage: true,
     location: 'Smoke Devil Dungeon',
+    fairyRing: 'DLQ',
+    travelTips: ['Fairy ring DLQ → run east to Smoke Devil Dungeon entrance'],
     specialItems: ['Facemask (or Slayer helmet)'],
     alternatives: ['Thermonuclear smoke devil'],
     notableDrops: [
@@ -1113,9 +1722,28 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 63,
     style: SlayerStyle.melee,
     location: 'God Wars Dungeon',
+    travelTips: [
+      'Ghommal\'s hilt teleport (Combat Achievements)',
+      'Trollheim teleport → run north to GWD entrance'
+    ],
     notableDrops: ['Dragon boots (spiritual mages)'],
     notes:
         'Spiritual mages (83 Slayer) drop Dragon boots. Wear God items to avoid aggression.',
+    wikiPath: 'Spiritual_creature',
+  ),
+  SlayerMonster(
+    name: 'Spiritual creatures (prayer)',
+    slayerLevel: 63,
+    style: SlayerStyle.prayer,
+    location: 'God Wars Dungeon',
+    travelTips: [
+      'Ghommal\'s hilt teleport (Combat Achievements)',
+      'Trollheim teleport → run north to GWD entrance'
+    ],
+    specialItems: ['God items for protection'],
+    notableDrops: ['Dragon boots (spiritual mages)'],
+    notes:
+        'Proselyte + protection prayers in GWD. Prayer gear is essential here as you need to pray anyway. Wear a God item to avoid aggression from other factions.',
     wikiPath: 'Spiritual_creature',
   ),
   SlayerMonster(
@@ -1124,8 +1752,27 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Lunar Isle',
+    travelTips: [
+      'Lunar spellbook: Moonclan Teleport',
+      'Seal of passage + boat from Rellekka'
+    ],
     notableDrops: ['Suqah tooth', 'Suqah hide'],
     notes: 'Cannon + melee with protect from magic for fast task.',
+    wikiPath: 'Suqah',
+  ),
+  SlayerMonster(
+    name: 'Suqah (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    canCannon: true,
+    location: 'Lunar Isle',
+    travelTips: [
+      'Lunar spellbook: Moonclan Teleport',
+      'Seal of passage + boat from Rellekka'
+    ],
+    notableDrops: ['Suqah tooth', 'Suqah hide'],
+    notes:
+        'Proselyte + Protect from Magic with cannon. Prayer gear extends trips since you pray the entire task. Cannon speeds it up.',
     wikiPath: 'Suqah',
   ),
 
@@ -1135,6 +1782,7 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.hybrid,
     location: 'Tormented Demon Dungeon',
+    travelTips: ['Lassar Undercity teleport via Ancient spellbook'],
     gearOverrides: {
       'weapon': [
         'Arclight',
@@ -1158,8 +1806,13 @@ const List<SlayerMonster> slayerMonsters = [
     style: SlayerStyle.melee,
     canCannon: true,
     location: 'Trollheim / Mount Quidamortem',
+    travelTips: [
+      'Trollheim teleport → run to troll area',
+      'Jatizso: Fremennik sea boots / Enchanted lyre → boat to Jatizso'
+    ],
     notableDrops: ['Granite shield'],
-    notes: 'Cannon ice trolls on Jatizso for fast task + good prayer XP from bones.',
+    notes:
+        'Cannon ice trolls on Jatizso for fast task + good prayer XP from bones.',
     wikiPath: 'Troll',
   ),
   SlayerMonster(
@@ -1167,6 +1820,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 55,
     style: SlayerStyle.melee,
     location: 'Fremennik Slayer Dungeon',
+    fairyRing: 'AJR',
+    travelTips: [
+      'Fairy ring AJR → Fremennik Slayer Dungeon',
+      'Slayer ring teleport'
+    ],
     specialItems: ['Leaf-bladed weapon required'],
     gearOverrides: {
       'weapon': [
@@ -1185,6 +1843,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.melee,
     location: 'TzHaar City / Fight Cave / Inferno',
+    travelTips: [
+      'Fairy ring BLP → TzHaar City entrance',
+      'Glory teleport → Karamja → run to volcano entrance'
+    ],
+    fairyRing: 'BLP',
     notableDrops: [
       'Fire cape (Jad)',
       'Infernal cape (Inferno)',
@@ -1201,6 +1864,7 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.melee,
     location: 'Darkmeyer',
+    travelTips: ['Drakan\'s medallion → Darkmeyer'],
     specialItems: ['Blisterwood flail or Ivandis flail'],
     gearOverrides: {
       'weapon': [
@@ -1213,6 +1877,24 @@ const List<SlayerMonster> slayerMonsters = [
         'Kill Vyrewatch Sentinels in Darkmeyer for blood shard drops. Requires Sins of the Father. Blisterwood flail is BiS.',
     wikiPath: 'Vyrewatch_Sentinel',
   ),
+  SlayerMonster(
+    name: 'Vampyres (prayer)',
+    slayerLevel: 1,
+    style: SlayerStyle.prayer,
+    location: 'Darkmeyer',
+    travelTips: ['Drakan\'s medallion → Darkmeyer'],
+    specialItems: ['Blisterwood flail or Ivandis flail'],
+    gearOverrides: {
+      'weapon': [
+        'Blisterwood flail',
+        'Ivandis flail',
+      ],
+    },
+    notableDrops: ['Blood shard'],
+    notes:
+        'Proselyte + Protect from Melee in Darkmeyer. Vyrewatch Sentinels are aggressive — very AFK with prayer gear. Blood shard is ~10M.',
+    wikiPath: 'Vyrewatch_Sentinel',
+  ),
 
   // ── W ──
   SlayerMonster(
@@ -1220,6 +1902,7 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 56,
     style: SlayerStyle.melee,
     location: 'Warped area (Tree Gnome Stronghold)',
+    travelTips: ['Spirit tree → Tree Gnome Stronghold → run to Warped area'],
     notableDrops: ['Warped sceptre'],
     notes: 'Requires completion of The Path of Glouphrie.',
     wikiPath: 'Slayer_task/Warped_creature',
@@ -1229,7 +1912,11 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 1,
     style: SlayerStyle.ranged,
     canCannon: true,
-    location: 'Kraken Cove / Ancient Cavern',
+    location: 'Ancient Cavern',
+    fairyRing: 'BJQ',
+    travelTips: [
+      'Ancient Cavern: Fairy ring BJQ → under Baxtorian Falls',
+    ],
     notableDrops: ['Water orb', 'Mist battlestaff'],
     notes: 'Ranged + cannon for fast task. Weak to ranged attacks.',
     wikiPath: 'Waterfiend',
@@ -1239,6 +1926,12 @@ const List<SlayerMonster> slayerMonsters = [
     slayerLevel: 62,
     style: SlayerStyle.melee,
     location: 'Karuulm Slayer Dungeon',
+    fairyRing: 'CIR',
+    travelTips: [
+      'Fairy ring CIR → climb Mount Karuulm',
+      'Rada\'s blessing 3/4 → Mount Karuulm teleport',
+      'Skills necklace → Farming Guild → run north',
+    ],
     specialItems: ['Boots of stone/brimstone'],
     notableDrops: ['Dragon harpoon', 'Dragon sword', 'Dragon knife'],
     notes:

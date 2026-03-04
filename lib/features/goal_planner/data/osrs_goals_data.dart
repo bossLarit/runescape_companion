@@ -703,7 +703,8 @@ const List<OsrsGoal> osrsGoals = [
       'Farming': 50,
       'Runecraft': 50,
       'Hunter': 50,
-      'Construction': 50
+      'Construction': 50,
+      'Sailing': 50
     },
     priority: 3,
     rewards: 'Solid account foundation, unlocks many quests/diaries',
@@ -737,7 +738,8 @@ const List<OsrsGoal> osrsGoals = [
       'Farming': 70,
       'Runecraft': 70,
       'Hunter': 70,
-      'Construction': 70
+      'Construction': 70,
+      'Sailing': 70
     },
     priority: 3,
     rewards: 'Access to nearly all content in the game',
@@ -1383,6 +1385,7 @@ const List<OsrsGoal> osrsGoals = [
       'Smithing': 99,
       'Runecraft': 99,
       'Construction': 99,
+      'Sailing': 99,
     },
     priority: 2,
     rewards:

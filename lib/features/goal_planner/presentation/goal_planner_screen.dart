@@ -5,6 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../characters/domain/character_model.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
 import '../../characters/presentation/providers/hiscores_provider.dart';
+import '../../best_setup/data/bank_provider.dart';
+import '../../../shared/widgets/bank_import_dialog.dart';
 import '../data/goal_suggestion_engine.dart';
 import '../data/micro_goals_engine.dart';
 import '../data/osrs_goals_data.dart';
@@ -37,12 +39,15 @@ class GoalPlannerScreen extends HookConsumerWidget {
           CharacterType.gim
         }.contains(activeChar.characterType);
 
-    // Auto-lookup hiscores for active character
+    // Auto-lookup hiscores for active character (deferred to avoid
+    // modifying provider state during the build phase)
     useEffect(() {
       if (activeChar != null && !statsLoaded.value) {
-        ref.read(hiscoresProvider.notifier).lookup(activeChar.displayName,
-            mode: _charTypeToMode(activeChar.characterType.name));
-        statsLoaded.value = true;
+        Future(() {
+          ref.read(hiscoresProvider.notifier).lookup(activeChar.displayName,
+              mode: _charTypeToMode(activeChar.characterType.name));
+          statsLoaded.value = true;
+        });
       }
       return null;
     }, [activeChar?.id]);
@@ -180,6 +185,10 @@ class GoalPlannerScreen extends HookConsumerWidget {
                           value: 2,
                           label: Text('Training Plan'),
                           icon: Icon(Icons.trending_up, size: 16)),
+                      ButtonSegment(
+                          value: 3,
+                          label: Text('Road to 99'),
+                          icon: Icon(Icons.route, size: 16)),
                     ],
                     selected: {viewTab.value},
                     onSelectionChanged: (s) {
@@ -263,10 +272,13 @@ class GoalPlannerScreen extends HookConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     if (playerLevels.isNotEmpty)
-                      Text(
-                        'Est. ${MicroGoalsEngine.formatHours(MicroGoalsEngine.hoursToMax(playerLevels, isIronman: isIronman))} to max',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 12),
+                      Flexible(
+                        child: Text(
+                          'Est. ${MicroGoalsEngine.formatHours(MicroGoalsEngine.hoursToMax(playerLevels, isIronman: isIronman))} to max',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     const Spacer(),
                   ],
@@ -274,8 +286,18 @@ class GoalPlannerScreen extends HookConsumerWidget {
               ),
               const SizedBox(height: 12),
 
+              const BankEmptyBanner(),
+
               // ── Content based on tab ──
-              if (viewTab.value == 2)
+              if (viewTab.value == 3)
+                Expanded(
+                  child: _RoadTo99View(
+                    playerLevels: playerLevels,
+                    isIronman: isIronman,
+                    intensityPref: intensityPref.value,
+                  ),
+                )
+              else if (viewTab.value == 2)
                 Expanded(
                   child: _TrainingPlanView(
                     playerLevels: playerLevels,
@@ -584,6 +606,14 @@ class _TrainingPlanView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final savedIds = ref.watch(goalPlannerProvider).savedGoalIds;
     final completedIds = ref.watch(goalPlannerProvider).completedOsrsGoalIds;
+    final bankState = ref.watch(bankProvider);
+    final bankItems = bankState.isLoaded && bankState.itemNames.isNotEmpty
+        ? bankState.itemNames
+        : null;
+    final bankQuantities = bankState.isLoaded && bankState.items.isNotEmpty
+        ? bankState.items
+        : null;
+
     if (playerLevels.isEmpty) {
       return const Center(
         child:
@@ -596,17 +626,20 @@ class _TrainingPlanView extends ConsumerWidget {
       isIronman: isIronman,
       intensityPref: intensityPref,
       limit: 20,
+      bankItems: bankItems,
     );
     final quickWins = MicroGoalsEngine.getQuickWins(
       playerLevels: playerLevels,
       isIronman: isIronman,
       intensityPref: intensityPref,
       maxHours: 5,
+      bankItems: bankItems,
     );
     final sessionGoals = MicroGoalsEngine.generateSessionGoals(
       playerLevels: playerLevels,
       isIronman: isIronman,
       intensityPref: intensityPref,
+      bankItems: bankItems,
     );
 
     return Row(
@@ -618,16 +651,23 @@ class _TrainingPlanView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.auto_awesome, size: 16, color: Color(0xFFD4A017)),
-                  SizedBox(width: 6),
-                  Text('Recommended Next Goals',
+                  const Icon(Icons.auto_awesome,
+                      size: 16, color: Color(0xFFD4A017)),
+                  const SizedBox(width: 6),
+                  const Text('Recommended Next Goals',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFFD4A017),
                       )),
+                  const Spacer(),
+                  // Bank status indicator + import button
+                  _BankStatusChip(
+                    bankState: bankState,
+                    onImport: () => _showBankImportDialog(context),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -641,6 +681,8 @@ class _TrainingPlanView extends ConsumerWidget {
                       goal: g,
                       isSaved: savedIds.contains(tid),
                       isCompleted: completedIds.contains(tid),
+                      bankItems: bankItems,
+                      bankQuantities: bankQuantities,
                       onToggleSaved: () => ref
                           .read(goalPlannerProvider.notifier)
                           .toggleSavedGoal(tid),
@@ -858,12 +900,16 @@ class _MicroGoalTile extends StatelessWidget {
   final MicroGoal goal;
   final bool isSaved;
   final bool isCompleted;
+  final Set<String>? bankItems;
+  final Map<String, int>? bankQuantities;
   final VoidCallback? onToggleSaved;
   final VoidCallback? onToggleComplete;
   const _MicroGoalTile({
     required this.goal,
     this.isSaved = false,
     this.isCompleted = false,
+    this.bankItems,
+    this.bankQuantities,
     this.onToggleSaved,
     this.onToggleComplete,
   });
@@ -871,6 +917,21 @@ class _MicroGoalTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pColor = _priorityToColor(goal.priority);
+    final method = goal.bestMethod;
+    final needsBank = method.needsBankItems;
+    final hasBankData = bankItems != null;
+    final bankOk = !needsBank || !hasBankData || method.bankViable(bankItems!);
+
+    // Quantity checking
+    final int? itemsNeeded =
+        needsBank ? method.itemsNeededForXp(goal.xpNeeded) : null;
+    final int? itemsHave = needsBank && bankQuantities != null
+        ? method.bankQuantityAvailable(bankQuantities!)
+        : null;
+    final bool? hasEnough =
+        needsBank && bankQuantities != null && itemsNeeded != null
+            ? (itemsHave ?? 0) >= itemsNeeded
+            : null;
 
     return Card(
       color: isCompleted ? Colors.green.withValues(alpha: 0.08) : null,
@@ -938,17 +999,54 @@ class _MicroGoalTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis),
                   Row(
                     children: [
-                      const Icon(Icons.speed, size: 10, color: Colors.white38),
+                      Icon(
+                        needsBank && hasBankData
+                            ? (hasEnough == true
+                                ? Icons.check_circle
+                                : bankOk
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.cancel_outlined)
+                            : Icons.speed,
+                        size: 10,
+                        color: needsBank && hasBankData
+                            ? (hasEnough == true
+                                ? const Color(0xFF43A047)
+                                : const Color(0xFFFF9800))
+                            : Colors.white38,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          '${goal.bestMethod.method} — ${_formatXpHr(goal.bestMethod.xpPerHour)}',
-                          style: const TextStyle(
-                              fontSize: 10, color: Colors.white38),
+                          '${method.method} — ${_formatXpHr(method.xpPerHour)}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: needsBank && hasBankData && hasEnough != true
+                                ? const Color(0xFFFF9800).withValues(alpha: 0.7)
+                                : Colors.white38,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      // Quantity indicator: "Have X / Need Y"
+                      if (needsBank &&
+                          hasBankData &&
+                          itemsNeeded != null &&
+                          itemsHave != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          hasEnough == true
+                              ? '${_fmtQty(itemsHave)}/${_fmtQty(itemsNeeded)}'
+                              : '${_fmtQty(itemsHave)}/${_fmtQty(itemsNeeded)}',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: hasEnough == true
+                                ? const Color(0xFF43A047)
+                                : const Color(0xFFFF9800),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -1002,6 +1100,12 @@ class _MicroGoalTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _fmtQty(int qty) {
+    if (qty >= 1000000) return '${(qty / 1000000).toStringAsFixed(1)}M';
+    if (qty >= 1000) return '${(qty / 1000).toStringAsFixed(1)}k';
+    return '$qty';
   }
 
   String _formatXpHr(int xphr) {
@@ -1694,5 +1798,1188 @@ class _GoalDetailPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ─── Bank Status Chip ───────────────────────────────
+
+class _BankStatusChip extends StatelessWidget {
+  final BankState bankState;
+  final VoidCallback onImport;
+  const _BankStatusChip({required this.bankState, required this.onImport});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBank = bankState.isLoaded && bankState.itemNames.isNotEmpty;
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onImport,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: hasBank
+              ? const Color(0xFF43A047).withValues(alpha: 0.12)
+              : const Color(0xFFFF9800).withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: hasBank
+                ? const Color(0xFF43A047).withValues(alpha: 0.25)
+                : const Color(0xFFFF9800).withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasBank ? Icons.inventory_2 : Icons.inventory_2_outlined,
+              size: 13,
+              color: hasBank
+                  ? const Color(0xFF43A047)
+                  : const Color(0xFFFF9800).withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              hasBank
+                  ? 'Bank: ${bankState.itemNames.length} items'
+                  : 'Import Bank',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color:
+                    hasBank ? const Color(0xFF43A047) : const Color(0xFFFF9800),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showBankImportDialog(BuildContext context) {
+  final controller = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (ctx) => Consumer(
+      builder: (context, ref, _) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.inventory_2, size: 20, color: Color(0xFFD4A017)),
+            SizedBox(width: 8),
+            Text('Import Bank'),
+          ],
+        ),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Paste your bank items below. Supports:\n'
+                '  • RuneLite Bank Tags (TSV: id\\tname\\tqty)\n'
+                '  • One item name per line\n'
+                '  • Comma-separated item names',
+                style: TextStyle(fontSize: 12, color: Colors.white54),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                maxLines: 10,
+                decoration: const InputDecoration(
+                  hintText: 'Paste bank items here...',
+                  border: OutlineInputBorder(),
+                ),
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              ),
+              const SizedBox(height: 8),
+              Builder(builder: (context) {
+                final bankState = ref.watch(bankProvider);
+                if (bankState.itemNames.isNotEmpty) {
+                  return Text(
+                    'Currently ${bankState.itemNames.length} items in bank.',
+                    style: const TextStyle(fontSize: 11, color: Colors.white38),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ref.read(bankProvider.notifier).clearBank();
+              Navigator.of(ctx).pop();
+            },
+            child:
+                const Text('Clear Bank', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              final count =
+                  await ref.read(bankProvider.notifier).importFromText(text);
+              if (ctx.mounted) {
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Imported $count items into your bank'),
+                    backgroundColor: const Color(0xFF43A047),
+                  ),
+                );
+              }
+            },
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// ─── Road to 99 View ─────────────────────────────────
+
+class _RoadTo99View extends ConsumerStatefulWidget {
+  final Map<String, int> playerLevels;
+  final bool isIronman;
+  final Intensity intensityPref;
+  const _RoadTo99View({
+    required this.playerLevels,
+    this.isIronman = false,
+    this.intensityPref = Intensity.either,
+  });
+
+  @override
+  ConsumerState<_RoadTo99View> createState() => _RoadTo99ViewState();
+}
+
+class _RoadTo99ViewState extends ConsumerState<_RoadTo99View> {
+  final Map<String, TrainingMethod> _methodOverrides = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final bankState = ref.watch(bankProvider);
+    final bankItems = bankState.isLoaded && bankState.itemNames.isNotEmpty
+        ? bankState.itemNames
+        : null;
+    final bankQuantities = bankState.isLoaded && bankState.items.isNotEmpty
+        ? bankState.items
+        : null;
+
+    if (widget.playerLevels.isEmpty) {
+      return const Center(
+        child:
+            Text('Loading stats...', style: TextStyle(color: Colors.white38)),
+      );
+    }
+
+    final roads = MicroGoalsEngine.generateAllRoadsTo99(
+      playerLevels: widget.playerLevels,
+      isIronman: widget.isIronman,
+      intensityPref: widget.intensityPref,
+      bankItems: bankItems,
+      bankQuantities: bankQuantities,
+    );
+
+    final shoppingList = MicroGoalsEngine.generateShoppingList(
+      playerLevels: widget.playerLevels,
+      isIronman: widget.isIronman,
+      intensityPref: widget.intensityPref,
+      bankItems: bankItems,
+      bankQuantities: bankQuantities,
+      methodOverrides: _methodOverrides.isNotEmpty ? _methodOverrides : null,
+    );
+
+    // Compute total hours accounting for method overrides
+    double totalHours = 0;
+    for (final r in roads) {
+      final override = _methodOverrides[r.skill];
+      if (override != null) {
+        final custom = MicroGoalsEngine.generateRoadTo99WithMethod(
+          skill: r.skill,
+          currentLevel: r.currentLevel,
+          method: override,
+          bankQuantities: bankQuantities,
+        );
+        totalHours += custom.totalHours;
+      } else {
+        totalHours += r.totalHours;
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Left: Skill roadmaps ──
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.route, size: 16, color: Color(0xFFD4A017)),
+                  const SizedBox(width: 6),
+                  const Text('Road to 99 — All Skills',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFD4A017),
+                      )),
+                  const Spacer(),
+                  Text(
+                    '${roads.length} skills remaining  •  ${MicroGoalsEngine.formatHours(totalHours)} total',
+                    style: const TextStyle(fontSize: 11, color: Colors.white38),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: roads.length,
+                  itemBuilder: (_, i) => _RoadSkillCard(
+                    road: roads[i],
+                    isIronman: widget.isIronman,
+                    intensityPref: widget.intensityPref,
+                    bankQuantities: bankQuantities,
+                    selectedMethod: _methodOverrides[roads[i].skill],
+                    onMethodChanged: (method) {
+                      setState(() {
+                        if (method != null) {
+                          _methodOverrides[roads[i].skill] = method;
+                        } else {
+                          _methodOverrides.remove(roads[i].skill);
+                        }
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+
+        // ── Right: Shopping list ──
+        SizedBox(
+          width: 300,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.shopping_cart,
+                      size: 16, color: Color(0xFFFF9800)),
+                  const SizedBox(width: 6),
+                  const Text('Shopping List',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFF9800),
+                      )),
+                  const Spacer(),
+                  _BankStatusChip(
+                    bankState: bankState,
+                    onImport: () => _showBankImportDialog(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Items you need to farm or buy before training',
+                style: TextStyle(fontSize: 10, color: Colors.white30),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: shoppingList.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle,
+                                size: 32,
+                                color: const Color(0xFF43A047)
+                                    .withValues(alpha: 0.3)),
+                            const SizedBox(height: 8),
+                            Text(
+                              bankItems != null
+                                  ? 'No shortages!\nYou have everything you need.'
+                                  : 'Import your bank to see\nwhat items you still need.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: shoppingList.length,
+                        itemBuilder: (_, i) =>
+                            _ShoppingItemCard(item: shoppingList[i]),
+                      ),
+              ),
+              if (shoppingList.isNotEmpty || _methodOverrides.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showSavePlanDialog(
+                      context,
+                      roads,
+                      shoppingList,
+                      totalHours,
+                      bankQuantities,
+                    ),
+                    icon: const Icon(Icons.save, size: 16),
+                    label: const Text('Save Plan',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2D5F27),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSavePlanDialog(
+    BuildContext context,
+    List<RoadTo99> roads,
+    List<ShoppingItem> shoppingList,
+    double totalHours,
+    Map<String, int>? bankQuantities,
+  ) {
+    // Build per-skill summary with overrides
+    final skillSummaries = <_SkillPlanSummary>[];
+    for (final r in roads) {
+      final override = _methodOverrides[r.skill];
+      RoadTo99 display;
+      if (override != null) {
+        display = MicroGoalsEngine.generateRoadTo99WithMethod(
+          skill: r.skill,
+          currentLevel: r.currentLevel,
+          method: override,
+          bankQuantities: bankQuantities,
+        );
+      } else {
+        display = r;
+      }
+      skillSummaries.add(_SkillPlanSummary(
+        skill: r.skill,
+        currentLevel: r.currentLevel,
+        hours: display.totalHours,
+        methodName: override?.method ?? '${r.segments.length} methods (auto)',
+        isCustom: override != null,
+        itemsNeeded: display.segments
+            .where((s) => s.itemsNeeded != null && s.itemsNeeded! > 0)
+            .map((s) =>
+                '${s.method.requiredItems.isNotEmpty ? s.method.requiredItems.first : "items"}: ${_fmtNum(s.itemsNeeded!)}')
+            .toList(),
+      ));
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xFF3B2A14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    const Icon(Icons.route, size: 20, color: Color(0xFFD4A017)),
+                    const SizedBox(width: 10),
+                    const Text('Road to 99 — Plan Summary',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFD4A017),
+                        )),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      color: Colors.white38,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${roads.length} skills  •  ${MicroGoalsEngine.formatHours(totalHours)} total  •  ${_methodOverrides.length} custom methods',
+                  style: const TextStyle(fontSize: 11, color: Colors.white38),
+                ),
+                const Divider(color: Colors.white12, height: 24),
+
+                // Shopping/gathering list
+                if (shoppingList.isNotEmpty) ...[
+                  const Text('🛒 Gathering / Shopping List',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFF9800),
+                      )),
+                  const SizedBox(height: 8),
+                  ...shoppingList.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.circle,
+                                size: 5, color: Color(0xFFFF9800)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.item,
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Text(
+                              'Need ${_fmtNum(item.shortage)}',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xFFFF9800)),
+                            ),
+                            if (item.totalOwned > 0) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '(Have ${_fmtNum(item.totalOwned)}),',
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.white38),
+                              ),
+                            ],
+                          ],
+                        ),
+                      )),
+                  const Divider(color: Colors.white12, height: 20),
+                ],
+
+                // Per-skill breakdown
+                const Text('📋 Per-Skill Breakdown',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFD4A017),
+                    )),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: skillSummaries.length,
+                    itemBuilder: (_, i) {
+                      final s = skillSummaries[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              child: Text('${s.currentLevel}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFD4A017),
+                                  )),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(s.skill,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          )),
+                                      if (s.isCustom) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 4, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2196F3)
+                                                .withValues(alpha: 0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(3),
+                                          ),
+                                          child: const Text('Custom',
+                                              style: TextStyle(
+                                                fontSize: 8,
+                                                color: Color(0xFF2196F3),
+                                              )),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  Text(
+                                    '${s.methodName}  •  ${MicroGoalsEngine.formatHours(s.hours)}',
+                                    style: const TextStyle(
+                                        fontSize: 10, color: Colors.white38),
+                                  ),
+                                  if (s.itemsNeeded.isNotEmpty)
+                                    Text(
+                                      s.itemsNeeded.join(', '),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFFFF9800),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              MicroGoalsEngine.formatHours(s.hours),
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.white54),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _fmtNum(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
+  }
+}
+
+class _SkillPlanSummary {
+  final String skill;
+  final int currentLevel;
+  final double hours;
+  final String methodName;
+  final bool isCustom;
+  final List<String> itemsNeeded;
+
+  const _SkillPlanSummary({
+    required this.skill,
+    required this.currentLevel,
+    required this.hours,
+    required this.methodName,
+    required this.isCustom,
+    required this.itemsNeeded,
+  });
+}
+
+// ─── Road Skill Card ─────────────────────────────────
+
+class _RoadSkillCard extends StatelessWidget {
+  final RoadTo99 road;
+  final bool isIronman;
+  final Intensity intensityPref;
+  final Map<String, int>? bankQuantities;
+  final TrainingMethod? selectedMethod;
+  final ValueChanged<TrainingMethod?> onMethodChanged;
+
+  const _RoadSkillCard({
+    required this.road,
+    this.isIronman = false,
+    this.intensityPref = Intensity.either,
+    this.bankQuantities,
+    this.selectedMethod,
+    required this.onMethodChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasShortage = road.hasShortage;
+
+    // Get all eligible methods for this skill at current level
+    final allMethods = MicroGoalsEngine.getMethodsForSkill(
+      skill: road.skill,
+      currentLevel: road.currentLevel,
+      isIronman: isIronman,
+      intensityPref: intensityPref,
+    );
+
+    // Compute single-method road if a method is selected
+    RoadTo99? customRoad;
+    if (selectedMethod != null) {
+      customRoad = MicroGoalsEngine.generateRoadTo99WithMethod(
+        skill: road.skill,
+        currentLevel: road.currentLevel,
+        method: selectedMethod!,
+        bankQuantities: bankQuantities,
+      );
+    }
+
+    final displayRoad = customRoad ?? road;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Card(
+        color: hasShortage
+            ? const Color(0xFFFF9800).withValues(alpha: 0.04)
+            : null,
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          childrenPadding:
+              const EdgeInsets.only(left: 14, right: 14, bottom: 10),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4A017).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                '${road.currentLevel}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFD4A017),
+                ),
+              ),
+            ),
+          ),
+          title: Row(
+            children: [
+              Text(
+                road.skill,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '→ 99',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.4),
+                ),
+              ),
+              if (selectedMethod != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'Custom',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2196F3),
+                    ),
+                  ),
+                ),
+              ],
+              if (hasShortage && selectedMethod == null) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.warning_amber,
+                    size: 13, color: Color(0xFFFF9800)),
+              ],
+            ],
+          ),
+          subtitle: Text(
+            '${MicroGoalsEngine.formatHours(displayRoad.totalHours)}  •  '
+            '${_fmtXp(displayRoad.totalXp)} XP'
+            '${selectedMethod == null ? "  •  ${road.segments.length} methods" : ""}',
+            style: const TextStyle(fontSize: 10, color: Colors.white38),
+          ),
+          children: [
+            // ── Method picker ──
+            if (allMethods.isNotEmpty) ...[
+              _MethodPicker(
+                methods: allMethods,
+                selectedMethod: selectedMethod,
+                onMethodSelected: (m) => onMethodChanged(m),
+                onClear: () => onMethodChanged(null),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // ── Custom single-method breakdown ──
+            if (selectedMethod != null && customRoad != null) ...[
+              ...customRoad.segments
+                  .map((seg) => _SegmentRow(segment: seg, isCustom: true)),
+            ] else ...[
+              // ── Default auto segments ──
+              ...road.segments.map((seg) => _SegmentRow(segment: seg)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmtXp(int xp) {
+    if (xp >= 1000000) return '${(xp / 1000000).toStringAsFixed(1)}M';
+    if (xp >= 1000) return '${(xp / 1000).toStringAsFixed(0)}k';
+    return '$xp';
+  }
+}
+
+// ─── Method Picker ───────────────────────────────────
+
+class _MethodPicker extends StatelessWidget {
+  final List<TrainingMethod> methods;
+  final TrainingMethod? selectedMethod;
+  final ValueChanged<TrainingMethod> onMethodSelected;
+  final VoidCallback onClear;
+
+  const _MethodPicker({
+    required this.methods,
+    required this.selectedMethod,
+    required this.onMethodSelected,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2196F3).withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: const Color(0xFF2196F3).withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.tune, size: 12, color: Color(0xFF2196F3)),
+              const SizedBox(width: 6),
+              const Text(
+                'Choose a training method to 99:',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2196F3),
+                ),
+              ),
+              const Spacer(),
+              if (selectedMethod != null)
+                GestureDetector(
+                  onTap: onClear,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Auto',
+                      style: TextStyle(fontSize: 9, color: Colors.white38),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: methods.map((m) {
+              final isSelected = selectedMethod == m;
+              return GestureDetector(
+                onTap: () => onMethodSelected(m),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF2196F3).withValues(alpha: 0.2)
+                        : Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF2196F3).withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        m.intensity == Intensity.afk
+                            ? Icons.weekend
+                            : Icons.directions_run,
+                        size: 10,
+                        color: isSelected
+                            ? const Color(0xFF2196F3)
+                            : Colors.white24,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        m.method,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w400,
+                          color: isSelected
+                              ? const Color(0xFF2196F3)
+                              : Colors.white54,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_fmtXpHr(m.xpPerHour)}/hr',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: isSelected
+                              ? const Color(0xFF2196F3).withValues(alpha: 0.7)
+                              : Colors.white24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _fmtXpHr(int xp) {
+    if (xp >= 1000000) return '${(xp / 1000000).toStringAsFixed(1)}M';
+    if (xp >= 1000) return '${(xp / 1000).toStringAsFixed(0)}k';
+    return '$xp';
+  }
+}
+
+// ─── Segment Row ─────────────────────────────────────
+
+class _SegmentRow extends StatelessWidget {
+  final RoadSegment segment;
+  final bool isCustom;
+  const _SegmentRow({required this.segment, this.isCustom = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasShortage =
+        segment.itemsShortage != null && segment.itemsShortage! > 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: hasShortage
+              ? const Color(0xFFFF9800).withValues(alpha: 0.06)
+              : isCustom
+                  ? const Color(0xFF2196F3).withValues(alpha: 0.03)
+                  : Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: hasShortage
+                ? const Color(0xFFFF9800).withValues(alpha: 0.2)
+                : isCustom
+                    ? const Color(0xFF2196F3).withValues(alpha: 0.12)
+                    : Colors.white.withValues(alpha: 0.05),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Level range
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4A017).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${segment.fromLevel} → ${segment.toLevel}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFD4A017),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Method name
+                Expanded(
+                  child: Text(
+                    segment.method.method,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                // Intensity icon
+                Icon(
+                  segment.method.intensity == Intensity.afk
+                      ? Icons.weekend
+                      : Icons.directions_run,
+                  size: 12,
+                  color: Colors.white24,
+                ),
+                const SizedBox(width: 8),
+
+                // Time
+                Text(
+                  MicroGoalsEngine.formatHours(segment.estimatedHours),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: segment.estimatedHours < 5
+                        ? const Color(0xFF43A047)
+                        : segment.estimatedHours < 20
+                            ? const Color(0xFFFF9800)
+                            : Colors.white54,
+                  ),
+                ),
+              ],
+            ),
+
+            // XP info + actions
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Text(
+                    '${_fmtXp(segment.xpNeeded)} XP  •  '
+                    '${_fmtXpHr(segment.method.xpPerHour)}/hr',
+                    style: const TextStyle(fontSize: 10, color: Colors.white30),
+                  ),
+                  if (segment.actionsNeeded != null &&
+                      segment.method.sessionUnit != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        '${_fmtQty(segment.actionsNeeded!)} ${segment.method.sessionUnit}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2196F3),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (segment.method.notes.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        segment.method.notes,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white24,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Resource requirements
+            if (segment.method.needsBankItems) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: hasShortage
+                      ? const Color(0xFFFF9800).withValues(alpha: 0.08)
+                      : const Color(0xFF43A047).withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Icon(
+                      hasShortage ? Icons.warning_amber : Icons.check_circle,
+                      size: 12,
+                      color: hasShortage
+                          ? const Color(0xFFFF9800)
+                          : const Color(0xFF43A047),
+                    ),
+                    Text(
+                      'Needs: ${segment.method.requiredItems.join(", ")}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: hasShortage
+                            ? const Color(0xFFFF9800)
+                            : const Color(0xFF43A047),
+                      ),
+                    ),
+                    if (segment.itemsNeeded != null)
+                      Text(
+                        segment.itemsOwned != null
+                            ? '(have ${_fmtQty(segment.itemsOwned!)} / need ${_fmtQty(segment.itemsNeeded!)})'
+                            : '(need ~${_fmtQty(segment.itemsNeeded!)})',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: hasShortage
+                              ? const Color(0xFFFF9800).withValues(alpha: 0.7)
+                              : Colors.white30,
+                        ),
+                      ),
+                    if (hasShortage)
+                      Text(
+                        'Farm ${_fmtQty(segment.itemsShortage!)} more',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFFF9800),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmtXp(int xp) {
+    if (xp >= 1000000) return '${(xp / 1000000).toStringAsFixed(1)}M';
+    if (xp >= 1000) return '${(xp / 1000).toStringAsFixed(0)}k';
+    return '$xp';
+  }
+
+  String _fmtXpHr(int xp) {
+    if (xp >= 1000000) return '${(xp / 1000000).toStringAsFixed(1)}M';
+    if (xp >= 1000) return '${(xp / 1000).toStringAsFixed(0)}k';
+    return '$xp';
+  }
+
+  String _fmtQty(int qty) {
+    if (qty >= 1000000) return '${(qty / 1000000).toStringAsFixed(1)}M';
+    if (qty >= 1000) return '${(qty / 1000).toStringAsFixed(1)}k';
+    return '$qty';
+  }
+}
+
+// ─── Shopping Item Card ──────────────────────────────
+
+class _ShoppingItemCard extends StatelessWidget {
+  final ShoppingItem item;
+  const _ShoppingItemCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Card(
+        color: const Color(0xFFFF9800).withValues(alpha: 0.06),
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.shopping_bag,
+                      size: 14, color: Color(0xFFFF9800)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      item.item,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFF9800),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE53935).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Need ${_fmtQty(item.shortage)} more',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFE53935),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Text(
+                    'Have ${_fmtQty(item.totalOwned)} / ${_fmtQty(item.totalNeeded)} total',
+                    style: const TextStyle(fontSize: 10, color: Colors.white38),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Used for: ${item.usedBySkills.join(", ")}',
+                style: const TextStyle(fontSize: 9, color: Colors.white24),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _fmtQty(int qty) {
+    if (qty >= 1000000) return '${(qty / 1000000).toStringAsFixed(1)}M';
+    if (qty >= 1000) return '${(qty / 1000).toStringAsFixed(1)}k';
+    return '$qty';
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/design_system/design_system.dart';
+import '../../../core/services/osrs_api_service.dart';
+import '../../../shared/widgets/bank_import_dialog.dart';
 import '../data/bank_provider.dart';
 import '../data/slayer_task_data.dart';
-import '../../../core/services/osrs_api_service.dart';
 
 class SlayerTaskHelper extends HookConsumerWidget {
   const SlayerTaskHelper({super.key});
@@ -25,101 +28,112 @@ class SlayerTaskHelper extends HookConsumerWidget {
           m.alternatives.any((a) => a.toLowerCase().contains(q));
     }).toList();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: [
-        // ── Left: Monster list ──
-        SizedBox(
-          width: 320,
-          child: Column(
-            children: [
-              // Search bar
-              TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search slayer task...',
-                  prefixIcon: const Icon(Icons.search, size: 18),
-                  isDense: true,
-                  suffixIcon: searchQuery.value.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 16),
-                          onPressed: () {
-                            searchController.clear();
-                            searchQuery.value = '';
-                          },
-                        )
-                      : null,
-                ),
-                onChanged: (v) => searchQuery.value = v,
-              ),
-              const SizedBox(height: 8),
-
-              // Monster count
-              Row(
-                children: [
-                  Text(
-                    '${filtered.length} slayer tasks',
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.white38),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Bank: ${bank.itemNames.length} items',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: bank.itemNames.isNotEmpty
-                          ? const Color(0xFFD4A017)
-                          : Colors.white38,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Monster list
-              Expanded(
-                child: ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final monster = filtered[index];
-                    final isSelected =
-                        selectedMonster.value?.name == monster.name;
-                    return _MonsterListTile(
-                      monster: monster,
-                      isSelected: isSelected,
-                      onTap: () => selectedMonster.value = monster,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 16),
-
-        // ── Right: Gear recommendation panel ──
+        const BankEmptyBanner(),
         Expanded(
-          child: selectedMonster.value != null
-              ? _GearRecommendationPanel(
-                  monster: selectedMonster.value!,
-                  bank: bank,
-                  showOnlyOwned: showOnlyOwned.value,
-                  onToggleOwned: (v) => showOnlyOwned.value = v,
-                )
-              : const Center(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Left: Monster list ──
+              SizedBox(
+                width: 320,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.pest_control, size: 48, color: Colors.white12),
-                      SizedBox(height: 12),
-                      Text(
-                        'Select a slayer task to see\nrecommended gear',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white38),
+                      // Search bar
+                      TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search slayer task...',
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          isDense: true,
+                          suffixIcon: searchQuery.value.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 16),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    searchQuery.value = '';
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (v) => searchQuery.value = v,
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Monster count
+                      Row(
+                        children: [
+                          Text(
+                            '${filtered.length} slayer tasks',
+                            style: const TextStyle(
+                                fontSize: 11, color: Colors.white38),
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Bank: ${bank.itemNames.length} items',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: bank.itemNames.isNotEmpty
+                                  ? kGold
+                                  : Colors.white38,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Monster list
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final monster = filtered[index];
+                            final isSelected =
+                                selectedMonster.value?.name == monster.name;
+                            return _MonsterListTile(
+                              monster: monster,
+                              isSelected: isSelected,
+                              onTap: () => selectedMonster.value = monster,
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
                 ),
+              ),
+              const SizedBox(width: 16),
+
+              // ── Right: Gear recommendation panel ──
+              Expanded(
+                child: selectedMonster.value != null
+                    ? _GearRecommendationPanel(
+                        monster: selectedMonster.value!,
+                        bank: bank,
+                        showOnlyOwned: showOnlyOwned.value,
+                        onToggleOwned: (v) => showOnlyOwned.value = v,
+                      )
+                    : const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.pest_control,
+                                size: 48, color: Colors.white12),
+                            SizedBox(height: 12),
+                            Text(
+                              'Select a slayer task to see\nrecommended gear',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white38),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -166,9 +180,8 @@ class _MonsterListTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: monster.slayerLevel > 1
-                          ? styleColor
-                          : Colors.white38,
+                      color:
+                          monster.slayerLevel > 1 ? styleColor : Colors.white38,
                     ),
                   ),
                 ),
@@ -196,15 +209,12 @@ class _MonsterListTile extends StatelessWidget {
                         _StyleBadge(style: monster.style),
                         if (monster.canCannon) ...[
                           const SizedBox(width: 4),
-                          _TagBadge(
-                              label: 'Cannon',
-                              color: const Color(0xFFFF9800)),
+                          _TagBadge(label: 'Cannon', color: kAccentOrange),
                         ],
                         if (monster.canBarrage) ...[
                           const SizedBox(width: 4),
                           _TagBadge(
-                              label: 'Barrage',
-                              color: const Color(0xFF1E88E5)),
+                              label: 'Barrage', color: const Color(0xFF1E88E5)),
                         ],
                       ],
                     ),
@@ -216,8 +226,8 @@ class _MonsterListTile extends StatelessWidget {
               if (monster.specialItems.isNotEmpty)
                 const Tooltip(
                   message: 'Special item required',
-                  child: Icon(Icons.warning_amber,
-                      size: 16, color: Color(0xFFFF9800)),
+                  child:
+                      Icon(Icons.warning_amber, size: 16, color: kAccentOrange),
                 ),
             ],
           ),
@@ -293,7 +303,7 @@ class _GearRecommendationPanel extends StatelessWidget {
                         _InfoChip(
                           icon: Icons.star,
                           label: '${monster.slayerLevel} Slayer',
-                          color: const Color(0xFFD4A017),
+                          color: kGold,
                         ),
                       _InfoChip(
                         icon: Icons.location_on,
@@ -304,7 +314,7 @@ class _GearRecommendationPanel extends StatelessWidget {
                         const _InfoChip(
                           icon: Icons.rocket_launch,
                           label: 'Cannon',
-                          color: Color(0xFFFF9800),
+                          color: kAccentOrange,
                         ),
                       if (monster.canBarrage)
                         const _InfoChip(
@@ -319,24 +329,23 @@ class _GearRecommendationPanel extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                        color: kAccentOrange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color:
-                              const Color(0xFFFF9800).withValues(alpha: 0.3),
+                          color: kAccentOrange.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.warning_amber,
-                              size: 16, color: Color(0xFFFF9800)),
+                              size: 16, color: kAccentOrange),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Required: ${monster.specialItems.join(', ')}',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFFFF9800),
+                                color: kAccentOrange,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -353,6 +362,93 @@ class _GearRecommendationPanel extends StatelessWidget {
                           fontSize: 12, color: Colors.white54, height: 1.4),
                     ),
                   ],
+
+                  // ── Travel tips ──
+                  if (monster.travelTips.isNotEmpty ||
+                      monster.fairyRing != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: kLinkBlue.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: kLinkBlue.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.directions_run,
+                                  size: 14, color: kLinkBlue),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'How to get there',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: kLinkBlue,
+                                ),
+                              ),
+                              if (monster.fairyRing != null) ...[
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: kAccentGreen.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.park,
+                                          size: 11, color: kAccentGreen),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        monster.fairyRing!,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: kAccentGreen,
+                                          fontFamily: 'monospace',
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ...monster.travelTips.map((tip) => Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('• ',
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.white38)),
+                                    Expanded(
+                                      child: Text(
+                                        tip,
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.white54,
+                                            height: 1.3),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -365,8 +461,7 @@ class _GearRecommendationPanel extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: Row(
                 children: [
-                  Icon(Icons.inventory_2,
-                      size: 16, color: styleColor),
+                  Icon(Icons.inventory_2, size: 16, color: styleColor),
                   const SizedBox(width: 6),
                   Text(
                     'You own gear for $ownedSlotCount / ${slots.length} slots',
@@ -374,7 +469,7 @@ class _GearRecommendationPanel extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: ownedSlotCount == slots.length
-                          ? const Color(0xFF43A047)
+                          ? kAccentGreen
                           : styleColor,
                     ),
                   ),
@@ -414,12 +509,10 @@ class _GearRecommendationPanel extends StatelessWidget {
               children: monster.notableDrops
                   .map((d) => Chip(
                         label: Text(d, style: const TextStyle(fontSize: 11)),
-                        backgroundColor:
-                            const Color(0xFFD4A017).withValues(alpha: 0.1),
+                        backgroundColor: kGold.withValues(alpha: 0.1),
                         visualDensity: VisualDensity.compact,
                         side: BorderSide(
-                          color:
-                              const Color(0xFFD4A017).withValues(alpha: 0.3),
+                          color: kGold.withValues(alpha: 0.3),
                         ),
                       ))
                   .toList(),
@@ -438,7 +531,7 @@ class _GearRecommendationPanel extends StatelessWidget {
                   .map((a) => Chip(
                         label: Text(a, style: const TextStyle(fontSize: 11)),
                         avatar: const Icon(Icons.star_outline,
-                            size: 14, color: Color(0xFFD4A017)),
+                            size: 14, color: kGold),
                         backgroundColor: Colors.white.withValues(alpha: 0.05),
                         visualDensity: VisualDensity.compact,
                       ))
@@ -448,21 +541,31 @@ class _GearRecommendationPanel extends StatelessWidget {
 
           // ── Wiki link ──
           const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.open_in_new, size: 14, color: Colors.white38),
-              const SizedBox(width: 6),
-              Expanded(
-                child: SelectableText(
-                  'https://oldschool.runescape.wiki/w/${monster.wikiPath}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF64B5F6),
-                    decoration: TextDecoration.underline,
+          InkWell(
+            borderRadius: BorderRadius.circular(4),
+            onTap: () => launchUrl(
+              Uri.parse(
+                  'https://oldschool.runescape.wiki/w/${monster.wikiPath}'),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.open_in_new, size: 14, color: kLinkBlue),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'View on OSRS Wiki →',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: kLinkBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 24),
         ],
@@ -473,14 +576,14 @@ class _GearRecommendationPanel extends StatelessWidget {
   Widget _sectionHeader(String text, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: const Color(0xFFD4A017)),
+        Icon(icon, size: 14, color: kGold),
         const SizedBox(width: 6),
         Text(
           text,
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: Color(0xFFD4A017),
+            color: kGold,
             letterSpacing: 0.5,
           ),
         ),
@@ -511,9 +614,7 @@ class _GearSlotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayItems = showOnlyOwned
-        ? items
-            .where((i) => bankItems.contains(i.toLowerCase()))
-            .toList()
+        ? items.where((i) => bankItems.contains(i.toLowerCase())).toList()
         : items;
 
     return Padding(
@@ -543,21 +644,21 @@ class _GearSlotCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF43A047).withValues(alpha: 0.15),
+                        color: kAccentGreen.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.check_circle,
-                              size: 12, color: Color(0xFF43A047)),
+                              size: 12, color: kAccentGreen),
                           const SizedBox(width: 4),
                           Text(
                             'Owned',
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF43A047),
+                              color: kAccentGreen,
                             ),
                           ),
                         ],
@@ -572,8 +673,7 @@ class _GearSlotCard extends StatelessWidget {
               ...displayItems.asMap().entries.map((entry) {
                 final rank = entry.key;
                 final item = entry.value;
-                final isOwned =
-                    bankItems.contains(item.toLowerCase());
+                final isOwned = bankItems.contains(item.toLowerCase());
                 final isBestOwned = item == bestOwned;
                 final isTop = rank == 0;
 
@@ -588,9 +688,7 @@ class _GearSlotCard extends StatelessWidget {
                           '${rank + 1}.',
                           style: TextStyle(
                             fontSize: 11,
-                            color: isTop
-                                ? const Color(0xFFD4A017)
-                                : Colors.white30,
+                            color: isTop ? kGold : Colors.white30,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -603,9 +701,8 @@ class _GearSlotCard extends StatelessWidget {
                           margin: const EdgeInsets.only(right: 6),
                           decoration: BoxDecoration(
                             color: isBestOwned
-                                ? const Color(0xFF43A047)
-                                : const Color(0xFF43A047)
-                                    .withValues(alpha: 0.5),
+                                ? kAccentGreen
+                                : kAccentGreen.withValues(alpha: 0.5),
                             shape: BoxShape.circle,
                           ),
                         )
@@ -623,7 +720,7 @@ class _GearSlotCard extends StatelessWidget {
                                     ? FontWeight.w600
                                     : FontWeight.w400,
                             color: isBestOwned
-                                ? const Color(0xFF43A047)
+                                ? kAccentGreen
                                 : isOwned
                                     ? Colors.white
                                     : isTop
@@ -638,7 +735,7 @@ class _GearSlotCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF43A047),
+                            color: kAccentGreen,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -752,12 +849,14 @@ Color _slayerStyleColor(SlayerStyle style) {
     case SlayerStyle.melee:
       return const Color(0xFFE53935);
     case SlayerStyle.ranged:
-      return const Color(0xFF43A047);
+      return kAccentGreen;
     case SlayerStyle.magic:
     case SlayerStyle.barrage:
       return const Color(0xFF1E88E5);
     case SlayerStyle.hybrid:
       return const Color(0xFFAB47BC);
+    case SlayerStyle.prayer:
+      return const Color(0xFFFFD54F);
   }
 }
 
@@ -773,6 +872,8 @@ String _slayerStyleLabel(SlayerStyle style) {
       return 'BARRAGE';
     case SlayerStyle.hybrid:
       return 'HYBRID';
+    case SlayerStyle.prayer:
+      return 'PRAYER';
   }
 }
 

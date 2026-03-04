@@ -19,6 +19,7 @@ class AppConstants {
   static const String wikiSearchHistoryFile = 'wiki_search_history.json';
   static const String bankItemsFile = 'bank_items.json';
   static const String bingoCardsFile = 'bingo_cards.json';
+  static const String gearLoadoutsFile = 'gear_loadouts.json';
 
   // Clipboard auto-clear duration
   static const Duration clipboardClearDuration = Duration(seconds: 30);

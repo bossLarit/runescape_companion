@@ -85,8 +85,11 @@ class GoalsScreen extends HookConsumerWidget {
           children: [
             Row(
               children: [
-                Text('Goals',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Goals',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
                   Container(

@@ -34,11 +34,11 @@ class AppTheme {
     scaffoldBackgroundColor: osrsDarkBrown,
     cardTheme: CardThemeData(
       color: osrsBrown,
-      elevation: 3,
-      shadowColor: Colors.black54,
+      elevation: 2,
+      shadowColor: Colors.black38,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: BorderSide(color: osrsLightBrown.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: osrsLightBrown.withValues(alpha: 0.35)),
       ),
     ),
     appBarTheme: const AppBarTheme(
@@ -53,15 +53,15 @@ class AppTheme {
       labelStyle: TextStyle(color: osrsParchment.withValues(alpha: 0.7)),
       hintStyle: TextStyle(color: osrsParchment.withValues(alpha: 0.4)),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: osrsLightBrown),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: osrsLightBrown.withValues(alpha: 0.6)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: osrsLightBrown),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: osrsLightBrown.withValues(alpha: 0.6)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: osrsGold, width: 1.5),
       ),
     ),
@@ -70,18 +70,18 @@ class AppTheme {
         backgroundColor: osrsDarkGreen,
         foregroundColor: osrsCream,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: osrsGreen.withValues(alpha: 0.5)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        elevation: 2,
+        elevation: 1,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: osrsGold,
         side: const BorderSide(color: osrsGold),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -91,8 +91,8 @@ class AppTheme {
       backgroundColor: osrsMedBrown,
       selectedColor: osrsDarkGreen,
       labelStyle: const TextStyle(color: osrsParchment),
-      side: BorderSide(color: osrsLightBrown.withValues(alpha: 0.5)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      side: BorderSide(color: osrsLightBrown.withValues(alpha: 0.4)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     dividerTheme: DividerThemeData(
       color: osrsLightBrown.withValues(alpha: 0.4),
@@ -101,8 +101,8 @@ class AppTheme {
     dialogTheme: DialogThemeData(
       backgroundColor: osrsBrown,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-        side: const BorderSide(color: osrsLightBrown),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: osrsLightBrown.withValues(alpha: 0.6)),
       ),
       titleTextStyle: const TextStyle(
         color: osrsGold,
@@ -114,16 +114,16 @@ class AppTheme {
       backgroundColor: osrsMedBrown,
       contentTextStyle: const TextStyle(color: osrsCream),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: const BorderSide(color: osrsGold),
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: osrsGold.withValues(alpha: 0.6)),
       ),
       behavior: SnackBarBehavior.floating,
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: osrsBrown,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: const BorderSide(color: osrsLightBrown),
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: osrsLightBrown.withValues(alpha: 0.6)),
       ),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
@@ -133,10 +133,11 @@ class AppTheme {
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
         color: osrsMedBrown,
-        border: Border.all(color: osrsGold),
-        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: osrsGold.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(6),
       ),
       textStyle: const TextStyle(color: osrsCream, fontSize: 12),
+      waitDuration: const Duration(milliseconds: 400),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
@@ -152,7 +153,7 @@ class AppTheme {
           const BorderSide(color: osrsLightBrown),
         ),
         shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     ),

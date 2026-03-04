@@ -57,8 +57,11 @@ class BingoScreen extends HookConsumerWidget {
             // Header
             Row(
               children: [
-                Text('Bingo',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Bingo',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
                   Container(
@@ -740,6 +743,7 @@ const _skillNames = [
   'Runecraft',
   'Hunter',
   'Construction',
+  'Sailing',
 ];
 
 class _NewCardDialog extends HookWidget {

@@ -10,6 +10,9 @@ import '../../../core/widgets/confirm_dialog.dart';
 class CharactersScreen extends HookConsumerWidget {
   const CharactersScreen({super.key});
 
+  static const _gold = Color(0xFFD4A017);
+  static const _parchment = Color(0xFFD2C3A3);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final charactersAsync = ref.watch(charactersProvider);
@@ -22,17 +25,20 @@ class CharactersScreen extends HookConsumerWidget {
           children: [
             Row(
               children: [
-                Text('Characters',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Characters',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 const Spacer(),
                 ElevatedButton.icon(
                   onPressed: () => _showCreateDialog(context, ref),
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add Character'),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Expanded(
               child: charactersAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -43,18 +49,27 @@ class CharactersScreen extends HookConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.people_outline,
-                              size: 64, color: Colors.white24),
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: _gold.withValues(alpha: 0.06),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.person_add_outlined,
+                                size: 36, color: Colors.white12),
+                          ),
                           const SizedBox(height: 16),
                           Text('No characters yet',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(color: Colors.white54)),
-                          const SizedBox(height: 8),
-                          const Text(
-                              'Create your first character to get started',
-                              style: TextStyle(color: Colors.white38)),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _parchment.withValues(alpha: 0.5))),
+                          const SizedBox(height: 6),
+                          Text('Create your first character to get started',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: _parchment.withValues(alpha: 0.3))),
                         ],
                       ),
                     );
@@ -64,8 +79,8 @@ class CharactersScreen extends HookConsumerWidget {
                         const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 400,
                       childAspectRatio: 1.3,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
                     ),
                     itemCount: characters.length,
                     itemBuilder: (context, index) =>

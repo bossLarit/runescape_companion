@@ -4,12 +4,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../config/environment.dart';
 import '../constants/app_constants.dart';
+import '../design_system/design_system.dart';
 
-const _sidebarWidth = 230.0;
-const _accentColor = Color(0xFFD4A017); // OSRS gold
-const _sidebarBg = Color(0xFF1E1408); // Darkest brown
-const _hoverColor = Color(0xFF3B2A14); // Brown hover
-const _selectedBg = Color(0xFF2D5F27); // Dark green selected
+const _sidebarWidth = 240.0;
+const _accentColor = kGold;
+const _sidebarBg = Color(0xFF17100A);
+const _hoverColor = Color(0xFF2E2010);
+const _selectedBg = Color(0xFF1A2E14);
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -111,6 +112,21 @@ class AppShell extends ConsumerWidget {
           label: 'Dry Calculator',
           path: '/dry-calc'),
       _NavItem(
+          icon: Icons.trending_down_outlined,
+          selectedIcon: Icons.trending_down,
+          label: 'Dry Streak Tracker',
+          path: '/dry-streak'),
+      _NavItem(
+          icon: Icons.pets_outlined,
+          selectedIcon: Icons.pets,
+          label: 'Pet Hunter',
+          path: '/pet-hunter'),
+      _NavItem(
+          icon: Icons.handyman_outlined,
+          selectedIcon: Icons.handyman,
+          label: 'Item Lookup',
+          path: '/item-lookup'),
+      _NavItem(
           icon: Icons.timer_outlined,
           selectedIcon: Icons.timer,
           label: 'Daily Tasks',
@@ -120,6 +136,13 @@ class AppShell extends ConsumerWidget {
           selectedIcon: Icons.travel_explore,
           label: 'Wiki Search',
           path: '/wiki'),
+    ]),
+    _NavSection(header: 'IRONMAN', items: [
+      _NavItem(
+          icon: Icons.account_tree_outlined,
+          selectedIcon: Icons.account_tree,
+          label: 'Supply Chain',
+          path: '/ironman-supply'),
     ]),
     _NavSection(header: null, items: [
       _NavItem(
@@ -144,10 +167,12 @@ class AppShell extends ConsumerWidget {
         children: [
           Container(
             width: _sidebarWidth,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _sidebarBg,
-              border:
-                  Border(right: BorderSide(color: Color(0xFF5C4529), width: 1)),
+              border: Border(
+                right: BorderSide(
+                    color: const Color(0xFF3B2A14).withValues(alpha: 0.6)),
+              ),
             ),
             child: Column(
               children: [
@@ -167,14 +192,7 @@ class AppShell extends ConsumerWidget {
                             onTap: () => context.go(item.path),
                           ),
                         if (section != _sections.last)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Divider(
-                                color: const Color(0xFF5C4529)
-                                    .withValues(alpha: 0.4),
-                                height: 1,
-                                thickness: 1),
-                          ),
+                          const SizedBox(height: 4),
                       ],
                     ],
                   ),
@@ -360,15 +378,28 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFFD4A017).withValues(alpha: 0.35),
-          letterSpacing: 1.8,
-        ),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 6),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 10,
+            decoration: BoxDecoration(
+              color: _accentColor.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: _accentColor.withValues(alpha: 0.4),
+              letterSpacing: 2.0,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -393,7 +424,7 @@ class _NavTileState extends State<_NavTile> {
     final isSelected = widget.isSelected;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: 1),
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovering = true),
         onExit: (_) => setState(() => _hovering = false),
@@ -402,7 +433,7 @@ class _NavTileState extends State<_NavTile> {
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
               color: isSelected
                   ? _selectedBg
@@ -410,24 +441,38 @@ class _NavTileState extends State<_NavTile> {
                       ? _hoverColor
                       : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
-              border: isSelected
-                  ? Border.all(
-                      color: const Color(0xFF3B8132).withValues(alpha: 0.5),
-                      width: 1)
-                  : null,
             ),
             child: Row(
               children: [
+                // Gold accent bar for selected
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 3,
+                  height: isSelected ? 18 : 0,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? _accentColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: _accentColor.withValues(alpha: 0.4),
+                              blurRadius: 6,
+                            )
+                          ]
+                        : null,
+                  ),
+                ),
                 Icon(
                   isSelected ? widget.item.selectedIcon : widget.item.icon,
-                  size: 18,
+                  size: 17,
                   color: isSelected
                       ? _accentColor
                       : _hovering
-                          ? Colors.white70
-                          : Colors.white38,
+                          ? const Color(0xFFD2C3A3)
+                          : const Color(0xFF8A7560),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     widget.item.label,
@@ -436,22 +481,13 @@ class _NavTileState extends State<_NavTile> {
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w400,
                       color: isSelected
-                          ? Colors.white
+                          ? const Color(0xFFF5E6C8)
                           : _hovering
-                              ? Colors.white70
-                              : Colors.white54,
+                              ? const Color(0xFFD2C3A3)
+                              : const Color(0xFF8A7560),
                     ),
                   ),
                 ),
-                if (isSelected)
-                  Container(
-                    width: 4,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: _accentColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
               ],
             ),
           ),

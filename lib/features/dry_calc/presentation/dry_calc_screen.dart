@@ -40,8 +40,11 @@ class DryCalcScreen extends HookConsumerWidget {
             // Header
             Row(
               children: [
-                Text('Drop Rate Calculator',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Drop Rate Calculator',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 const SizedBox(width: 12),
                 Container(
                   padding:

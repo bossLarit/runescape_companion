@@ -10,6 +10,10 @@ import '../../../core/widgets/confirm_dialog.dart';
 class SessionsScreen extends HookConsumerWidget {
   const SessionsScreen({super.key});
 
+  static const _gold = Color(0xFFD4A017);
+  static const _cream = Color(0xFFF5E6C8);
+  static const _parchment = Color(0xFFD2C3A3);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeChar = ref.watch(activeCharacterProvider);
@@ -18,6 +22,7 @@ class SessionsScreen extends HookConsumerWidget {
 
     final sorted = [...sessions]
       ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    final history = sorted.where((s) => !s.isActive).toList();
 
     return Scaffold(
       body: Padding(
@@ -25,22 +30,49 @@ class SessionsScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Header ──
             Row(
               children: [
-                Text('Sessions',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Sessions',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
-                  Chip(label: Text(activeChar.displayName)),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _gold.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person,
+                            size: 13, color: _gold.withValues(alpha: 0.7)),
+                        const SizedBox(width: 5),
+                        Text(activeChar.displayName,
+                            style: const TextStyle(
+                                color: _gold,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
                 ],
                 const Spacer(),
                 if (activeSession != null)
                   ElevatedButton.icon(
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB33831),
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: () =>
                         _showStopDialog(context, ref, activeSession),
-                    icon: const Icon(Icons.stop),
+                    icon: const Icon(Icons.stop, size: 18),
                     label: const Text('Stop Session'),
                   )
                 else
@@ -48,78 +80,231 @@ class SessionsScreen extends HookConsumerWidget {
                     onPressed: activeChar == null
                         ? null
                         : () => _startSession(context, ref, activeChar.id),
-                    icon: const Icon(Icons.play_arrow),
+                    icon: const Icon(Icons.play_arrow, size: 18),
                     label: const Text('Start Session'),
                   ),
               ],
             ),
+
+            // ── Active session banner ──
             if (activeSession != null) ...[
               const SizedBox(height: 16),
-              Card(
-                color: Colors.green.withValues(alpha: 0.1),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.circle, color: Colors.green, size: 12),
-                      const SizedBox(width: 8),
-                      Text('Active: ${activeSession.type.name}',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [
+                    const Color(0xFF1B3A1B).withValues(alpha: 0.7),
+                    const Color(0xFF2D5F27).withValues(alpha: 0.4),
+                  ]),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFF43A047).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF43A047),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                              color: const Color(0xFF43A047)
+                                  .withValues(alpha: 0.5),
+                              blurRadius: 6)
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Active',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: _cream)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(activeSession.type.name,
+                          style: TextStyle(
+                              color: _parchment.withValues(alpha: 0.7),
+                              fontSize: 12)),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(Icons.schedule,
+                        size: 13, color: _parchment.withValues(alpha: 0.4)),
+                    const SizedBox(width: 4),
+                    Text(
+                        'Started ${DateFormat.Hm().format(activeSession.startTime)}',
+                        style: TextStyle(
+                            color: _parchment.withValues(alpha: 0.5),
+                            fontSize: 12)),
+                    if (activeSession.notes.isNotEmpty) ...[
                       const SizedBox(width: 16),
-                      Text(
-                          'Started ${DateFormat.Hm().format(activeSession.startTime)}'),
-                      if (activeSession.notes.isNotEmpty) ...[
-                        const SizedBox(width: 16),
-                        Text(activeSession.notes,
-                            style: const TextStyle(color: Colors.white54)),
-                      ],
+                      Expanded(
+                        child: Text(activeSession.notes,
+                            style: TextStyle(
+                                color: _parchment.withValues(alpha: 0.4),
+                                fontSize: 12),
+                            overflow: TextOverflow.ellipsis),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ],
-            const SizedBox(height: 24),
-            Text('History', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 20),
+
+            // ── History ──
+            Row(
+              children: [
+                Icon(Icons.history,
+                    size: 16, color: _gold.withValues(alpha: 0.6)),
+                const SizedBox(width: 8),
+                Text('History',
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _cream.withValues(alpha: 0.8))),
+                const SizedBox(width: 8),
+                Text('${history.length} sessions',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: _parchment.withValues(alpha: 0.4))),
+              ],
+            ),
             const SizedBox(height: 8),
             Expanded(
-              child: sorted.where((s) => !s.isActive).isEmpty
+              child: history.isEmpty
                   ? Center(
-                      child: Text(
-                          activeChar == null
-                              ? 'Create a character in the Characters tab to start sessions'
-                              : 'No session history yet',
-                          style: const TextStyle(color: Colors.white54)))
-                  : ListView.builder(
-                      itemCount: sorted.where((s) => !s.isActive).length,
-                      itemBuilder: (context, index) {
-                        final session =
-                            sorted.where((s) => !s.isActive).toList()[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: Icon(_sessionIcon(session.type)),
-                            title: Text(
-                                '${session.type.name} - ${session.durationFormatted}'),
-                            subtitle: Text(
-                              '${DateFormat.yMd().add_Hm().format(session.startTime)}'
-                              '${session.xpGained > 0 ? ' | XP: ${session.xpGained.toStringAsFixed(0)}' : ''}'
-                              '${session.lootValue > 0 ? ' | GP: ${session.lootValue.toStringAsFixed(0)}' : ''}'
-                              '${session.killCount > 0 ? ' | KC: ${session.killCount}' : ''}',
-                              style: const TextStyle(fontSize: 12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: _gold.withValues(alpha: 0.06),
+                              shape: BoxShape.circle,
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20),
-                              onPressed: () async {
-                                final confirmed = await showConfirmDialog(
-                                    context,
-                                    title: 'Delete Session',
-                                    message: 'Delete this session?');
-                                if (confirmed) {
-                                  ref
-                                      .read(sessionsProvider.notifier)
-                                      .delete(session.id);
-                                }
-                              },
+                            child: const Icon(Icons.play_circle_outline,
+                                size: 32, color: Colors.white12),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                              activeChar == null
+                                  ? 'Create a character to start sessions'
+                                  : 'No session history yet',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: _parchment.withValues(alpha: 0.4))),
+                          const SizedBox(height: 4),
+                          Text('Start a session to track your progress',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: _parchment.withValues(alpha: 0.25))),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: history.length,
+                      itemBuilder: (context, index) {
+                        final session = history[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: _gold.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(_sessionIcon(session.type),
+                                      size: 18,
+                                      color: _gold.withValues(alpha: 0.6)),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(session.type.name,
+                                              style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: _cream)),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF42A5F5)
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                                session.durationFormatted,
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFF42A5F5))),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        [
+                                          DateFormat.yMd()
+                                              .add_Hm()
+                                              .format(session.startTime),
+                                          if (session.xpGained > 0)
+                                            'XP: ${session.xpGained.toStringAsFixed(0)}',
+                                          if (session.lootValue > 0)
+                                            'GP: ${session.lootValue.toStringAsFixed(0)}',
+                                          if (session.killCount > 0)
+                                            'KC: ${session.killCount}',
+                                        ].join(' · '),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: _parchment.withValues(
+                                                alpha: 0.4)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete_outline,
+                                      size: 18,
+                                      color: _parchment.withValues(alpha: 0.3)),
+                                  onPressed: () async {
+                                    final confirmed = await showConfirmDialog(
+                                        context,
+                                        title: 'Delete Session',
+                                        message: 'Delete this session?');
+                                    if (confirmed) {
+                                      ref
+                                          .read(sessionsProvider.notifier)
+                                          .delete(session.id);
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                         );

@@ -85,6 +85,7 @@ class MicroGoalsEngine {
     Intensity intensityPref = Intensity.either,
     Set<String>? focusSkills,
     int maxGoalsPerSkill = 2,
+    Set<String>? bankItems,
   }) {
     final goals = <MicroGoal>[];
 
@@ -102,7 +103,7 @@ class MicroGoalsEngine {
 
       for (final targetLevel in milestones) {
         final method = info.bestMethodAt(currentLevel,
-            isIronman: isIronman, pref: intensityPref);
+            isIronman: isIronman, pref: intensityPref, bankItems: bankItems);
         if (method == null) continue;
 
         final xpNeeded = xpBetween(currentLevel, targetLevel);
@@ -146,12 +147,14 @@ class MicroGoalsEngine {
     bool isIronman = false,
     Intensity intensityPref = Intensity.either,
     int limit = 15,
+    Set<String>? bankItems,
   }) {
     final all = generateGoals(
       playerLevels: playerLevels,
       isIronman: isIronman,
       intensityPref: intensityPref,
       maxGoalsPerSkill: 1,
+      bankItems: bankItems,
     );
     return all.take(limit).toList();
   }
@@ -162,12 +165,14 @@ class MicroGoalsEngine {
     bool isIronman = false,
     Intensity intensityPref = Intensity.either,
     double maxHours = 5.0,
+    Set<String>? bankItems,
   }) {
     final all = generateGoals(
       playerLevels: playerLevels,
       isIronman: isIronman,
       intensityPref: intensityPref,
       maxGoalsPerSkill: 3,
+      bankItems: bankItems,
     );
     return all
         .where((g) => g.estimatedHours <= maxHours && g.estimatedHours > 0)
@@ -181,6 +186,7 @@ class MicroGoalsEngine {
     bool isIronman = false,
     Intensity intensityPref = Intensity.either,
     String? forSkill,
+    Set<String>? bankItems,
   }) {
     final sessions = <SessionGoal>[];
 
@@ -194,7 +200,7 @@ class MicroGoalsEngine {
       if (currentLevel >= 99) continue;
 
       final methods = info.allMethodsAt(currentLevel,
-          isIronman: isIronman, pref: intensityPref);
+          isIronman: isIronman, pref: intensityPref, bankItems: bankItems);
 
       for (final m in methods) {
         if (m.xpPerHour <= 0) continue;
@@ -291,7 +297,7 @@ class MicroGoalsEngine {
 
   /// Calculate total time to max from current levels.
   static double hoursToMax(Map<String, int> playerLevels,
-      {bool isIronman = false}) {
+      {bool isIronman = false, Set<String>? bankItems}) {
     double total = 0;
     for (final entry in trainingData.entries) {
       final skill = entry.key;
@@ -299,7 +305,8 @@ class MicroGoalsEngine {
       final current = playerLevels[skill] ?? 1;
       if (current >= 99) continue;
 
-      final method = info.bestMethodAt(current, isIronman: isIronman);
+      final method = info.bestMethodAt(current,
+          isIronman: isIronman, bankItems: bankItems);
       if (method == null || method.xpPerHour == 0) continue;
 
       final xpNeeded = xpBetween(current, 99);
@@ -316,4 +323,294 @@ class MicroGoalsEngine {
     final days = hours / 24;
     return '${days.toStringAsFixed(1)} days';
   }
+
+  /// Generate a full "Road to 99" plan for a skill, broken into method segments.
+  /// Shows exactly what to do at each level bracket and what resources are needed.
+  static RoadTo99 generateRoadTo99({
+    required String skill,
+    required int currentLevel,
+    bool isIronman = false,
+    Intensity intensityPref = Intensity.either,
+    Set<String>? bankItems,
+    Map<String, int>? bankQuantities,
+  }) {
+    final info = trainingData[skill];
+    if (info == null || currentLevel >= 99) {
+      return RoadTo99(skill: skill, currentLevel: currentLevel, segments: []);
+    }
+
+    final segments = <RoadSegment>[];
+    int level = currentLevel;
+
+    while (level < 99) {
+      final method = info.bestMethodAt(level,
+          isIronman: isIronman, pref: intensityPref, bankItems: bankItems);
+      if (method == null) break;
+
+      // Determine how far this method takes us
+      final endLevel = min(method.maxLevel + 1, 99);
+      final xpNeeded = xpBetween(level, endLevel);
+      final hours = method.xpPerHour > 0 ? xpNeeded / method.xpPerHour : 0.0;
+
+      // Resource calculation
+      int? itemsNeeded;
+      int? itemsOwned;
+      int? itemsShortage;
+      if (method.needsBankItems && method.xpPerAction != null) {
+        itemsNeeded = method.itemsNeededForXp(xpNeeded);
+        if (bankQuantities != null) {
+          itemsOwned = method.bankQuantityAvailable(bankQuantities);
+          if (itemsNeeded != null && itemsOwned < itemsNeeded) {
+            itemsShortage = itemsNeeded - itemsOwned;
+          }
+        }
+      }
+
+      segments.add(RoadSegment(
+        fromLevel: level,
+        toLevel: endLevel,
+        method: method,
+        xpNeeded: xpNeeded,
+        estimatedHours: hours,
+        itemsNeeded: itemsNeeded,
+        itemsOwned: itemsOwned,
+        itemsShortage: itemsShortage,
+      ));
+
+      if (endLevel <= level) break; // safety
+      level = endLevel;
+    }
+
+    return RoadTo99(
+      skill: skill,
+      currentLevel: currentLevel,
+      segments: segments,
+    );
+  }
+
+  /// Generate a Road to 99 using a single chosen training method.
+  /// Shows exactly how much you need (time, items, actions) with that method.
+  static RoadTo99 generateRoadTo99WithMethod({
+    required String skill,
+    required int currentLevel,
+    required TrainingMethod method,
+    Map<String, int>? bankQuantities,
+  }) {
+    if (currentLevel >= 99 || method.xpPerHour <= 0) {
+      return RoadTo99(skill: skill, currentLevel: currentLevel, segments: []);
+    }
+
+    final xpNeeded = xpBetween(currentLevel, 99);
+    final hours = xpNeeded / method.xpPerHour;
+
+    int? itemsNeeded;
+    int? itemsOwned;
+    int? itemsShortage;
+    if (method.needsBankItems && method.xpPerAction != null) {
+      itemsNeeded = method.itemsNeededForXp(xpNeeded);
+      if (bankQuantities != null) {
+        itemsOwned = method.bankQuantityAvailable(bankQuantities);
+        if (itemsNeeded != null && itemsOwned < itemsNeeded) {
+          itemsShortage = itemsNeeded - itemsOwned;
+        }
+      }
+    }
+
+    int? actionsNeeded;
+    if (method.xpPerAction != null && method.xpPerAction! > 0) {
+      actionsNeeded = (xpNeeded / method.xpPerAction!).ceil();
+    }
+
+    return RoadTo99(
+      skill: skill,
+      currentLevel: currentLevel,
+      segments: [
+        RoadSegment(
+          fromLevel: currentLevel,
+          toLevel: 99,
+          method: method,
+          xpNeeded: xpNeeded,
+          estimatedHours: hours,
+          itemsNeeded: itemsNeeded,
+          itemsOwned: itemsOwned,
+          itemsShortage: itemsShortage,
+          actionsNeeded: actionsNeeded,
+        ),
+      ],
+    );
+  }
+
+  /// Get all eligible training methods for a skill at a given level.
+  static List<TrainingMethod> getMethodsForSkill({
+    required String skill,
+    required int currentLevel,
+    bool isIronman = false,
+    Intensity intensityPref = Intensity.either,
+  }) {
+    final info = trainingData[skill];
+    if (info == null) return [];
+    return info.allMethodsAt(currentLevel,
+        isIronman: isIronman, pref: intensityPref);
+  }
+
+  /// Generate Road to 99 for ALL skills.
+  static List<RoadTo99> generateAllRoadsTo99({
+    required Map<String, int> playerLevels,
+    bool isIronman = false,
+    Intensity intensityPref = Intensity.either,
+    Set<String>? bankItems,
+    Map<String, int>? bankQuantities,
+  }) {
+    final roads = <RoadTo99>[];
+    for (final skill in trainingData.keys) {
+      final current = playerLevels[skill] ?? 1;
+      if (current >= 99) continue;
+      roads.add(generateRoadTo99(
+        skill: skill,
+        currentLevel: current,
+        isIronman: isIronman,
+        intensityPref: intensityPref,
+        bankItems: bankItems,
+        bankQuantities: bankQuantities,
+      ));
+    }
+    // Sort by total hours ascending (quickest to 99 first)
+    roads.sort((a, b) => a.totalHours.compareTo(b.totalHours));
+    return roads;
+  }
+
+  /// Aggregate a "shopping list" of all items needed across all skills.
+  /// [methodOverrides] maps skill name → user-selected TrainingMethod.
+  /// When present, that skill uses the override instead of auto-best.
+  static List<ShoppingItem> generateShoppingList({
+    required Map<String, int> playerLevels,
+    bool isIronman = false,
+    Intensity intensityPref = Intensity.either,
+    Set<String>? bankItems,
+    Map<String, int>? bankQuantities,
+    Map<String, TrainingMethod>? methodOverrides,
+  }) {
+    final itemMap = <String, _ShopAccum>{};
+
+    // Build roads, substituting overrides where the user picked a method
+    final roads = <RoadTo99>[];
+    for (final skill in trainingData.keys) {
+      final current = playerLevels[skill] ?? 1;
+      if (current >= 99) continue;
+
+      final override = methodOverrides?[skill];
+      if (override != null) {
+        roads.add(generateRoadTo99WithMethod(
+          skill: skill,
+          currentLevel: current,
+          method: override,
+          bankQuantities: bankQuantities,
+        ));
+      } else {
+        roads.add(generateRoadTo99(
+          skill: skill,
+          currentLevel: current,
+          isIronman: isIronman,
+          intensityPref: intensityPref,
+          bankItems: bankItems,
+          bankQuantities: bankQuantities,
+        ));
+      }
+    }
+
+    for (final road in roads) {
+      for (final seg in road.segments) {
+        if (!seg.method.needsBankItems) continue;
+        if (seg.itemsNeeded == null || seg.itemsNeeded! <= 0) continue;
+
+        final keyword = seg.method.requiredItems.first;
+        final accum =
+            itemMap.putIfAbsent(keyword, () => _ShopAccum(keyword, 0, 0, []));
+        accum.totalNeeded += seg.itemsNeeded!;
+        accum.totalOwned = seg.itemsOwned ?? 0;
+        accum.skills.add('${road.skill} (${seg.fromLevel}-${seg.toLevel})');
+      }
+    }
+
+    return itemMap.values
+        .map((a) => ShoppingItem(
+              item: a.item,
+              totalNeeded: a.totalNeeded,
+              totalOwned: a.totalOwned,
+              shortage: max(0, a.totalNeeded - a.totalOwned),
+              usedBySkills: a.skills,
+            ))
+        .where((s) => s.shortage > 0)
+        .toList()
+      ..sort((a, b) => b.shortage.compareTo(a.shortage));
+  }
+}
+
+class _ShopAccum {
+  final String item;
+  int totalNeeded;
+  int totalOwned;
+  final List<String> skills;
+  _ShopAccum(this.item, this.totalNeeded, this.totalOwned, this.skills);
+}
+
+/// Full training roadmap for one skill from current level to 99.
+class RoadTo99 {
+  final String skill;
+  final int currentLevel;
+  final List<RoadSegment> segments;
+
+  const RoadTo99({
+    required this.skill,
+    required this.currentLevel,
+    required this.segments,
+  });
+
+  double get totalHours =>
+      segments.fold(0.0, (sum, s) => sum + s.estimatedHours);
+  int get totalXp => segments.fold(0, (sum, s) => sum + s.xpNeeded);
+  bool get hasShortage =>
+      segments.any((s) => s.itemsShortage != null && s.itemsShortage! > 0);
+}
+
+/// One segment of a Road to 99 — a method used for a level range.
+class RoadSegment {
+  final int fromLevel;
+  final int toLevel;
+  final TrainingMethod method;
+  final int xpNeeded;
+  final double estimatedHours;
+  final int? itemsNeeded;
+  final int? itemsOwned;
+  final int? itemsShortage;
+  final int? actionsNeeded;
+
+  const RoadSegment({
+    required this.fromLevel,
+    required this.toLevel,
+    required this.method,
+    required this.xpNeeded,
+    required this.estimatedHours,
+    this.itemsNeeded,
+    this.itemsOwned,
+    this.itemsShortage,
+    this.actionsNeeded,
+  });
+}
+
+/// An item in the aggregated shopping list.
+class ShoppingItem {
+  final String item;
+  final int totalNeeded;
+  final int totalOwned;
+  final int shortage;
+  final List<String> usedBySkills;
+
+  const ShoppingItem({
+    required this.item,
+    required this.totalNeeded,
+    required this.totalOwned,
+    required this.shortage,
+    required this.usedBySkills,
+  });
 }

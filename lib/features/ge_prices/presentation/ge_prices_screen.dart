@@ -33,9 +33,14 @@ class GePricesScreen extends HookConsumerWidget {
           children: [
             Row(
               children: [
-                Text('GE Price Checker', style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('GE Price Checker',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 const SizedBox(width: 12),
-                const Text('Live from OSRS Wiki', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                const Text('Live from OSRS Wiki',
+                    style: TextStyle(color: Colors.white38, fontSize: 12)),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -54,7 +59,8 @@ class GePricesScreen extends HookConsumerWidget {
                   width: 350,
                   child: TextField(
                     decoration: const InputDecoration(
-                      hintText: 'Search items (e.g. "abyssal whip", "dragon")...',
+                      hintText:
+                          'Search items (e.g. "abyssal whip", "dragon")...',
                       prefixIcon: Icon(Icons.search),
                       isDense: true,
                     ),
@@ -67,8 +73,10 @@ class GePricesScreen extends HookConsumerWidget {
                   value: sortBy.value,
                   items: const [
                     DropdownMenuItem(value: 'name', child: Text('Name')),
-                    DropdownMenuItem(value: 'price_high', child: Text('Price ↓')),
-                    DropdownMenuItem(value: 'price_low', child: Text('Price ↑')),
+                    DropdownMenuItem(
+                        value: 'price_high', child: Text('Price ↓')),
+                    DropdownMenuItem(
+                        value: 'price_low', child: Text('Price ↑')),
                   ],
                   onChanged: (v) => sortBy.value = v ?? 'name',
                 ),
@@ -84,13 +92,16 @@ class GePricesScreen extends HookConsumerWidget {
             Expanded(
               child: mappingAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Failed to load item data: $e')),
+                error: (e, _) =>
+                    Center(child: Text('Failed to load item data: $e')),
                 data: (mapping) {
                   final prices = pricesAsync.valueOrNull ?? {};
                   var filtered = mapping.where((item) {
                     if (searchQuery.value.length < 2) return false;
                     if (membersOnly.value && !item.members) return false;
-                    return item.name.toLowerCase().contains(searchQuery.value.toLowerCase());
+                    return item.name
+                        .toLowerCase()
+                        .contains(searchQuery.value.toLowerCase());
                   }).toList();
 
                   switch (sortBy.value) {
@@ -115,10 +126,15 @@ class GePricesScreen extends HookConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.monetization_on, size: 48, color: Colors.amber.withValues(alpha: 0.3)),
+                          Icon(Icons.monetization_on,
+                              size: 48,
+                              color: Colors.amber.withValues(alpha: 0.3)),
                           const SizedBox(height: 12),
-                          const Text('Type at least 2 characters to search', style: TextStyle(color: Colors.white54)),
-                          Text('${mapping.length} items loaded', style: const TextStyle(color: Colors.white24, fontSize: 12)),
+                          const Text('Type at least 2 characters to search',
+                              style: TextStyle(color: Colors.white54)),
+                          Text('${mapping.length} items loaded',
+                              style: const TextStyle(
+                                  color: Colors.white24, fontSize: 12)),
                         ],
                       ),
                     );
@@ -132,7 +148,9 @@ class GePricesScreen extends HookConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${filtered.length} results', style: const TextStyle(fontSize: 11, color: Colors.white38)),
+                            Text('${filtered.length} results',
+                                style: const TextStyle(
+                                    fontSize: 11, color: Colors.white38)),
                             const SizedBox(height: 4),
                             Expanded(
                               child: ListView.builder(
@@ -140,23 +158,37 @@ class GePricesScreen extends HookConsumerWidget {
                                 itemBuilder: (_, i) {
                                   final item = filtered[i];
                                   final price = prices[item.id];
-                                  final isSelected = selectedItem.value?.id == item.id;
+                                  final isSelected =
+                                      selectedItem.value?.id == item.id;
                                   return Card(
-                                    color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2) : null,
+                                    color: isSelected
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withValues(alpha: 0.2)
+                                        : null,
                                     margin: const EdgeInsets.only(bottom: 2),
                                     child: ListTile(
                                       dense: true,
-                                      title: Text(item.name, style: const TextStyle(fontSize: 13)),
+                                      title: Text(item.name,
+                                          style: const TextStyle(fontSize: 13)),
                                       subtitle: Text(
                                         item.members ? 'Members' : 'F2P',
-                                        style: const TextStyle(fontSize: 10, color: Colors.white38),
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.white38),
                                       ),
                                       trailing: price != null
                                           ? Text(
                                               _formatGp(price.high),
-                                              style: const TextStyle(color: Colors.amber, fontSize: 13, fontWeight: FontWeight.w600),
+                                              style: const TextStyle(
+                                                  color: Colors.amber,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600),
                                             )
-                                          : const Text('-', style: TextStyle(color: Colors.white38)),
+                                          : const Text('-',
+                                              style: TextStyle(
+                                                  color: Colors.white38)),
                                       onTap: () => selectedItem.value = item,
                                     ),
                                   );
@@ -169,8 +201,12 @@ class GePricesScreen extends HookConsumerWidget {
                       const SizedBox(width: 16),
                       Expanded(
                         child: selectedItem.value != null
-                            ? _ItemDetailPanel(item: selectedItem.value!, price: prices[selectedItem.value!.id])
-                            : const Center(child: Text('Select an item', style: TextStyle(color: Colors.white38))),
+                            ? _ItemDetailPanel(
+                                item: selectedItem.value!,
+                                price: prices[selectedItem.value!.id])
+                            : const Center(
+                                child: Text('Select an item',
+                                    style: TextStyle(color: Colors.white38))),
                       ),
                     ],
                   );
@@ -206,28 +242,38 @@ class _ItemDetailPanel extends StatelessWidget {
           children: [
             Text(item.name, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 4),
-            Text(item.examine, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+            Text(item.examine,
+                style: const TextStyle(color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 4),
             Row(
               children: [
-                Chip(label: Text(item.members ? 'Members' : 'F2P', style: const TextStyle(fontSize: 11))),
+                Chip(
+                    label: Text(item.members ? 'Members' : 'F2P',
+                        style: const TextStyle(fontSize: 11))),
                 const SizedBox(width: 8),
-                Chip(label: Text('ID: ${item.id}', style: const TextStyle(fontSize: 11))),
+                Chip(
+                    label: Text('ID: ${item.id}',
+                        style: const TextStyle(fontSize: 11))),
                 if (item.limit != null) ...[
                   const SizedBox(width: 8),
-                  Chip(label: Text('Buy limit: ${item.limit}', style: const TextStyle(fontSize: 11))),
+                  Chip(
+                      label: Text('Buy limit: ${item.limit}',
+                          style: const TextStyle(fontSize: 11))),
                 ],
               ],
             ),
             const Divider(height: 32),
             if (price != null) ...[
-              Text('Grand Exchange Prices', style: Theme.of(context).textTheme.titleMedium),
+              Text('Grand Exchange Prices',
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _PriceCard('Instant Buy (High)', price!.high, Colors.red[300]!),
+                  _PriceCard(
+                      'Instant Buy (High)', price!.high, Colors.red[300]!),
                   const SizedBox(width: 16),
-                  _PriceCard('Instant Sell (Low)', price!.low, Colors.green[300]!),
+                  _PriceCard(
+                      'Instant Sell (Low)', price!.low, Colors.green[300]!),
                   const SizedBox(width: 16),
                   _PriceCard('Average', price!.avgPrice, Colors.amber),
                 ],
@@ -235,10 +281,12 @@ class _ItemDetailPanel extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _PriceCard('Margin', price!.high - price!.low, Colors.blue[300]!),
+                  _PriceCard(
+                      'Margin', price!.high - price!.low, Colors.blue[300]!),
                   const SizedBox(width: 16),
                   if (item.highalch != null)
-                    _PriceCard('High Alch', item.highalch!, Colors.purple[300]!),
+                    _PriceCard(
+                        'High Alch', item.highalch!, Colors.purple[300]!),
                   if (item.lowalch != null) ...[
                     const SizedBox(width: 16),
                     _PriceCard('Low Alch', item.lowalch!, Colors.purple[200]!),
@@ -252,12 +300,15 @@ class _ItemDetailPanel extends StatelessWidget {
                   '${NumberFormat('#,###').format(item.highalch! - price!.low)} gp (sell)',
                   style: TextStyle(
                     fontSize: 12,
-                    color: (item.highalch! - price!.high) > 0 ? Colors.green : Colors.red,
+                    color: (item.highalch! - price!.high) > 0
+                        ? Colors.green
+                        : Colors.red,
                   ),
                 ),
               ],
             ] else
-              const Text('No price data available', style: TextStyle(color: Colors.white54)),
+              const Text('No price data available',
+                  style: TextStyle(color: Colors.white54)),
           ],
         ),
       ),
@@ -288,7 +339,8 @@ class _PriceCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${NumberFormat('#,###').format(value)} gp',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.bold, color: color),
             ),
           ],
         ),

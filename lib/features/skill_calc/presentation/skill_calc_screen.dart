@@ -142,8 +142,11 @@ class SkillCalcScreen extends HookConsumerWidget {
             // Header
             Row(
               children: [
-                Text('Skill Calculator',
-                    style: Theme.of(context).textTheme.headlineMedium),
+                Flexible(
+                  child: Text('Skill Calculator',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      overflow: TextOverflow.ellipsis),
+                ),
                 if (activeChar != null) ...[
                   const SizedBox(width: 12),
                   Container(
@@ -220,6 +223,10 @@ class _GeneralCalcTab extends HookWidget {
       searchQuery.value = '';
       return true;
     });
+
+    // Rebuild when the user edits either level field
+    useListenable(currentLvlCtrl);
+    useListenable(targetLvlCtrl);
 
     final currentLevel = (int.tryParse(currentLvlCtrl.text) ?? 1).clamp(1, 99);
     final targetLevel =
