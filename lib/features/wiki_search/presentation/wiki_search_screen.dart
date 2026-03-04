@@ -38,9 +38,9 @@ class WikiSearchScreen extends HookConsumerWidget {
     _WikiEntry('Chambers of Xeric', 'boss', 'Chambers_of_Xeric'),
     _WikiEntry('Corporeal Beast', 'boss', 'Corporeal_Beast'),
     _WikiEntry('General Graardor', 'boss', 'General_Graardor'),
-    _WikiEntry("Kree'arra", 'boss', "Kree%27arra"),
+    _WikiEntry("Kree'arra", 'boss', 'Kree%27arra'),
     _WikiEntry('Commander Zilyana', 'boss', 'Commander_Zilyana'),
-    _WikiEntry("K'ril Tsutsaroth", 'boss', "K%27ril_Tsutsaroth"),
+    _WikiEntry("K'ril Tsutsaroth", 'boss', 'K%27ril_Tsutsaroth'),
     _WikiEntry('Giant Mole', 'boss', 'Giant_Mole'),
     _WikiEntry('Kalphite Queen', 'boss', 'Kalphite_Queen'),
     _WikiEntry('King Black Dragon', 'boss', 'King_Black_Dragon'),
@@ -67,7 +67,7 @@ class WikiSearchScreen extends HookConsumerWidget {
     final wikiResults = useState<List<WikiSearchResult>>([]);
     final wikiLoading = useState(false);
 
-    List<_WikiEntry> allEntries = [];
+    final List<_WikiEntry> allEntries = [];
     if (mode.value == 'slayer' || mode.value == 'all') {
       allEntries.addAll(_slayerCreatures);
     }
@@ -105,32 +105,45 @@ class WikiSearchScreen extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'all', label: Text('All')),
-                    ButtonSegment(value: 'slayer', label: Text('Slayer')),
-                    ButtonSegment(value: 'boss', label: Text('Bosses')),
-                    ButtonSegment(value: 'wiki', label: Text('Wiki Search')),
-                  ],
-                  selected: {mode.value},
-                  onSelectionChanged: (v) => mode.value = v.first,
-                ),
-                if (mode.value == 'wiki') ...[
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: searchQuery.value.isEmpty
-                        ? null
-                        : () async {
-                            wikiLoading.value = true;
-                            final api = ref.read(osrsApiServiceProvider);
-                            wikiResults.value = await api
-                                .searchWiki(searchQuery.value, limit: 20);
-                            wikiLoading.value = false;
-                          },
-                    icon: const Icon(Icons.search, size: 16),
-                    label: const Text('Search Wiki'),
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'all', label: Text('All')),
+                            ButtonSegment(
+                                value: 'slayer', label: Text('Slayer')),
+                            ButtonSegment(value: 'boss', label: Text('Bosses')),
+                            ButtonSegment(
+                                value: 'wiki', label: Text('Wiki Search')),
+                          ],
+                          selected: {mode.value},
+                          onSelectionChanged: (v) => mode.value = v.first,
+                        ),
+                        if (mode.value == 'wiki') ...[
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: searchQuery.value.isEmpty
+                                ? null
+                                : () async {
+                                    wikiLoading.value = true;
+                                    final api =
+                                        ref.read(osrsApiServiceProvider);
+                                    wikiResults.value = await api.searchWiki(
+                                        searchQuery.value,
+                                        limit: 20);
+                                    wikiLoading.value = false;
+                                  },
+                            icon: const Icon(Icons.search, size: 16),
+                            label: const Text('Search Wiki'),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ],
             ),
             if (recentSearches.value.isNotEmpty) ...[
@@ -230,14 +243,14 @@ class WikiSearchScreen extends HookConsumerWidget {
       ValueNotifier<List<String>> recentSearches) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (results.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Enter a search term and click "Search Wiki"',
+            Text('Enter a search term and click "Search Wiki"',
                 style: TextStyle(color: Colors.white54)),
-            const SizedBox(height: 8),
-            const Text('Powered by the OSRS Wiki MediaWiki API',
+            SizedBox(height: 8),
+            Text('Powered by the OSRS Wiki MediaWiki API',
                 style: TextStyle(color: Colors.white24, fontSize: 11)),
           ],
         ),

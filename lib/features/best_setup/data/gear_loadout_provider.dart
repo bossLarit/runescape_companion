@@ -259,7 +259,7 @@ class GearLoadoutNotifier extends StateNotifier<GearLoadoutState> {
     if (bankItems.isEmpty) return 0;
 
     // Work on a local copy — only set state once at the end
-    var loadouts = List<GearLoadout>.from(state.loadouts);
+    final loadouts = List<GearLoadout>.from(state.loadouts);
     final newLoadouts = <GearLoadout>[];
     var baseTime = DateTime.now().millisecondsSinceEpoch;
 

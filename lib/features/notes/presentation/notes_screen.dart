@@ -7,6 +7,7 @@ import '../domain/note_model.dart';
 import 'providers/notes_provider.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/screen_header.dart';
 
 class NotesScreen extends HookConsumerWidget {
   const NotesScreen({super.key});
@@ -25,43 +26,10 @@ class NotesScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Text('Notes',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                if (activeChar != null) ...[
-                  const SizedBox(width: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4A017).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color:
-                              const Color(0xFFD4A017).withValues(alpha: 0.2)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.person,
-                            size: 13,
-                            color:
-                                const Color(0xFFD4A017).withValues(alpha: 0.7)),
-                        const SizedBox(width: 5),
-                        Text(activeChar.displayName,
-                            style: const TextStyle(
-                                color: Color(0xFFD4A017),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                ],
-                const Spacer(),
+            ScreenHeader(
+              title: 'Notes',
+              characterName: activeChar?.displayName,
+              actions: [
                 FilterChip(
                   label: const Text('Global Only'),
                   selected: showGlobalOnly.value,
@@ -93,7 +61,7 @@ class NotesScreen extends HookConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('Error: $e')),
                 data: (allNotes) {
-                  var notes = allNotes.where((n) {
+                  final notes = allNotes.where((n) {
                     if (showGlobalOnly.value) return n.isGlobal;
                     if (activeChar != null) {
                       return n.isGlobal || n.characterId == activeChar.id;
@@ -163,7 +131,7 @@ class NotesScreen extends HookConsumerWidget {
                                       if (selectedNote.value?.id == note.id) {
                                         selectedNote.value = null;
                                       }
-                                      ref
+                                      await ref
                                           .read(notesProvider.notifier)
                                           .delete(note.id);
                                     }

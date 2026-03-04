@@ -48,7 +48,7 @@ class GoalSuggestionEngine {
 
       final gaps = <String, SkillGap>{};
       int metCount = 0;
-      int totalReqs = goal.skillRequirements.length;
+      final int totalReqs = goal.skillRequirements.length;
 
       for (final entry in goal.skillRequirements.entries) {
         final skill = entry.key;

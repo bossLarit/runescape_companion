@@ -947,10 +947,10 @@ Future<List<EquipmentItem>> fetchBestInSlot(
   } else {
     final fields = _bucketFields.map((f) => "'$f'").join(',');
     final query = "bucket('infobox_bonuses')"
-        ".select($fields)"
+        '.select($fields)'
         ".where('equipment_slot','$slot')"
-        ".limit(500)"
-        ".run()";
+        '.limit(500)'
+        '.run()';
 
     final uri = Uri.https(
       'oldschool.runescape.wiki',

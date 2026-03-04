@@ -604,7 +604,7 @@ const List<BossEntry> allBosses = [
       'Nightmare staff',
       'Eldritch/Harmonised/Volatile orb'
     ],
-    wikiPath: "The_Nightmare",
+    wikiPath: 'The_Nightmare',
     groupSize: 'Solo/Team',
   ),
   BossEntry(

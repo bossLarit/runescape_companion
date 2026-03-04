@@ -6,6 +6,7 @@ import '../domain/session_model.dart';
 import 'providers/sessions_provider.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/screen_header.dart';
 
 class SessionsScreen extends HookConsumerWidget {
   const SessionsScreen({super.key});
@@ -31,39 +32,10 @@ class SessionsScreen extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header ──
-            Row(
-              children: [
-                Flexible(
-                  child: Text('Sessions',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                if (activeChar != null) ...[
-                  const SizedBox(width: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _gold.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: _gold.withValues(alpha: 0.2)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.person,
-                            size: 13, color: _gold.withValues(alpha: 0.7)),
-                        const SizedBox(width: 5),
-                        Text(activeChar.displayName,
-                            style: const TextStyle(
-                                color: _gold,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                ],
-                const Spacer(),
+            ScreenHeader(
+              title: 'Sessions',
+              characterName: activeChar?.displayName,
+              actions: [
                 if (activeSession != null)
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
@@ -118,7 +90,7 @@ class SessionsScreen extends HookConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text('Active',
+                    const Text('Active',
                         style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
@@ -298,7 +270,7 @@ class SessionsScreen extends HookConsumerWidget {
                                         title: 'Delete Session',
                                         message: 'Delete this session?');
                                     if (confirmed) {
-                                      ref
+                                      await ref
                                           .read(sessionsProvider.notifier)
                                           .delete(session.id);
                                     }

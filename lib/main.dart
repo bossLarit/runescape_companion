@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -10,7 +12,7 @@ void main() async {
 
   await windowManager.ensureInitialized();
   const minSize = Size(1024, 640);
-  windowManager.waitUntilReadyToShow(
+  unawaited(windowManager.waitUntilReadyToShow(
     const WindowOptions(
       minimumSize: minSize,
       size: Size(1280, 800),
@@ -21,7 +23,7 @@ void main() async {
       await windowManager.show();
       await windowManager.focus();
     },
-  );
+  ));
 
   runApp(
     ProviderScope(

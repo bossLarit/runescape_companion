@@ -458,7 +458,7 @@ class _BankManageDialog extends HookConsumerWidget {
                         ),
                       );
                       if (confirmed == true) {
-                        ref.read(bankProvider.notifier).clearBank();
+                        await ref.read(bankProvider.notifier).clearBank();
                       }
                     },
                     icon: const Icon(Icons.delete_outline,

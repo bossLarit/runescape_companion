@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -6,6 +8,7 @@ import 'providers/characters_provider.dart';
 import 'character_form_dialog.dart';
 import 'hiscores_dialog.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/screen_header.dart';
 
 class CharactersScreen extends HookConsumerWidget {
   const CharactersScreen({super.key});
@@ -23,14 +26,9 @@ class CharactersScreen extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Text('Characters',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                const Spacer(),
+            ScreenHeader(
+              title: 'Characters',
+              actions: [
                 ElevatedButton.icon(
                   onPressed: () => _showCreateDialog(context, ref),
                   icon: const Icon(Icons.add, size: 18),
@@ -152,8 +150,8 @@ class _CharacterCard extends HookConsumerWidget {
                         Text(character.displayName,
                             style: Theme.of(context).textTheme.titleMedium),
                         Text(character.characterType.displayName,
-                            style:
-                                TextStyle(color: Colors.white54, fontSize: 12)),
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -172,7 +170,7 @@ class _CharacterCard extends HookConsumerWidget {
                   PopupMenuButton<String>(
                     onSelected: (value) async {
                       if (value == 'lookup') {
-                        showDialog(
+                        unawaited(showDialog(
                           context: context,
                           builder: (_) => HiscoresDialog(
                             initialName: character.displayName,
@@ -185,9 +183,9 @@ class _CharacterCard extends HookConsumerWidget {
                                         ? 'ultimate'
                                         : 'normal',
                           ),
-                        );
+                        ));
                       } else if (value == 'edit') {
-                        showDialog(
+                        unawaited(showDialog(
                           context: context,
                           builder: (context) => CharacterFormDialog(
                             character: character,
@@ -197,7 +195,7 @@ class _CharacterCard extends HookConsumerWidget {
                                   .update(updated);
                             },
                           ),
-                        );
+                        ));
                       } else if (value == 'delete') {
                         final confirmed = await showConfirmDialog(
                           context,
@@ -206,7 +204,7 @@ class _CharacterCard extends HookConsumerWidget {
                               'Delete "${character.displayName}"? This cannot be undone.',
                         );
                         if (confirmed) {
-                          ref
+                          await ref
                               .read(charactersProvider.notifier)
                               .delete(character.id);
                         }
@@ -224,7 +222,7 @@ class _CharacterCard extends HookConsumerWidget {
               ),
               const SizedBox(height: 12),
               if (character.currentGrind.isNotEmpty) ...[
-                Text('Current Grind:',
+                const Text('Current Grind:',
                     style: TextStyle(color: Colors.white38, fontSize: 11)),
                 Text(character.currentGrind,
                     style: const TextStyle(fontSize: 13),
@@ -233,7 +231,7 @@ class _CharacterCard extends HookConsumerWidget {
                 const SizedBox(height: 4),
               ],
               if (character.nextLoginPurpose.isNotEmpty) ...[
-                Text('Next Login:',
+                const Text('Next Login:',
                     style: TextStyle(color: Colors.white38, fontSize: 11)),
                 Text(character.nextLoginPurpose,
                     style: const TextStyle(fontSize: 13),

@@ -244,20 +244,20 @@ class _WelcomeStep extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: kLightBrown.withValues(alpha: 0.2)),
             ),
-            child: Column(
+            child: const Column(
               children: [
                 _FeatureRow(
                     icon: Icons.trending_up,
                     text: 'Track goals, sessions & progress'),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _FeatureRow(
                     icon: Icons.auto_awesome,
                     text: 'Personalized training recommendations'),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _FeatureRow(
                     icon: Icons.calculate,
                     text: 'Skill calcs, GE prices & wiki search'),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _FeatureRow(
                     icon: Icons.lock_outline,
                     text: 'Encrypted vault for account notes'),
@@ -277,7 +277,7 @@ class _WelcomeStep extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Get Started",
+                  Text('Get Started',
                       style:
                           TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                   SizedBox(width: 8),
@@ -543,7 +543,7 @@ class _AccountTypeChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? kDarkGreen : kMedBrown,
@@ -619,24 +619,24 @@ class _ReadyStep extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: kLightBrown.withValues(alpha: 0.2)),
             ),
-            child: Column(
+            child: const Column(
               children: [
                 _QuickTip(
                   icon: Icons.person_search,
                   text: 'Characters → "Lookup Stats" to pull your live levels.',
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _QuickTip(
                   icon: Icons.route,
                   text: 'Goal Planner generates a personalized training plan.',
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _QuickTip(
                   icon: Icons.inventory_2,
                   text:
                       'Import your bank in BiS Gear → Bank for smarter recommendations.',
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _QuickTip(
                   icon: Icons.timer,
                   text:

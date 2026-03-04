@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -284,7 +286,7 @@ class _VaultContentView extends HookConsumerWidget {
                                     message:
                                         'Delete "${selectedEntry.value!.title}"?');
                                 if (confirmed) {
-                                  ref
+                                  await ref
                                       .read(vaultProvider.notifier)
                                       .deleteEntry(selectedEntry.value!.id);
                                   selectedEntry.value = null;
@@ -335,7 +337,7 @@ class _VaultContentView extends HookConsumerWidget {
           await ref.read(vaultProvider.notifier).parseImportFile(path);
 
       if (!context.mounted) return;
-      showDialog(
+      unawaited(showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Import Preview'),
@@ -382,7 +384,7 @@ class _VaultContentView extends HookConsumerWidget {
             ),
           ],
         ),
-      );
+      ));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)

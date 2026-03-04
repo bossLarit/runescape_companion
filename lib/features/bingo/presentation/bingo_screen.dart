@@ -9,6 +9,7 @@ import '../../characters/presentation/providers/hiscores_provider.dart';
 import '../../goal_planner/data/micro_goals_engine.dart';
 import '../domain/bingo_model.dart';
 import 'providers/bingo_provider.dart';
+import '../../../core/widgets/screen_header.dart';
 
 class BingoScreen extends HookConsumerWidget {
   const BingoScreen({super.key});
@@ -55,28 +56,10 @@ class BingoScreen extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Row(
-              children: [
-                Flexible(
-                  child: Text('Bingo',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                if (activeChar != null) ...[
-                  const SizedBox(width: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4A017).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(activeChar.displayName,
-                        style: const TextStyle(
-                            color: Color(0xFFD4A017), fontSize: 12)),
-                  ),
-                ],
-                const Spacer(),
+            ScreenHeader(
+              title: 'Bingo',
+              characterName: activeChar?.displayName,
+              actions: [
                 if (selectedCard != null) ...[
                   // Auto-check from hiscores
                   if (playerLevels.isNotEmpty)

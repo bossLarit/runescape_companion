@@ -209,12 +209,12 @@ class _MonsterListTile extends StatelessWidget {
                         _StyleBadge(style: monster.style),
                         if (monster.canCannon) ...[
                           const SizedBox(width: 4),
-                          _TagBadge(label: 'Cannon', color: kAccentOrange),
+                          const _TagBadge(label: 'Cannon', color: kAccentOrange),
                         ],
                         if (monster.canBarrage) ...[
                           const SizedBox(width: 4),
-                          _TagBadge(
-                              label: 'Barrage', color: const Color(0xFF1E88E5)),
+                          const _TagBadge(
+                              label: 'Barrage', color: Color(0xFF1E88E5)),
                         ],
                       ],
                     ),
@@ -547,16 +547,16 @@ class _GearRecommendationPanel extends StatelessWidget {
               Uri.parse(
                   'https://oldschool.runescape.wiki/w/${monster.wikiPath}'),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.open_in_new, size: 14, color: kLinkBlue),
-                  const SizedBox(width: 6),
+                  Icon(Icons.open_in_new, size: 14, color: kLinkBlue),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'View on OSRS Wiki →',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         color: kLinkBlue,
                         fontWeight: FontWeight.w600,
@@ -647,15 +647,15 @@ class _GearSlotCard extends StatelessWidget {
                         color: kAccentGreen.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.check_circle,
+                          Icon(Icons.check_circle,
                               size: 12, color: kAccentGreen),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             'Owned',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: kAccentGreen,
