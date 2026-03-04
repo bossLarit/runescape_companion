@@ -5,6 +5,9 @@ on:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+" # e.g. v1.2.0 (no suffix = prod)
 
+permissions:
+  contents: write
+
 jobs:
   build-prod:
     runs-on: windows-latest
@@ -16,14 +19,13 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
           channel: "stable"
+
+      - name: Flutter doctor
+        run: flutter doctor -v
 
       - name: Get dependencies
         run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
 
       - name: Build Windows (prod)
         run: flutter build windows --release -t lib/main.dart
