@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -723,6 +724,21 @@ class _BossDetailPanel extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: kGold,
                 side: BorderSide(color: kGold.withValues(alpha: 0.4)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Try in Idle Adventurer
+            OutlinedButton.icon(
+              onPressed: () => context.go('/idle-adventure'),
+              icon: const Icon(Icons.sports_esports, size: 14),
+              label: const Text('Try in Idle Adventurer'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFCE93D8),
+                side: BorderSide(
+                    color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 textStyle: const TextStyle(fontSize: 12),

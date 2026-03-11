@@ -27,8 +27,21 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"          # e.g. v1.2.0
+          $ver = $tag -replace '^v', ''             # 1.2.0
+          $num = "${{ github.run_number }}"
+          echo "BUILD_NAME=$ver"   >> $env:GITHUB_OUTPUT
+          echo "BUILD_NUMBER=$num" >> $env:GITHUB_OUTPUT
+
       - name: Build Windows (prod)
-        run: flutter build windows --release -t lib/main.dart
+        run: >-
+          flutter build windows --release -t lib/main.dart
+          --build-name=${{ steps.version.outputs.BUILD_NAME }}
+          --build-number=${{ steps.version.outputs.BUILD_NUMBER }}
 
       - name: Create ZIP archive
         run: |

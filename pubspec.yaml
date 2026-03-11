@@ -1,7 +1,7 @@
 name: runescape_companion
 description: OSRS Companion Desktop App
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -23,6 +23,7 @@ dependencies:
   file_picker: ^8.1.7
   http: ^1.2.2
   window_manager: ^0.5.1
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:

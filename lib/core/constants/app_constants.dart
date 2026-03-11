@@ -1,8 +1,16 @@
+import 'package:package_info_plus/package_info_plus.dart';
+
 class AppConstants {
   AppConstants._();
 
   static const String appName = 'OSRS Companion';
-  static const String version = '1.0.0';
+  static String version = '1.0.0'; // overwritten at startup
+
+  /// Call once in main() before runApp()
+  static Future<void> init() async {
+    final info = await PackageInfo.fromPlatform();
+    version = info.version;
+  }
 
   // Storage file names
   static const String charactersFile = 'characters.json';

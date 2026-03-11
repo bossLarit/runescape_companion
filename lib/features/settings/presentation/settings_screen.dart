@@ -40,7 +40,7 @@ class SettingsScreen extends HookConsumerWidget {
                     Text('About',
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    const Text('OSRS Companion v${AppConstants.version}'),
+                    Text('OSRS Companion v${AppConstants.version}'),
                     const SizedBox(height: 4),
                     const Text(
                       'A standalone desktop companion app for Old School RuneScape.\n'
@@ -194,9 +194,9 @@ class _UpdateCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text('Updates', style: Theme.of(context).textTheme.titleMedium),
                 const Spacer(),
-                const Text(
+                Text(
                   'v${AppConstants.version}',
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontSize: 12,
                       color: Colors.white38,
                       fontFamily: 'monospace'),
