@@ -30,8 +30,26 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Extract version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $ver = "${{ github.ref_name }}" -replace '^v', ''   # e.g. 1.2.0-rc1
+          } else {
+            # Branch push: read version from pubspec.yaml
+            $line = Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$'
+            $ver = ($line.Matches[0].Groups[1].Value).Split('+')[0].Trim()
+          }
+          $num = "${{ github.run_number }}"
+          echo "BUILD_NAME=$ver"   >> $env:GITHUB_OUTPUT
+          echo "BUILD_NUMBER=$num" >> $env:GITHUB_OUTPUT
+
       - name: Build Windows (qa)
-        run: flutter build windows --release -t lib/main_qa.dart
+        run: >-
+          flutter build windows --release -t lib/main_qa.dart
+          --build-name=${{ steps.version.outputs.BUILD_NAME }}
+          --build-number=${{ steps.version.outputs.BUILD_NUMBER }}
 
       - name: Create ZIP archive
         run: |

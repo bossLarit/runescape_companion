@@ -6,12 +6,15 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
 import 'core/config/environment.dart';
+import 'core/constants/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await windowManager.ensureInitialized();
   const minSize = Size(1024, 640);
+  await AppConstants.init();
+
   unawaited(windowManager.waitUntilReadyToShow(
     const WindowOptions(
       minimumSize: minSize,

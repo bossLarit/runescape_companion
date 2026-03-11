@@ -31,8 +31,21 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Extract version
+        id: version
+        shell: pwsh
+        run: |
+          $line = Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$'
+          $ver = ($line.Matches[0].Groups[1].Value).Split('+')[0].Trim()
+          $num = "${{ github.run_number }}"
+          echo "BUILD_NAME=$ver"   >> $env:GITHUB_OUTPUT
+          echo "BUILD_NUMBER=$num" >> $env:GITHUB_OUTPUT
+
       - name: Build Windows (dev)
-        run: flutter build windows --release -t lib/main_dev.dart
+        run: >-
+          flutter build windows --release -t lib/main_dev.dart
+          --build-name=${{ steps.version.outputs.BUILD_NAME }}
+          --build-number=${{ steps.version.outputs.BUILD_NUMBER }}
 
       - name: Create ZIP archive
         run: |

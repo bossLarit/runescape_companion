@@ -14,6 +14,9 @@ import '../../goal_planner/presentation/providers/goal_planner_provider.dart';
 import '../../goal_planner/data/training_methods_data.dart';
 import '../../goal_planner/data/micro_goals_engine.dart';
 import '../../ironman_supply/data/supply_chain_data.dart';
+import '../../idle_adventure/presentation/providers/idle_game_provider.dart';
+import '../../idle_adventure/data/idle_game_data.dart';
+import '../../idle_adventure/domain/idle_models.dart' hide xpForLevel;
 import 'providers/daily_checklist_provider.dart';
 
 // Local aliases for semantic accent colors used throughout this screen.
@@ -327,6 +330,10 @@ class DashboardScreen extends HookConsumerWidget {
                 ),
               ],
             ),
+
+            // ── Idle Adventurer status ──
+            const SizedBox(height: 14),
+            _IdleAdventurerCard(),
 
             // ── Current grind + Next login ──
             if (activeChar != null &&
@@ -1349,6 +1356,245 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  IDLE ADVENTURER STATUS — quick view of idle game on dashboard
+// ═══════════════════════════════════════════════════════════════════
+
+class _IdleAdventurerCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final game = ref.watch(idleGameProvider);
+    final notifier = ref.read(idleGameProvider.notifier);
+    final monster = getMonster(game.monsterIndex, game.zone);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.sports_esports, size: 14, color: _gold),
+                const SizedBox(width: 6),
+                const Text('Idle Adventurer',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _gold)),
+                const SizedBox(width: 8),
+                if (game.isRunning)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: _green,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: _green.withValues(alpha: 0.5),
+                                  blurRadius: 4)
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('Fighting',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: _green)),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('Idle',
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white30)),
+                  ),
+                const Spacer(),
+                InkWell(
+                  onTap: () => context.go('/idle-adventure'),
+                  child: Text('Open →',
+                      style: TextStyle(
+                          fontSize: 9, color: _gold.withValues(alpha: 0.6))),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Stats row
+            Row(
+              children: [
+                // Current monster
+                Expanded(
+                  flex: 3,
+                  child: Row(
+                    children: [
+                      Text(monster.icon, style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(monster.name,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _cream),
+                                overflow: TextOverflow.ellipsis),
+                            Text('HP ${game.monsterCurrentHp}/${monster.maxHp}',
+                                style: const TextStyle(
+                                    fontSize: 9, color: Colors.white38)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Kill count
+                _IdleMiniStat(
+                  icon: Icons.military_tech,
+                  value: _fmtIdleNum(game.totalKills),
+                  label: 'Kills',
+                  color: _orange,
+                ),
+                const SizedBox(width: 12),
+                // GP
+                _IdleMiniStat(
+                  icon: Icons.paid,
+                  value: _fmtIdleNum(game.gp),
+                  label: 'GP',
+                  color: _gold,
+                ),
+                const SizedBox(width: 12),
+                // Gear level
+                _IdleMiniStat(
+                  icon: Icons.shield,
+                  value: gearName(game.gearLevel),
+                  label: 'Gear',
+                  color: _blue,
+                ),
+                const SizedBox(width: 12),
+                // Combat levels summary
+                _IdleMiniStat(
+                  icon: Icons.flash_on,
+                  value:
+                      '${game.stats.attackLevel}/${game.stats.strengthLevel}/${game.stats.defenceLevel}',
+                  label: 'Atk/Str/Def',
+                  color: _red,
+                ),
+                const SizedBox(width: 16),
+                // Quick start/stop
+                SizedBox(
+                  height: 30,
+                  child: game.isRunning
+                      ? OutlinedButton.icon(
+                          onPressed: () => notifier.stopCombat(),
+                          icon: const Icon(Icons.stop, size: 12),
+                          label: const Text('Stop',
+                              style: TextStyle(fontSize: 10)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _red,
+                            side:
+                                BorderSide(color: _red.withValues(alpha: 0.3)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: () => notifier.startCombat(),
+                          icon: const Icon(Icons.play_arrow, size: 12),
+                          label: const Text('Fight',
+                              style: TextStyle(fontSize: 10)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _green,
+                            side: BorderSide(
+                                color: _green.withValues(alpha: 0.3)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+            // Slayer task progress (if active)
+            if (game.currentSlayerTask != null &&
+                !game.currentSlayerTask!.isComplete) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.assignment, size: 12, color: _green),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Slayer: ${getMonsterDefById(game.currentSlayerTask!.monsterId)?.name ?? game.currentSlayerTask!.monsterId} '
+                    '${game.currentSlayerTask!.amountKilled}/${game.currentSlayerTask!.amountTotal}',
+                    style: TextStyle(
+                        fontSize: 9, color: _parchment.withValues(alpha: 0.5)),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IdleMiniStat extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _IdleMiniStat({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, size: 12, color: color.withValues(alpha: 0.7)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w700, color: color),
+            overflow: TextOverflow.ellipsis),
+        Text(label,
+            style: TextStyle(
+                fontSize: 7, color: _parchment.withValues(alpha: 0.35))),
+      ],
+    );
+  }
+}
+
+String _fmtIdleNum(int amount) {
+  if (amount >= 1000000) return '${(amount / 1000000).toStringAsFixed(1)}M';
+  if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
+  return amount.toString();
 }
 
 String _fmtXp(int xp) {
