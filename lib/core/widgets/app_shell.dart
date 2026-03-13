@@ -141,6 +141,11 @@ class AppShell extends ConsumerWidget {
           selectedIcon: Icons.sports_kabaddi,
           label: 'Idle Adventurer',
           path: '/idle-adventure'),
+      _NavItem(
+          icon: Icons.cell_tower_outlined,
+          selectedIcon: Icons.cell_tower,
+          label: 'Tower Defense',
+          path: '/tower-defense'),
     ]),
     _NavSection(header: 'IRONMAN', items: [
       _NavItem(
