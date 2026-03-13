@@ -30,6 +30,7 @@ import '../features/pet_hunter/presentation/pet_hunter_screen.dart';
 import '../features/dry_streak/presentation/dry_streak_screen.dart';
 import '../features/ironman_supply/presentation/ironman_supply_screen.dart';
 import '../features/idle_adventure/presentation/idle_adventure_screen.dart';
+import '../features/tower_defense/presentation/tower_defense_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -227,6 +228,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/idle-adventure',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: IdleAdventureScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/tower-defense',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: TowerDefenseScreen(),
             ),
           ),
           GoRoute(
