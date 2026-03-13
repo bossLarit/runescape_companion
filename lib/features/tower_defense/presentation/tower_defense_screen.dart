@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../domain/td_models.dart';
@@ -19,36 +20,81 @@ String _fmt(int n) {
   return n.toString();
 }
 
-class TowerDefenseScreen extends ConsumerWidget {
+class TowerDefenseScreen extends ConsumerStatefulWidget {
   const TowerDefenseScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TowerDefenseScreen> createState() => _TowerDefenseScreenState();
+}
+
+class _TowerDefenseScreenState extends ConsumerState<TowerDefenseScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // If returning to screen with a paused wave, auto-resume
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(tdGameProvider.notifier).resume();
+    });
+  }
+
+  @override
+  void deactivate() {
+    ref.read(tdGameProvider.notifier).pause();
+    super.deactivate();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    ref.read(tdGameProvider.notifier).resume();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final game = ref.watch(tdGameProvider);
     final notifier = ref.read(tdGameProvider.notifier);
 
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _Header(game: game),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                      flex: 3,
-                      child: _GameArea(game: game, notifier: notifier)),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                      width: 280,
-                      child: _Sidebar(game: game, notifier: notifier)),
-                ],
+    return KeyboardListener(
+      focusNode: FocusNode()..requestFocus(),
+      autofocus: true,
+      onKeyEvent: (event) {
+        if (event is! KeyDownEvent) return;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.digit1) {
+          notifier.useAbility(AbilityType.iceBarrage);
+        } else if (key == LogicalKeyboardKey.digit2) {
+          notifier.useAbility(AbilityType.cannonBlast);
+        } else if (key == LogicalKeyboardKey.digit3) {
+          notifier.useAbility(AbilityType.heal);
+        } else if (key == LogicalKeyboardKey.space) {
+          notifier.sendWave();
+        } else if (key == LogicalKeyboardKey.escape) {
+          notifier.selectSlot(null);
+        }
+      },
+      child: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _Header(game: game),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        flex: 3,
+                        child: _GameArea(game: game, notifier: notifier)),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                        width: 280,
+                        child: _Sidebar(game: game, notifier: notifier)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -295,11 +341,14 @@ class _GameArea extends StatelessWidget {
                   title: Text(def.name,
                       style: TextStyle(
                           color: canAfford ? _parchment : Colors.grey)),
-                  subtitle: Text(_costString(def.cost),
+                  subtitle: Text(
+                      canAfford
+                          ? _costString(def.cost)
+                          : '${_costString(def.cost)}\n${_missingString(def.cost, game.resources)}',
                       style: TextStyle(
                           color: canAfford
                               ? _parchment.withValues(alpha: 0.5)
-                              : Colors.grey.withValues(alpha: 0.5),
+                              : const Color(0xFFFF5252).withValues(alpha: 0.7),
                           fontSize: 11)),
                   trailing: canAfford
                       ? const Icon(Icons.add_circle, color: _gold, size: 20)
@@ -325,58 +374,109 @@ class _GameArea extends StatelessWidget {
         ? houseUpgradeCost(slot.level)
         : towerUpgradeCost(slot.towerType!, slot.level);
     final canAfford = game.resources.canAfford(cost);
+    final statStyle =
+        TextStyle(color: _parchment.withValues(alpha: 0.7), fontSize: 12);
+
     showModalBottomSheet(
       context: ctx,
       backgroundColor: _darkBg,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${towerTypeName(slot.towerType!)} Lv${slot.level}',
-                style: const TextStyle(
-                    color: _gold, fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            if (isHouse)
-              Text('Peasant Cap: +1 per level (current: ${game.peasantCap})',
-                  style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.7), fontSize: 12))
-            else ...[
-              Text(
-                  'DMG: ${towerDamageAtLevel(slot.towerType!, slot.level).toStringAsFixed(1)} → ${towerDamageAtLevel(slot.towerType!, slot.level + 1).toStringAsFixed(1)}',
-                  style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.7), fontSize: 12)),
-              Text(
-                  'Range: ${(towerRangeAtLevel(slot.towerType!, slot.level) * 100).toStringAsFixed(0)}% → ${(towerRangeAtLevel(slot.towerType!, slot.level + 1) * 100).toStringAsFixed(0)}%',
-                  style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.7), fontSize: 12)),
-            ],
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: canAfford
-                      ? const Color(0xFF2D5A1E)
-                      : Colors.grey.shade800,
-                  foregroundColor: Colors.white,
+      builder: (_) => StatefulBuilder(builder: (sCtx, setSheetState) {
+        final currentSlot = game.towerSlots[slotIdx];
+        final targetLabel = switch (currentSlot.targetMode) {
+          TargetMode.first => 'First',
+          TargetMode.last => 'Last',
+          TargetMode.strongest => 'Strongest',
+          TargetMode.closest => 'Closest',
+        };
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Expanded(
+                  child: Text(
+                      '${towerTypeName(slot.towerType!)} Lv${slot.level}',
+                      style: const TextStyle(
+                          color: _gold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ),
-                onPressed: canAfford
-                    ? () {
-                        notifier.upgradeTowerAtSlot(slotIdx);
-                        Navigator.pop(ctx);
-                      }
-                    : null,
-                child: Text(
-                    'Upgrade → Lv${slot.level + 1}  (${_costString(cost)})'),
+                Text('${slot.kills} kills',
+                    style: TextStyle(
+                        color: _parchment.withValues(alpha: 0.5),
+                        fontSize: 11)),
+              ]),
+              const SizedBox(height: 8),
+              if (isHouse)
+                Text('Peasant Cap: +1 per level (current: ${game.peasantCap})',
+                    style: statStyle)
+              else ...[
+                Text(
+                    'DMG: ${towerDamageAtLevel(slot.towerType!, slot.level).toStringAsFixed(1)} → ${towerDamageAtLevel(slot.towerType!, slot.level + 1).toStringAsFixed(1)}',
+                    style: statStyle),
+                Text(
+                    'Range: ${(towerRangeAtLevel(slot.towerType!, slot.level) * 100).toStringAsFixed(0)}% → ${(towerRangeAtLevel(slot.towerType!, slot.level + 1) * 100).toStringAsFixed(0)}%',
+                    style: statStyle),
+                Text(
+                    'Fire Rate: ${towerFireRateAtLevel(slot.towerType!, slot.level).toStringAsFixed(0)} ticks',
+                    style: statStyle),
+                if (slot.equippedLootId != null)
+                  Text(
+                      'Loot: ${game.inventory.where((l) => l.id == slot.equippedLootId).firstOrNull?.name ?? "?"}',
+                      style: TextStyle(
+                          color: const Color(0xFFFFD700).withValues(alpha: 0.7),
+                          fontSize: 12)),
+                const SizedBox(height: 6),
+                Row(children: [
+                  Text('Target: ', style: statStyle),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          const Color(0xFF2196F3).withValues(alpha: 0.2),
+                      foregroundColor: const Color(0xFF2196F3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                    ),
+                    onPressed: () {
+                      notifier.cycleTargetMode(slotIdx);
+                      setSheetState(() {});
+                    },
+                    child:
+                        Text(targetLabel, style: const TextStyle(fontSize: 11)),
+                  ),
+                ]),
+              ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: canAfford
+                        ? const Color(0xFF2D5A1E)
+                        : Colors.grey.shade800,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: canAfford
+                      ? () {
+                          notifier.upgradeTowerAtSlot(slotIdx);
+                          Navigator.pop(ctx);
+                        }
+                      : null,
+                  child: Text(
+                      'Upgrade → Lv${slot.level + 1}  (${_costString(cost)})'),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -544,6 +644,15 @@ String _costString(Resources cost) {
   return parts.join(' + ');
 }
 
+String _missingString(Resources cost, Resources have) {
+  final parts = <String>[];
+  if (cost.gold > have.gold) parts.add('${cost.gold - have.gold} GP');
+  if (cost.logs > have.logs) parts.add('${cost.logs - have.logs} Logs');
+  if (cost.runes > have.runes) parts.add('${cost.runes - have.runes} Runes');
+  if (cost.ore > have.ore) parts.add('${cost.ore - have.ore} Ore');
+  return parts.isEmpty ? '' : 'Need ${parts.join(', ')} more';
+}
+
 // ─── Overlays ────────────────────────────────────────────────────
 
 class _Overlay extends StatelessWidget {
@@ -701,6 +810,124 @@ class _Sidebar extends StatelessWidget {
                     : const Color(0xFF2D5A1E),
             onTap: notifier.sendWave,
           ),
+        // ── Wave Preview ──
+        if (game.phase == TdPhase.idle || game.phase == TdPhase.waveComplete)
+          _WavePreview(
+              wave: game.phase == TdPhase.waveComplete
+                  ? game.wave + 1
+                  : game.wave),
+        // ── Auto-Continue Toggle ──
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Material(
+            color: notifier.autoContinue ? const Color(0xFF2D5A1E) : _cardBg,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: notifier.toggleAutoContinue,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      notifier.autoContinue
+                          ? Icons.fast_forward
+                          : Icons.fast_forward_outlined,
+                      color: notifier.autoContinue
+                          ? Colors.white
+                          : _parchment.withValues(alpha: 0.5),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      notifier.autoContinue ? 'Auto: ON' : 'Auto: OFF',
+                      style: TextStyle(
+                        color: notifier.autoContinue
+                            ? Colors.white
+                            : _parchment.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // ── Speed Control ──
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Material(
+            color: notifier.speedMultiplier > 1
+                ? const Color(0xFF1565C0)
+                : _cardBg,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: notifier.cycleSpeed,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.speed,
+                        color: notifier.speedMultiplier > 1
+                            ? Colors.white
+                            : _parchment.withValues(alpha: 0.5),
+                        size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Speed: ${notifier.speedMultiplier}×',
+                      style: TextStyle(
+                        color: notifier.speedMultiplier > 1
+                            ? Colors.white
+                            : _parchment.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // ── Prestige Button ──
+        if (game.wave >= 100 && game.phase != TdPhase.gameOver)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Material(
+              color: const Color(0xFF6A1B9A),
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _confirmPrestige(context, notifier, game.wave),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.stars, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        'PRESTIGE (+${prestigePointsForPrestige(game.wave)} pts)',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (game.phase == TdPhase.waveActive)
           _InfoChip(
               'Wave in progress... ${game.enemiesKilledThisWave}/${game.totalEnemiesThisWave}'),
@@ -815,16 +1042,38 @@ class _Sidebar extends StatelessWidget {
         ),
         ...game.peasants.map((p) {
           final nodes = game.resourceNodes;
-          final nodeName =
-              p.assignedNodeIndex >= 0 && p.assignedNodeIndex < nodes.length
-                  ? nodeResourceName(nodes[p.assignedNodeIndex].type)
-                  : 'Idle';
+          final hasNode =
+              p.assignedNodeIndex >= 0 && p.assignedNodeIndex < nodes.length;
+          final nodeName = hasNode
+              ? nodeResourceName(nodes[p.assignedNodeIndex].type)
+              : 'Idle';
+          final stateColor = switch (p.state) {
+            PeasantState.idle => Colors.grey,
+            PeasantState.walking => const Color(0xFFFFD700),
+            PeasantState.gathering => const Color(0xFF4CAF50),
+          };
+          final stateLabel = switch (p.state) {
+            PeasantState.idle => 'Idle',
+            PeasantState.walking => 'Walking',
+            PeasantState.gathering => nodeName,
+          };
+          // Count workers at each node for the popup
+          final workerCounts = List.filled(nodes.length, 0);
+          for (final pp in game.peasants) {
+            if (pp.assignedNodeIndex >= 0 &&
+                pp.assignedNodeIndex < nodes.length) {
+              workerCounts[pp.assignedNodeIndex]++;
+            }
+          }
           return ListTile(
             dense: true,
-            leading: const Icon(Icons.person, color: _parchment, size: 16),
-            title: Text('Peasant #${p.id}',
-                style: const TextStyle(color: _parchment, fontSize: 11)),
-            subtitle: Text('Gathering: $nodeName',
+            leading: Icon(Icons.person, color: stateColor, size: 16),
+            title: Text(p.name,
+                style: TextStyle(
+                    color: stateColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
+            subtitle: Text(stateLabel,
                 style: TextStyle(
                     color: _parchment.withValues(alpha: 0.5), fontSize: 10)),
             trailing: PopupMenuButton<int>(
@@ -836,7 +1085,7 @@ class _Sidebar extends StatelessWidget {
                   PopupMenuItem(
                       value: i,
                       child: Text(
-                          '${nodeTierName(nodes[i].type, nodes[i].level)} (${nodeResourceName(nodes[i].type)})')),
+                          '${nodeTierName(nodes[i].type, nodes[i].level)} (${nodeResourceName(nodes[i].type)}) [${workerCounts[i]}]')),
               ],
             ),
           );
@@ -854,6 +1103,25 @@ class _Sidebar extends StatelessWidget {
               LootRarity.legendary => const Color(0xFFFF9800),
             };
             final equipped = _isEquipped(item, game);
+            final slotIcon =
+                item.slot == LootSlot.tower ? Icons.cell_tower : Icons.person;
+            final slotLabel =
+                item.slot == LootSlot.tower ? 'Tower Boost' : 'Hero Boost';
+            // Find which tower this item is equipped on
+            String equippedOnLabel = '';
+            if (equipped) {
+              if (item.slot == LootSlot.tower) {
+                for (final s in game.towerSlots) {
+                  if (s.equippedLootId == item.id && s.hasTower) {
+                    equippedOnLabel =
+                        ' → ${towerTypeName(s.towerType!)} Lv${s.level}';
+                    break;
+                  }
+                }
+              } else {
+                equippedOnLabel = ' → Hero';
+              }
+            }
             return Container(
               margin: const EdgeInsets.only(bottom: 3),
               padding: const EdgeInsets.all(6),
@@ -867,20 +1135,30 @@ class _Sidebar extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.inventory_2, color: rarityColor, size: 14),
+                  Icon(slotIcon, color: rarityColor, size: 14),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.name,
-                            style: TextStyle(
-                                color: rarityColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10)),
+                        Row(children: [
+                          Flexible(
+                            child: Text(item.name,
+                                style: TextStyle(
+                                    color: rarityColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10)),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(slotLabel,
+                              style: TextStyle(
+                                  color: rarityColor.withValues(alpha: 0.5),
+                                  fontSize: 7,
+                                  fontStyle: FontStyle.italic)),
+                        ]),
                         Text(
                             _lootStatLine(item) +
-                                (equipped ? ' [EQUIPPED]' : ''),
+                                (equipped ? ' [EQUIPPED$equippedOnLabel]' : ''),
                             style: TextStyle(
                                 color: _parchment.withValues(alpha: 0.5),
                                 fontSize: 8)),
@@ -890,10 +1168,10 @@ class _Sidebar extends StatelessWidget {
                   if (!equipped &&
                       item.slot == LootSlot.hero &&
                       game.hero != null)
-                    _tinyBtn('Equip', rarityColor,
+                    _tinyBtn('Equip Hero', rarityColor,
                         () => notifier.doEquipHero(item.id)),
                   if (!equipped && item.slot == LootSlot.tower)
-                    _tinyBtn('Equip', rarityColor, () {
+                    _tinyBtn('Equip Tower', rarityColor, () {
                       final sel = game.selectedSlotIndex;
                       if (sel != null && game.towerSlots[sel].hasTower) {
                         notifier.doEquipTower(item.id, sel);
@@ -902,6 +1180,11 @@ class _Sidebar extends StatelessWidget {
                   if (equipped)
                     _tinyBtn('Unequip', Colors.grey,
                         () => notifier.doUnequip(item.id)),
+                  if (!equipped)
+                    _tinyBtn(
+                        'Sell ${lootSellPrice(item.rarity)}g',
+                        const Color(0xFFFFD700),
+                        () => notifier.doSellLoot(item.id)),
                 ],
               ),
             );
@@ -909,15 +1192,58 @@ class _Sidebar extends StatelessWidget {
         ],
         const SizedBox(height: 10),
 
+        // ── Prestige Shop ──
+        if (game.prestigePoints > 0) ...[
+          const _SectionTitle('Prestige Shop'),
+          _PrestigeItem(
+              'Startup Gold +15',
+              'startingGold',
+              1,
+              game.prestigeBonuses.startingGoldBonus,
+              game.prestigePoints,
+              notifier.doBuyPrestige),
+          _PrestigeItem(
+              'Peasant Cap +1',
+              'peasantCap',
+              2,
+              game.prestigeBonuses.peasantCapBonus,
+              game.prestigePoints,
+              notifier.doBuyPrestige),
+          _PrestigeItem(
+              'Tower DMG +5%',
+              'towerDmg',
+              2,
+              game.prestigeBonuses.towerDmgPercent,
+              game.prestigePoints,
+              notifier.doBuyPrestige),
+          _PrestigeItem(
+              'Garrison HP +10%',
+              'garrisonHp',
+              1,
+              game.prestigeBonuses.garrisonHpPercent,
+              game.prestigePoints,
+              notifier.doBuyPrestige),
+          const SizedBox(height: 10),
+        ],
+
         // ── Stats ──
         const _SectionTitle('Statistics'),
+        if (game.prestigeLevel > 0)
+          _StatRow('Prestige Level', '${game.prestigeLevel}'),
         _StatRow('Highest Wave', '${game.highestWave}'),
         _StatRow('Total Kills', '${game.totalKills}'),
         _StatRow('Total GP Earned', _fmt(game.totalGpEarned)),
-        if (game.prestigeBonuses.towerDmgPercent > 0)
+        if (game.prestigeLevel > 0) ...[
+          _StatRow('Passive Gold', '+${game.prestigeLevel}/sec'),
+          _StatRow('Tower DMG Bonus',
+              '+${(game.prestigeLevel * 15 + game.prestigeBonuses.towerDmgPercent * 5)}%'),
+          _StatRow('Enemy HP Bonus', '+${game.prestigeLevel * 30}%'),
+        ],
+        if (game.prestigeBonuses.towerDmgPercent > 0 && game.prestigeLevel == 0)
           _StatRow('Prestige Tower DMG',
               '+${game.prestigeBonuses.towerDmgPercent * 5}%'),
-        if (game.prestigeBonuses.garrisonHpPercent > 0)
+        if (game.prestigeBonuses.garrisonHpPercent > 0 &&
+            game.prestigeLevel == 0)
           _StatRow('Prestige Garrison HP',
               '+${game.prestigeBonuses.garrisonHpPercent * 10}%'),
       ],
@@ -946,6 +1272,40 @@ class _Sidebar extends StatelessWidget {
     return false;
   }
 
+  void _confirmPrestige(
+      BuildContext context, TdGameNotifier notifier, int wave) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF231A0E),
+        title:
+            const Text('Prestige?', style: TextStyle(color: Color(0xFF9C27B0))),
+        content: Text(
+          'Reset all towers, peasants, and progress.\n'
+          'Earn ${prestigePointsForPrestige(wave)} prestige points.\n'
+          'Enemies will be harder next time, but you\'ll start stronger.',
+          style: TextStyle(color: _parchment.withValues(alpha: 0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A1B9A)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              notifier.prestige();
+            },
+            child:
+                const Text('PRESTIGE', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _tinyBtn(String label, Color color, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
@@ -959,6 +1319,58 @@ class _Sidebar extends StatelessWidget {
         ),
         onPressed: onTap,
         child: Text(label, style: const TextStyle(fontSize: 8)),
+      ),
+    );
+  }
+}
+
+// ─── Wave Preview ───────────────────────────────────────────────
+
+class _WavePreview extends StatelessWidget {
+  final int wave;
+  const _WavePreview({required this.wave});
+
+  @override
+  Widget build(BuildContext context) {
+    final enemyName = enemyNameForWave(wave);
+    final mod = previewModifier(wave);
+    final modLabel = modifierLabel(mod);
+    final count = isTreasureWave(wave)
+        ? treasureEnemyCount(wave)
+        : modifierEnemyCountMult(mod, enemiesInWave(wave));
+    final isBoss = isBossWave(wave);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: isBoss
+                ? const Color(0xFFFF5252).withValues(alpha: 0.3)
+                : _gold.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Next: $enemyName',
+              style: TextStyle(
+                  color: isBoss ? const Color(0xFFFF5252) : _parchment,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10)),
+          const SizedBox(height: 2),
+          Row(children: [
+            Text('$count enemies',
+                style: TextStyle(
+                    color: _parchment.withValues(alpha: 0.6), fontSize: 9)),
+            if (modLabel.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(modLabel,
+                  style:
+                      const TextStyle(fontSize: 9, color: Color(0xFFFFB74D))),
+            ],
+          ]),
+        ],
       ),
     );
   }

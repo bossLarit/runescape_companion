@@ -125,7 +125,14 @@ class TdGameCanvasPainter extends CustomPainter {
     for (final node in state.resourceNodes) {
       final px = node.x * size.width;
       final py = node.y * size.height;
-      final grid = nodeSprites[node.type];
+      PixelGrid? grid;
+      if (node.level >= 3) {
+        grid = nodeSpriteTier3[node.type] ?? nodeSprites[node.type];
+      } else if (node.level >= 2) {
+        grid = nodeSpriteTier2[node.type] ?? nodeSprites[node.type];
+      } else {
+        grid = nodeSprites[node.type];
+      }
       if (grid != null) {
         final spriteW = grid[0].length * 2.0;
         final spriteH = grid.length * 2.0;
@@ -181,7 +188,13 @@ class TdGameCanvasPainter extends CustomPainter {
         if (type == TowerType.cannon ||
             type == TowerType.ballista ||
             type == TowerType.poisonTrap) {
-          grid = newTowerSprites[type];
+          if (slot.level >= 8) {
+            grid = newTowerSpriteTier3[type] ?? newTowerSprites[type];
+          } else if (slot.level >= 4) {
+            grid = newTowerSpriteTier2[type] ?? newTowerSprites[type];
+          } else {
+            grid = newTowerSprites[type];
+          }
         } else if (slot.level >= 8) {
           grid = towerSpriteTier3[type] ?? towerSprites[type];
         } else if (slot.level >= 4) {
@@ -340,7 +353,38 @@ class TdGameCanvasPainter extends CustomPainter {
       final px = pos.x * size.width;
       final py = pos.y * size.height;
 
-      if (enemy.isTreasure) {
+      if (enemy.isBoss) {
+        // Boss: large sprite at 2.5× scale
+        final bossDef = bossDefs[enemy.defIndex];
+        final grid = bossSprites[bossDef.id];
+        if (grid != null) {
+          final sw = grid[0].length * 2.5;
+          final sh = grid.length * 2.5;
+          _drawPixelGrid(canvas, grid, px - sw / 2, py - sh / 2, 2.5);
+        } else {
+          canvas.drawCircle(
+              Offset(px, py), 14, Paint()..color = const Color(0xFFB33831));
+        }
+        // Boss glow ring
+        canvas.drawCircle(
+            Offset(px, py),
+            28,
+            Paint()
+              ..color = const Color(0xFFFF5252).withValues(alpha: 0.15)
+              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+        // Boss name label
+        final nameTp = TextPainter(
+          text: TextSpan(
+            text: bossDef.name,
+            style: const TextStyle(
+                color: Color(0xFFFF5252),
+                fontSize: 8,
+                fontWeight: FontWeight.bold),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        nameTp.paint(canvas, Offset(px - nameTp.width / 2, py + 28));
+      } else if (enemy.isTreasure) {
         _drawPixelGrid(canvas, impSprite, px - 9, py - 9, 1.5);
       } else {
         final def = enemyDefs[enemy.defIndex];
@@ -355,21 +399,24 @@ class TdGameCanvasPainter extends CustomPainter {
 
       // Freeze tint
       if (state.freezeTicksLeft > 0) {
-        canvas.drawCircle(Offset(px, py), 8,
+        final r = enemy.isBoss ? 16.0 : 8.0;
+        canvas.drawCircle(Offset(px, py), r,
             Paint()..color = _freezeTint.withValues(alpha: 0.3));
       }
 
       // Poison tint
       if (enemy.poisonTicksLeft > 0) {
-        canvas.drawCircle(Offset(px, py), 7,
+        final r = enemy.isBoss ? 14.0 : 7.0;
+        canvas.drawCircle(Offset(px, py), r,
             Paint()..color = const Color(0xFF4CAF50).withValues(alpha: 0.3));
       }
 
       // Shield indicator
       if (enemy.shielded) {
+        final r = enemy.isBoss ? 20.0 : 10.0;
         canvas.drawCircle(
             Offset(px, py),
-            10,
+            r,
             Paint()
               ..color = const Color(0xFF90CAF9).withValues(alpha: 0.4)
               ..style = PaintingStyle.stroke
@@ -377,19 +424,22 @@ class TdGameCanvasPainter extends CustomPainter {
       }
 
       // HP bar
-      const hpBarWidth = 20.0;
+      final hpBarWidth = enemy.isBoss ? 40.0 : 20.0;
       const hpBarHeight = 3.0;
+      final hpBarY = enemy.isBoss ? py - 30.0 : py - 16.0;
       final hpRatio = (enemy.hp / enemy.maxHp).clamp(0.0, 1.0);
       canvas.drawRect(
-          Rect.fromLTWH(px - hpBarWidth / 2, py - 16, hpBarWidth, hpBarHeight),
+          Rect.fromLTWH(px - hpBarWidth / 2, hpBarY, hpBarWidth, hpBarHeight),
           Paint()..color = _hpBarBg);
       canvas.drawRect(
         Rect.fromLTWH(
-            px - hpBarWidth / 2, py - 16, hpBarWidth * hpRatio, hpBarHeight),
+            px - hpBarWidth / 2, hpBarY, hpBarWidth * hpRatio, hpBarHeight),
         Paint()
-          ..color = enemy.isTreasure
-              ? const Color(0xFFFFD700)
-              : (hpRatio > 0.5 ? _hpBarGreen : _hpBarRed),
+          ..color = enemy.isBoss
+              ? const Color(0xFFFF5252)
+              : enemy.isTreasure
+                  ? const Color(0xFFFFD700)
+                  : (hpRatio > 0.5 ? _hpBarGreen : _hpBarRed),
       );
     }
   }
@@ -450,9 +500,11 @@ class TdGameCanvasPainter extends CustomPainter {
       return;
     }
     final slot = state.towerSlots[selIdx];
-    if (slot.isEmpty) return;
     if (slot.towerType == TowerType.house) return;
-    final range = towerRangeAtLevel(slot.towerType!, slot.level);
+    // Show default archer range for empty slots as preview
+    final range = slot.isEmpty
+        ? towerRangeAtLevel(TowerType.archer, 1)
+        : towerRangeAtLevel(slot.towerType!, slot.level);
     final rangePixels = range * size.height;
     final px = slot.x * size.width;
     final py = slot.y * size.height;

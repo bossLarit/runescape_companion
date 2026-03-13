@@ -19,6 +19,9 @@ final tdGameProvider =
 class TdGameNotifier extends StateNotifier<TdGameState> {
   Timer? _tickTimer;
   Timer? _saveTimer;
+  Timer? _autoContinueTimer;
+  bool autoContinue = false;
+  int speedMultiplier = 1;
 
   TdGameNotifier()
       : super(TdGameState(
@@ -72,11 +75,18 @@ class TdGameNotifier extends StateNotifier<TdGameState> {
   void _startLoop() {
     _tickTimer?.cancel();
     _tickTimer = Timer.periodic(_tickDuration, (_) {
-      state = processTick(state);
+      for (int i = 0; i < speedMultiplier; i++) {
+        state = processTick(state);
+        if (state.phase != TdPhase.waveActive) break;
+      }
       if (state.phase == TdPhase.waveComplete ||
           state.phase == TdPhase.gameOver) {
         _stopLoop();
         _save();
+        if (state.phase == TdPhase.waveComplete && autoContinue) {
+          _autoContinueTimer?.cancel();
+          _autoContinueTimer = Timer(const Duration(seconds: 1), sendWave);
+        }
       }
     });
     _saveTimer?.cancel();
@@ -88,6 +98,32 @@ class TdGameNotifier extends StateNotifier<TdGameState> {
     _tickTimer = null;
     _saveTimer?.cancel();
     _saveTimer = null;
+  }
+
+  void cycleSpeed() {
+    speedMultiplier = speedMultiplier >= 3 ? 1 : speedMultiplier + 1;
+    state = state.copyWith();
+  }
+
+  void toggleAutoContinue() {
+    autoContinue = !autoContinue;
+    if (!autoContinue) {
+      _autoContinueTimer?.cancel();
+      _autoContinueTimer = null;
+    }
+    // Trigger rebuild by re-setting state
+    state = state.copyWith();
+  }
+
+  void pause() {
+    _stopLoop();
+    _autoContinueTimer?.cancel();
+  }
+
+  void resume() {
+    if (state.phase == TdPhase.waveActive && _tickTimer == null) {
+      _startLoop();
+    }
   }
 
   // ── Wave Control ─────────────────────────────────────────────
@@ -211,13 +247,35 @@ class TdGameNotifier extends StateNotifier<TdGameState> {
     _save();
   }
 
+  void doSellLoot(String lootId) {
+    state = sellLoot(state, lootId);
+    _save();
+  }
+
   // ── Selection ────────────────────────────────────────────────
 
   void selectSlot(int? index) {
     state = state.copyWith(selectedSlotIndex: () => index);
   }
 
+  void cycleTargetMode(int slotIdx) {
+    final slot = state.towerSlots[slotIdx];
+    if (slot.isEmpty) return;
+    const modes = TargetMode.values;
+    slot.targetMode = modes[(slot.targetMode.index + 1) % modes.length];
+    state = state.copyWith();
+    _save();
+  }
+
   // ── Reset ────────────────────────────────────────────────────
+
+  void prestige() {
+    if (state.wave < 100) return;
+    _stopLoop();
+    _autoContinueTimer?.cancel();
+    state = doPrestige(state);
+    _save();
+  }
 
   void reset() {
     _stopLoop();
@@ -228,6 +286,7 @@ class TdGameNotifier extends StateNotifier<TdGameState> {
   @override
   void dispose() {
     _stopLoop();
+    _autoContinueTimer?.cancel();
     _save();
     super.dispose();
   }

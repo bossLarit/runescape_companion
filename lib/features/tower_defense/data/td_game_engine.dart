@@ -32,18 +32,21 @@ TdGameState processTick(TdGameState state) {
   if (enemiesLeftToSpawn > 0 && enemies.length < maxActiveEnemies) {
     spawnCooldown -= 1;
     if (spawnCooldown <= 0) {
-      final e = spawnEnemy(state.wave);
-      // Apply wave modifier
-      e.hp = (e.hp * modifierHpMult(mod)).roundToDouble();
-      // Need to create with adjusted maxHp too, but maxHp is final, so re-create
+      final isBoss = isBossWave(state.wave) &&
+          enemiesLeftToSpawn == state.totalEnemiesThisWave;
+      final e = isBoss ? spawnBoss(state.wave) : spawnEnemy(state.wave);
+      // Apply wave modifier + prestige scaling
+      final pHpMult = prestigeEnemyHpMult(state.prestigeLevel);
+      final pDmgBonus = prestigeEnemyDmgBonus(state.prestigeLevel);
       final adjusted = ActiveEnemy(
         defIndex: e.defIndex,
-        hp: (e.maxHp * modifierHpMult(mod)).roundToDouble(),
-        maxHp: (e.maxHp * modifierHpMult(mod)).roundToDouble(),
+        hp: (e.maxHp * modifierHpMult(mod) * pHpMult).roundToDouble(),
+        maxHp: (e.maxHp * modifierHpMult(mod) * pHpMult).roundToDouble(),
         speed: e.speed * modifierSpeedMult(mod),
         gpReward: e.gpReward,
-        damage: e.damage,
+        damage: e.damage + pDmgBonus,
         isTreasure: e.isTreasure,
+        isBoss: e.isBoss,
         shielded: modifierShielded(mod),
       );
       enemies.add(adjusted);
@@ -54,6 +57,12 @@ TdGameState processTick(TdGameState state) {
 
   // ── 2. Freeze tick ─────────────────────────────────────────
   if (freezeTicks > 0) freezeTicks--;
+
+  // ── 2b. Passive gold income from prestige ─────────────────
+  if (state.prestigeLevel > 0) {
+    final goldPerTick = prestigePassiveGoldPerSec(state.prestigeLevel) / 62.5;
+    res = res.copyWith(gold: res.gold + goldPerTick.round().clamp(0, 999));
+  }
 
   // ── 3. Move enemies (skip if frozen) ───────────────────────
   for (final e in enemies) {
@@ -151,7 +160,8 @@ TdGameState processTick(TdGameState state) {
 
   // ── 5. Tower attacks ───────────────────────────────────────
   final prestigeDmgMult = prestigeTowerDmgMult(state.prestigeBonuses);
-  for (final slot in towerSlots) {
+  for (int slotIdx = 0; slotIdx < towerSlots.length; slotIdx++) {
+    final slot = towerSlots[slotIdx];
     if (slot.isEmpty || slot.towerType == TowerType.house) continue;
     slot.fireCooldown = (slot.fireCooldown - 1).clamp(0, 999);
     if (slot.fireCooldown > 0) continue;
@@ -184,7 +194,8 @@ TdGameState processTick(TdGameState state) {
       continue;
     }
 
-    final targetIdx = _findTarget(enemies, slot.x, slot.y, range);
+    final targetIdx =
+        _findTarget(enemies, slot.x, slot.y, range, slot.targetMode);
     if (targetIdx < 0) continue;
     slot.fireCooldown = towerFireRateAtLevel(slot.towerType!, slot.level);
     final projType = towerDefs[slot.towerType!]!.projectile;
@@ -199,8 +210,10 @@ TdGameState processTick(TdGameState state) {
         damage: dmg,
         type: projType,
         targetEnemyIndex: targetIdx,
+        sourceSlotIndex: slotIdx,
       ));
     } else {
+      final prevKills = kills;
       _instantHit(enemies[targetIdx], dmg, damageNumbers, res, kills,
           totalKills, totalGpEarned, (r, k, tk, tg) {
         res = r;
@@ -208,35 +221,59 @@ TdGameState processTick(TdGameState state) {
         totalKills = tk;
         totalGpEarned = tg;
       });
+      if (kills > prevKills) slot.kills++;
     }
   }
 
   // ── 6. Hero combat ─────────────────────────────────────────
   if (hero != null) {
     if (hero.alive) {
+      // Find frontmost alive enemy
+      int frontIdx = -1;
+      double frontProgress = -1;
+      for (int i = 0; i < enemies.length; i++) {
+        if (!enemies[i].alive) continue;
+        if (enemies[i].pathProgress > frontProgress) {
+          frontProgress = enemies[i].pathProgress;
+          frontIdx = i;
+        }
+      }
+
+      // Move toward frontmost enemy, or return to rest position
+      if (frontIdx >= 0) {
+        final targetProgress = enemies[frontIdx].pathProgress;
+        if ((hero.patrolProgress - targetProgress).abs() > 0.02) {
+          if (hero.patrolProgress < targetProgress) {
+            hero.patrolProgress =
+                (hero.patrolProgress + heroMoveSpeed).clamp(0.0, 0.95);
+          } else {
+            hero.patrolProgress =
+                (hero.patrolProgress - heroMoveSpeed).clamp(0.05, 0.95);
+          }
+        }
+      } else {
+        // No enemies — drift back to rest position
+        if (hero.patrolProgress > 0.3) {
+          hero.patrolProgress -= heroMoveSpeed * 0.5;
+        } else if (hero.patrolProgress < 0.28) {
+          hero.patrolProgress += heroMoveSpeed * 0.5;
+        }
+      }
+      final hPos = positionOnPath(hero.patrolProgress);
+      hero.x = hPos.x;
+      hero.y = hPos.y;
+
       // Check if any enemy is in melee range
       final engagedIdx = _findTarget(enemies, hero.x, hero.y, heroMeleeRange);
       final inCombat = engagedIdx >= 0;
 
-      // Patrol movement — only when NOT fighting
-      if (!inCombat) {
-        if (hero.patrolForward) {
-          hero.patrolProgress += heroPatrolSpeed;
-          if (hero.patrolProgress >= 0.85) hero.patrolForward = false;
-        } else {
-          hero.patrolProgress -= heroPatrolSpeed;
-          if (hero.patrolProgress <= 0.15) hero.patrolForward = true;
-        }
-        final hPos = positionOnPath(hero.patrolProgress);
-        hero.x = hPos.x;
-        hero.y = hPos.y;
-      }
-
-      // Attack nearest enemy
+      // Attack nearest enemy (apply equipped loot dmg bonus)
       hero.attackCooldown = (hero.attackCooldown - 1).clamp(0, 999);
       if (hero.attackCooldown <= 0 && inCombat) {
         hero.attackCooldown = heroAttackSpeed;
-        final dmg = heroDamageAtLevel(hero.damageLevel);
+        final baseDmg = heroDamageAtLevel(hero.damageLevel);
+        final lootBonus = _lootDmgBonus(hero.equippedLootId, inventory);
+        final dmg = baseDmg * (1.0 + lootBonus);
         _instantHit(enemies[engagedIdx], dmg, damageNumbers, res, kills,
             totalKills, totalGpEarned, (r, k, tk, tg) {
           res = r;
@@ -246,7 +283,7 @@ TdGameState processTick(TdGameState state) {
         });
       }
 
-      // Take damage from blocked enemies (use pathProgress, same as blocking check)
+      // Take damage from blocked enemies
       for (final e in enemies) {
         if (!e.alive) continue;
         final diff = (e.pathProgress - hero.patrolProgress).abs();
@@ -309,6 +346,10 @@ TdGameState processTick(TdGameState state) {
               totalGpEarned += gp;
               kills++;
               totalKills++;
+              if (p.sourceSlotIndex >= 0 &&
+                  p.sourceSlotIndex < towerSlots.length) {
+                towerSlots[p.sourceSlotIndex].kills++;
+              }
               // Loot drop roll
               if (inventory.length < maxInventorySize) {
                 final loot = rollLootDrop(state.wave);
@@ -490,18 +531,31 @@ void _instantHit(
 
 // ─── Targeting ───────────────────────────────────────────────────
 
-int _findTarget(List<ActiveEnemy> enemies, double tx, double ty, double range) {
+int _findTarget(List<ActiveEnemy> enemies, double tx, double ty, double range,
+    [TargetMode mode = TargetMode.first]) {
   int bestIdx = -1;
-  double bestProgress = -1;
+  double bestScore = -1;
   for (int i = 0; i < enemies.length; i++) {
     final e = enemies[i];
     if (!e.alive) continue;
     final pos = positionOnPath(e.pathProgress);
     final dx = pos.x - tx;
     final dy = pos.y - ty;
-    if (sqrt(dx * dx + dy * dy) > range) continue;
-    if (e.pathProgress > bestProgress) {
-      bestProgress = e.pathProgress;
+    final dist = sqrt(dx * dx + dy * dy);
+    if (dist > range) continue;
+    double score;
+    switch (mode) {
+      case TargetMode.first:
+        score = e.pathProgress;
+      case TargetMode.last:
+        score = -e.pathProgress;
+      case TargetMode.strongest:
+        score = e.hp;
+      case TargetMode.closest:
+        score = -dist;
+    }
+    if (bestIdx == -1 || score > bestScore) {
+      bestScore = score;
       bestIdx = i;
     }
   }
@@ -592,8 +646,13 @@ TdGameState buyPeasant(TdGameState state) {
   final peasants = List<Peasant>.from(state.peasants);
   final id = peasants.isEmpty ? 1 : peasants.map((p) => p.id).reduce(max) + 1;
   final nodeIdx = _leastBusyNode(peasants, state.resourceNodes.length);
-  peasants.add(
-      Peasant(id: id, assignedNodeIndex: nodeIdx, x: garrisonX, y: garrisonY));
+  final name = peasantNames[(id - 1) % peasantNames.length];
+  peasants.add(Peasant(
+      id: id,
+      name: name,
+      assignedNodeIndex: nodeIdx,
+      x: garrisonX,
+      y: garrisonY));
   return state.copyWith(
     resources: state.resources.copyWith(gold: state.resources.gold - cost),
     peasants: peasants,
@@ -887,9 +946,10 @@ TdGameState buyPrestige(TdGameState state, String bonusKey) {
 
 TdGameState resetGame(TdGameState state) {
   final b = state.prestigeBonuses;
-  final startGold = prestigeStartingGold(b);
-  final startCap = prestigePeasantCap(b);
-  final gMaxHp = prestigeGarrisonMaxHp(b, 1);
+  final pl = state.prestigeLevel;
+  final startGold = prestigeStartingGold(b, pl);
+  final startCap = prestigePeasantCap(b, pl);
+  final gMaxHp = prestigeGarrisonMaxHp(b, 1, pl);
   return TdGameState(
     highestWave: max(state.highestWave, state.wave),
     towerSlots: createTowerSlots(),
@@ -901,6 +961,53 @@ TdGameState resetGame(TdGameState state) {
     prestigePoints: state.prestigePoints,
     totalPrestigePoints: state.totalPrestigePoints,
     prestigeBonuses: b,
-    inventory: state.inventory,
+    prestigeLevel: pl,
+    inventory: const [],
+  );
+}
+
+// ─── Prestige Reset ─────────────────────────────────────────────
+
+TdGameState doPrestige(TdGameState state) {
+  if (state.wave < 100) return state;
+  final newLevel = state.prestigeLevel + 1;
+  final earned = prestigePointsForPrestige(state.wave);
+  final b = state.prestigeBonuses;
+  final startGold = prestigeStartingGold(b, newLevel);
+  final startCap = prestigePeasantCap(b, newLevel);
+  final gMaxHp = prestigeGarrisonMaxHp(b, 1, newLevel);
+  return TdGameState(
+    highestWave: max(state.highestWave, state.wave),
+    towerSlots: createTowerSlots(),
+    resourceNodes: createResourceNodes(),
+    wallSlots: createWallSlots(),
+    resources: Resources(gold: startGold),
+    peasantCap: startCap,
+    garrison: GarrisonState(hp: gMaxHp, maxHp: gMaxHp),
+    prestigePoints: state.prestigePoints + earned,
+    totalPrestigePoints: state.totalPrestigePoints + earned,
+    prestigeBonuses: b,
+    prestigeLevel: newLevel,
+    inventory: const [],
+  );
+}
+
+// ─── Sell Loot ───────────────────────────────────────────────────
+
+TdGameState sellLoot(TdGameState state, String lootId) {
+  final idx = state.inventory.indexWhere((l) => l.id == lootId);
+  if (idx < 0) return state;
+  final item = state.inventory[idx];
+  // Unequip first if equipped
+  var s = state;
+  if (state.hero?.equippedLootId == lootId ||
+      state.towerSlots.any((t) => t.equippedLootId == lootId)) {
+    s = unequipLoot(s, lootId);
+  }
+  final inv = List<LootItem>.from(s.inventory)..removeAt(idx);
+  final gold = s.resources.gold + lootSellPrice(item.rarity);
+  return s.copyWith(
+    inventory: inv,
+    resources: s.resources.copyWith(gold: gold),
   );
 }
