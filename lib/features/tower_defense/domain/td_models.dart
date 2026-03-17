@@ -20,6 +20,8 @@ enum TdPhase { idle, waveActive, waveComplete, gameOver }
 
 enum AbilityType { iceBarrage, cannonBlast, heal }
 
+enum TargetMode { first, last, strongest, closest }
+
 enum WaveModifier { none, armoured, swift, horde, regen, shielded }
 
 enum LootRarity { common, uncommon, rare, legendary }
@@ -133,7 +135,8 @@ class GarrisonState {
     this.fireCooldown = 0,
   });
 
-  double get armourReduction => armourLevel / (armourLevel + 100);
+  double get armourReduction =>
+      (armourLevel / (armourLevel + 100)).clamp(0.0, 0.50);
 
   GarrisonState copyWith({
     int? hp,
@@ -178,6 +181,8 @@ class TowerSlot {
   int level;
   double fireCooldown;
   String? equippedLootId;
+  int kills;
+  TargetMode targetMode;
 
   TowerSlot({
     required this.x,
@@ -186,6 +191,8 @@ class TowerSlot {
     this.level = 0,
     this.fireCooldown = 0,
     this.equippedLootId,
+    this.kills = 0,
+    this.targetMode = TargetMode.first,
   });
 
   bool get isEmpty => towerType == null;
@@ -197,6 +204,8 @@ class TowerSlot {
         'towerType': towerType?.index,
         'level': level,
         if (equippedLootId != null) 'equippedLootId': equippedLootId,
+        'kills': kills,
+        'targetMode': targetMode.index,
       };
 
   factory TowerSlot.fromJson(Map<String, dynamic> j) => TowerSlot(
@@ -207,6 +216,8 @@ class TowerSlot {
             : null,
         level: j['level'] as int? ?? 0,
         equippedLootId: j['equippedLootId'] as String?,
+        kills: j['kills'] as int? ?? 0,
+        targetMode: TargetMode.values[j['targetMode'] as int? ?? 0],
       );
 }
 
@@ -303,20 +314,18 @@ class HeroUnit {
   double attackCooldown;
   int respawnTimer;
   bool alive;
-  bool patrolForward;
   String? equippedLootId;
 
   HeroUnit({
     this.x = 0.5,
     this.y = 0.5,
     this.patrolProgress = 0.3,
-    this.hp = 30,
-    this.maxHp = 30,
+    this.hp = 50,
+    this.maxHp = 50,
     this.damageLevel = 1,
     this.attackCooldown = 0,
     this.respawnTimer = 0,
     this.alive = true,
-    this.patrolForward = true,
     this.equippedLootId,
   });
 
@@ -329,8 +338,8 @@ class HeroUnit {
 
   factory HeroUnit.fromJson(Map<String, dynamic> j) => HeroUnit(
         damageLevel: j['damageLevel'] as int? ?? 1,
-        hp: j['hp'] as int? ?? 30,
-        maxHp: j['maxHp'] as int? ?? 30,
+        hp: j['hp'] as int? ?? 50,
+        maxHp: j['maxHp'] as int? ?? 50,
         equippedLootId: j['equippedLootId'] as String?,
       );
 }
@@ -381,6 +390,7 @@ class WallSlot {
 
 class Peasant {
   final int id;
+  final String name;
   int assignedNodeIndex;
   double x;
   double y;
@@ -389,6 +399,7 @@ class Peasant {
 
   Peasant({
     required this.id,
+    this.name = 'Peasant',
     this.assignedNodeIndex = -1,
     required this.x,
     required this.y,
@@ -398,11 +409,13 @@ class Peasant {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'name': name,
         'assignedNodeIndex': assignedNodeIndex,
       };
 
   factory Peasant.fromJson(Map<String, dynamic> j) => Peasant(
         id: j['id'] as int? ?? 0,
+        name: j['name'] as String? ?? 'Peasant',
         assignedNodeIndex: j['assignedNodeIndex'] as int? ?? -1,
         x: 0.5,
         y: 0.92,
@@ -441,6 +454,7 @@ class ActiveEnemy {
   final int damage;
   bool alive;
   final bool isTreasure;
+  final bool isBoss;
   bool frozen;
   bool shielded;
   int poisonTicksLeft;
@@ -455,6 +469,7 @@ class ActiveEnemy {
     this.pathProgress = 0.0,
     this.alive = true,
     this.isTreasure = false,
+    this.isBoss = false,
     this.frozen = false,
     this.shielded = false,
     this.poisonTicksLeft = 0,
@@ -471,6 +486,7 @@ class Projectile {
   final double damage;
   final ProjectileType type;
   final int targetEnemyIndex;
+  final int sourceSlotIndex;
   bool active;
 
   Projectile({
@@ -481,6 +497,7 @@ class Projectile {
     required this.damage,
     required this.type,
     required this.targetEnemyIndex,
+    this.sourceSlotIndex = -1,
     this.active = true,
   });
 }
@@ -625,6 +642,7 @@ class TdGameState {
   final int totalPrestigePoints;
   final PrestigeBonuses prestigeBonuses;
   final List<LootItem> inventory;
+  final int prestigeLevel;
 
   const TdGameState({
     this.resources = const Resources(gold: 25),
@@ -655,6 +673,7 @@ class TdGameState {
     this.totalPrestigePoints = 0,
     this.prestigeBonuses = const PrestigeBonuses(),
     this.inventory = const [],
+    this.prestigeLevel = 0,
   });
 
   TdGameState copyWith({
@@ -686,6 +705,7 @@ class TdGameState {
     int? totalPrestigePoints,
     PrestigeBonuses? prestigeBonuses,
     List<LootItem>? inventory,
+    int? prestigeLevel,
   }) =>
       TdGameState(
         resources: resources ?? this.resources,
@@ -719,6 +739,7 @@ class TdGameState {
         totalPrestigePoints: totalPrestigePoints ?? this.totalPrestigePoints,
         prestigeBonuses: prestigeBonuses ?? this.prestigeBonuses,
         inventory: inventory ?? this.inventory,
+        prestigeLevel: prestigeLevel ?? this.prestigeLevel,
       );
 
   // ── Persistence ────────────────────────────────────────────
@@ -741,6 +762,7 @@ class TdGameState {
         'totalPrestigePoints': totalPrestigePoints,
         'prestigeBonuses': prestigeBonuses.toJson(),
         'inventory': inventory.map((l) => l.toJson()).toList(),
+        'prestigeLevel': prestigeLevel,
       };
 
   factory TdGameState.fromJson(Map<String, dynamic> j) => TdGameState(
@@ -748,6 +770,14 @@ class TdGameState {
             Resources.fromJson(j['resources'] as Map<String, dynamic>? ?? {}),
         garrison: GarrisonState.fromJson(
             j['garrison'] as Map<String, dynamic>? ?? {}),
+        towerSlots: (j['towerSlots'] as List<dynamic>?)
+                ?.map((e) => TowerSlot.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
+        peasants: (j['peasants'] as List<dynamic>?)
+                ?.map((e) => Peasant.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            const [],
         peasantCap: j['peasantCap'] as int? ?? 2,
         wave: j['wave'] as int? ?? 1,
         highestWave: j['highestWave'] as int? ?? 0,
@@ -778,6 +808,7 @@ class TdGameState {
                 ?.map((e) => LootItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             const [],
+        prestigeLevel: j['prestigeLevel'] as int? ?? 0,
       );
 
   String serialize() => jsonEncode(toJson());

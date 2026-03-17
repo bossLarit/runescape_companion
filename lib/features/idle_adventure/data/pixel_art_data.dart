@@ -178,17 +178,17 @@ final _hydraPal = <String, Color>{
 // ── Chicken ─────────────────────────────────────────────────────
 final _chickenIdle = _parse([
   '................',
-  '................',
-  '................',
-  '......kk........',
-  '.....kwwk.......',
-  '.....kwwk.......',
+  '......rrk.......',
+  '.....krrk.......',
+  '....kwwwk.......',
+  '....kwkwk.......',
+  '....kwwwk.......',
+  '.....koyk.......',
   '....kwwwwk......',
-  '...kkwwwwkk.....',
-  '..kwwwwwwwwk....',
-  '..kwwwwwwwwk....',
   '...kwwwwwwk.....',
-  '....kwwwwk......',
+  '...kwwwwwwk.....',
+  '..kwwwwwwwkk....',
+  '...kwwwwwwk.....',
   '....kwwwwk......',
   '.....k..k.......',
   '....ko..ok......',
@@ -196,14 +196,15 @@ final _chickenIdle = _parse([
 ], _chickenPal);
 
 final _chickenAtk = _parse([
-  '................',
-  '................',
-  '......kk........',
-  '.....kwwk.......',
-  '....kwwwwk......',
-  '...kkwwwwkk.....',
-  '..kwwwwwwwwk....',
-  '..kwwwwwwwwk....',
+  '.....rrk........',
+  '....krrk........',
+  '....kwwwk.......',
+  '....kwkwk.......',
+  '....kwwwk.......',
+  '.....koyk.......',
+  '...kwwwwwk......',
+  '..kwwwwwwwk.....',
+  '..kwwwwwwwwkk...',
   '..kwwwwwwwwk....',
   '...kwwwwwwk.....',
   '....kwwwwk......',
@@ -211,22 +212,21 @@ final _chickenAtk = _parse([
   '....k....k......',
   '...ko....ok.....',
   '................',
-  '................',
 ], _chickenPal);
 
 // ── Cow ─────────────────────────────────────────────────────────
 final _cowIdle = _parse([
   '................',
-  '..kk......kk....',
-  '.knnk....knnk...',
-  '.knnkkkkkknNk...',
+  '.kkk......kkk...',
+  '.kwwk....kwwk...',
+  '..kwwkkkkkwNk...',
   '..kNNNNNNNNk....',
-  '..kNNkNNkNNk....',
+  '..kNkNNkNNNk....',
   '..kNNNNNNNNk....',
   '...kNNppNNk.....',
-  '..knnnnnnnnk....',
-  '.knnnnnnnnnnk...',
-  '.knnnnnnnnnnk...',
+  '..knwnnnnwnk....',
+  '.knwnnnnnnwnk...',
+  '.knnwnnnnwnnk...',
   '.knnnnnnnnnnk...',
   '..knnnnnnnnk....',
   '..kn..kk..nk....',
@@ -235,194 +235,194 @@ final _cowIdle = _parse([
 ], _cowPal);
 
 final _cowAtk = _parse([
-  '................',
-  '..kk......kk....',
-  '.knnk....knnk...',
-  '.knnkkkkkknNk...',
-  '..kNNNNNNNNk....',
-  '..kNNkNNkNNk....',
-  '..kNNNNNNNNk....',
-  '..kkNNppNNkk....',
-  '.knnnnnnnnnnk...',
-  'knnnnnnnnnnnnk..',
-  'knnnnnnnnnnnnk..',
+  '..kkk....kkk....',
+  '..kwwk..kwwk....',
+  '...kwwkkkkwNk...',
+  '...kNNNNNNNk....',
+  '...kNkNNkNNk....',
+  '...kNNNNNNNk....',
+  '...kkNNppNNk....',
+  '..knwnnnnwnk....',
+  '.knwnnnnnnwnk...',
+  '.knnwnnnnwnnk...',
   '.knnnnnnnnnnk...',
   '..knnnnnnnnk....',
-  '...kn.kk.nk.....',
-  '...kk.kk.kk.....',
+  '..knnnnnnnnk....',
+  '..kn..kk..nk....',
+  '..kk..kk..kk....',
   '................',
 ], _cowPal);
 
 // ── Goblin ──────────────────────────────────────────────────────
 final _goblinIdle = _parse([
   '................',
-  '................',
-  '.....kkkk.......',
+  '...kk..kk.......',
+  '..kGgkkgGk......',
   '....kggggk......',
   '....kgGGgk......',
   '...kgkggkgk.....',
-  '...kggggggk.....',
-  '....kgrrGk......',
+  '...kggGGggk.....',
+  '....kgrrk.......',
   '.....kggk.......',
   '....knnnnnk.....',
   '....knnnnnk.....',
   '...kgknnnkgk....',
   '...k.knnnk.k....',
-  '.....knnnk......',
+  '.....kggk.......',
   '......k..k......',
   '.....kk..kk.....',
 ], _goblinPal);
 
 final _goblinAtk = _parse([
   '................',
-  '..........k.....',
-  '.....kkkk.k.....',
-  '....kggggkk.....',
-  '....kgGGgk......',
+  '...kk..kk..k....',
+  '..kGgkkgGk.k....',
+  '....kggggk.k....',
+  '....kgGGgkkk....',
   '...kgkggkgk.....',
-  '...kggggggk.....',
-  '....kgrrGk.kkk..',
+  '...kggGGggk.kk..',
+  '....kgrrk..kyk..',
   '.....kggk..kyk..',
-  '....knnnnnkkyk..',
   '....knnnnnkkk...',
+  '....knnnnnk.....',
   '...kgknnnkgk....',
   '...k.knnnk.k....',
-  '.....knnnk......',
-  '......k..k......',
-  '.....kk..kk.....',
+  '.....kggk.......',
+  '....kk..kk......',
+  '................',
 ], _goblinPal);
 
 // ── Al-Kharid Warrior ───────────────────────────────────────────
 final _guardIdle = _parse([
-  '......kkk.......',
-  '.....kdddk......',
-  '.....kdddk......',
+  '.....kkkkk......',
+  '....kwwwwwk.....',
+  '....kdddwdk.....',
+  '.....kssskk.....',
+  '.....kskskk.....',
+  '.....kssskk.....',
   '......ksk.......',
-  '.....ksSSk......',
   '....kkSSSkkk....',
-  '...kbkSSSk.k....',
-  '...kbkSSSk......',
+  '...kSkSSSk.k....',
+  '...kSkSSSk......',
   '....kkSSSk......',
   '.....kSSSk......',
-  '.....kSSSk......',
-  '.....kdSdk......',
-  '......k.k.......',
+  '.....kdkdk......',
   '......k.k.......',
   '.....kk.kk......',
   '................',
 ], _guardPal);
 
 final _guardAtk = _parse([
-  '......kkk.......',
-  '.....kdddk......',
-  '.....kdddk......',
+  '.....kkkkk......',
+  '....kwwwwwk.....',
+  '....kdddwdk.....',
+  '.....kssskk.....',
+  '.....kskskk.....',
+  '.....kssskk.....',
   '......ksk.......',
-  '.....ksSSk......',
-  '....kkSSSkkk....',
-  '..kkbkSSSk.k....',
+  '...kkkSSSkkk....',
+  '..kSSkSSSk.k....',
   '..kok.kSSSk.....',
   '..kkk.kSSSk.....',
-  '......kSSSk.....',
   '.....kSSSk......',
-  '.....kdSdk......',
-  '......k.k.......',
-  '.....kk.k.......',
-  '.....k..kk......',
+  '.....kdkdk......',
+  '....kk..k.......',
+  '....k...kk......',
   '................',
 ], _guardPal);
 
 // ── Hill Giant ──────────────────────────────────────────────────
 final _hillGiantIdle = _parse([
-  '....kkkkkkk.....',
-  '...kNNNNNNNk....',
-  '...kNkNNkNNk....',
-  '...kNNNNNNNk....',
-  '....kNssNk......',
-  '.....kssk.......',
-  '...kksssskk.....',
-  '..ksssssssSk....',
-  '..ksssssssSk....',
-  '..ksssssssSk....',
-  '...ksssssSk.....',
-  '....kssssk......',
-  '....kssssk......',
-  '....kss.ssk.....',
-  '...kkk..kkk.....',
+  '...kkkkkkkk.....',
+  '..ksssssssssk...',
+  '..ksksskssssk...',
+  '..kssssssssk....',
+  '...kssNNssk.....',
+  '....ksssk.......',
+  '..kksssssskk....',
+  '.ksssssssssSk...',
+  '.ksssssssssSk...',
+  '.ksssssssssSk...',
+  '..kssssssssk....',
+  '..kgnnnnnngk....',
+  '...kgnnnngk.....',
+  '...kss..ssk.....',
+  '..kkk...kkk.....',
   '................',
 ], _hillGiantPal);
 
 final _hillGiantAtk = _parse([
-  '....kkkkkkk.....',
-  '...kNNNNNNNk....',
-  '...kNkNNkNNk....',
-  '...kNNNNNNNk....',
-  '....kNssNk......',
-  '.....kssk.......',
-  '...kksssskkkk...',
-  '..ksssssssSkSk..',
-  '..ksssssssSkSk..',
-  '..ksssssssSkk...',
-  '...ksssssSk.....',
-  '....kssssk......',
-  '....kssssk......',
-  '...kss...ssk....',
-  '..kkk....kkk...',
+  '...kkkkkkkk.....',
+  '..ksssssssssk...',
+  '..ksksskssssk...',
+  '..kssssssssk....',
+  '...kssNNssk.....',
+  '....ksssk.......',
+  '.kkkssssskkkkk..',
+  'ksssssssssSknSk.',
+  '.kssssssssSknnk.',
+  '.kssssssssSkk...',
+  '..kssssssssk....',
+  '..kgnnnnnngk....',
+  '...kgnnnngk.....',
+  '..kss....ssk....',
+  '.kkk.....kkk....',
   '................',
 ], _hillGiantPal);
 
 // ── Moss Giant ──────────────────────────────────────────────────
 final _mossGiantIdle = _parse([
-  '....kkkkkk......',
-  '...kggGGggk.....',
-  '...kgkggkgk.....',
-  '...kggGGggk.....',
-  '....kgGGk.......',
-  '.....kggk.......',
-  '...kkGGGGkk.....',
-  '..kGGGGGGGGk....',
-  '..kGGGGGGGGk....',
-  '..kGGnGGnGGk....',
-  '...kGGGGGGk.....',
-  '....kGGGGk......',
-  '...kkGGGGkk.....',
-  '...kgk..kgk.....',
+  '...kkkkkkk......',
+  '..kggGgGggk.....',
+  '..kgkGgkGgk.....',
+  '..kggGGGggk.....',
+  '...kgGGGk.......',
+  '....kgGk........',
+  '..kkGGGGGkk.....',
+  '.kGGGGGGGGGk....',
+  '.kGGnGGGnGGk....',
+  '.kGGGGGGGGGk....',
+  '..kGGGGGGGk.....',
+  '..kgnGGGngk.....',
+  '...kGGGGGk......',
+  '...kGg..gGk.....',
   '..kkk...kkk.....',
   '................',
 ], _mossGiantPal);
 
 final _mossGiantAtk = _parse([
-  '....kkkkkk......',
-  '...kggGGggk.....',
-  '...kgkggkgk.....',
-  '...kggGGggk.....',
-  '....kgGGk.......',
-  '.....kggk.......',
-  '..kkkGGGGkkk....',
-  '.kGGGGGGGGGGk...',
-  '.kGGGGGGGGGGk...',
-  '..kGGnGGnGGk....',
-  '...kGGGGGGk.....',
-  '....kGGGGk......',
-  '...kkGGGGkk.....',
-  '..kgk....kgk....',
+  '...kkkkkkk......',
+  '..kggGgGggk.....',
+  '..kgkGgkGgk.....',
+  '..kggGGGggk.....',
+  '...kgGGGk.......',
+  '....kgGk........',
+  '.kkkGGGGGkkk....',
+  'kGGGGGGGGGGGk...',
+  'kGGnGGGGnGGGk...',
+  '.kGGGGGGGGGk....',
+  '..kGGGGGGGk.....',
+  '..kgnGGGngk.....',
+  '...kGGGGGk......',
+  '..kGg....gGk....',
   '.kkk......kkk...',
   '................',
 ], _mossGiantPal);
 
 // ── Lesser Demon ────────────────────────────────────────────────
 final _lesserDemonIdle = _parse([
-  '..k..........k..',
-  '..kk........kk..',
-  '...kkkkkkkkkk...',
-  '...krrRRRRrrk...',
-  '...krkRRkRrrk...',
-  '...krrRRRRrrk...',
+  '....kr...rk.....',
+  '....kkr.rkk.....',
+  '...krRRRRRrk....',
+  '...krkRRkrrk....',
+  '...krrRRRrrk....',
   '....krRooRk.....',
   '.....krrRk......',
-  '....kkRRRRkk....',
-  '...krrRRRRrrk...',
-  '...krrRRRRrrk...',
-  '....krRRRRk.....',
+  '.kk.kkRRRRkk.kk',
+  'krk.krrRRrrkk.rk',
+  '.kk.krrRRrrk.kk.',
+  '....krRRRRrk....',
+  '.....kRRRRk.....',
   '.....krrrrk.....',
   '.....kr..rk.....',
   '....kkr.krkk....',
@@ -430,18 +430,18 @@ final _lesserDemonIdle = _parse([
 ], _lesserDemonPal);
 
 final _lesserDemonAtk = _parse([
-  '..k..........k..',
-  '..kk........kk..',
-  '...kkkkkkkkkk...',
-  '...krrRRRRrrk...',
-  '...krkRRkRrrk...',
-  '...krrRRRRrrk...',
+  '....kr...rk.....',
+  '....kkr.rkk.....',
+  '...krRRRRRrk....',
+  '...krkRRkrrk....',
+  '...krrRRRrrk....',
   '....krRooRk.....',
   '.....krrRk......',
-  '..kkkRRRRRkkk...',
-  '.krrRRRRRRrrRk..',
-  '..krrRRRRrrRk...',
-  '....krRRRRk.....',
+  '.kkkkkRRRRkkkkk.',
+  'krrrkrrRRrrkrrrk',
+  '.kkkkrrRRrrkkrk.',
+  '....krRRRRrk.k..',
+  '.....kRRRRk.....',
   '.....krrrrk.....',
   '....kr....rk....',
   '...kkr..krkk....',
@@ -450,17 +450,17 @@ final _lesserDemonAtk = _parse([
 
 // ── Greater Demon ───────────────────────────────────────────────
 final _greaterDemonIdle = _parse([
-  '.kk..........kk.',
-  '.kkk........kkk.',
-  '..kkkkkkkkkkkkk.',
-  '..kRRrrrrrRRRk..',
-  '..kRkRrrrkRRRk..',
-  '..kRRrrrrrRRRk..',
+  '...kr.....rk....',
+  '...kkr...rkk....',
+  '..kkRRRRRRRkk...',
+  '..kRkRrrrkRRk...',
+  '..kRRrrrrrRRk...',
   '...kRroorRRk....',
   '....kRrrrRk.....',
-  '...kkRRRRRRkk...',
-  '..kRRRRRRRRRRk..',
-  '..kRRRRRRRRRRk..',
+  'kkk.kRRRRRk.kkk',
+  'kRRkkRRRRRRkkRRk',
+  'kRrkRRRRRRRRkRrk',
+  '.kkkkRRRRRRkkkk.',
   '...kRRRRRRRRk...',
   '....kRrrrRk.....',
   '....kRr.rRk.....',
@@ -469,17 +469,17 @@ final _greaterDemonIdle = _parse([
 ], _greaterDemonPal);
 
 final _greaterDemonAtk = _parse([
-  '.kk..........kk.',
-  '.kkk........kkk.',
-  '..kkkkkkkkkkkkk.',
-  '..kRRrrrrrRRRk..',
-  '..kRkRrrrkRRRk..',
-  '..kRRrrrrrRRRk..',
+  '...kr.....rk....',
+  '...kkr...rkk....',
+  '..kkRRRRRRRkk...',
+  '..kRkRrrrkRRk...',
+  '..kRRrrrrrRRk...',
   '...kRroorRRk....',
   '....kRrrrRk.....',
+  'kkkkkRRRRRRkkkkk',
+  'kRRRRRRRRRRRRRRk',
+  'kRrrRRRRRRRRrRrk',
   '.kkkkRRRRRRkkkk.',
-  'kRRRRRRRRRRRRRk.',
-  '.kRRRRRRRRRRRk..',
   '...kRRRRRRRRk...',
   '....kRrrrRk.....',
   '...kRr...rRk....',
@@ -490,55 +490,55 @@ final _greaterDemonAtk = _parse([
 // ── Black Dragon ────────────────────────────────────────────────
 final _blackDragonIdle = _parse([
   '................',
-  '.kk.......kkk...',
-  'kddk.....kdddk..',
-  '.kddkkkkkkdddk..',
-  '..kddddddddddk..',
-  '..kdkddddkdddk..',
-  '..kddddddddddk..',
+  '..kk........kk..',
+  '.kdSk......kdSk.',
+  '..kddkkkkkkkdk..',
+  '...kddddddddk...',
+  '...kdkdddkddk...',
   '...kdddddddk....',
-  '....kdddddk.....',
-  '..kkddddddddkk..',
-  '.kdddddddddddk.',
-  '.kdddddddddddk.',
-  '..kdddddddddk..',
-  '...kddd..dddk...',
+  '....kddrrdk.....',
+  '.....kdddk......',
+  'kkk.kddddddkkkk',
+  'kddkkddddddkkddk',
+  'kdSkddddddddkSdk',
+  '.kkkkddddddkkkk.',
+  '....kddd.dddk...',
   '...kkk...kkkk...',
   '................',
 ], _blackDragonPal);
 
 final _blackDragonAtk = _parse([
-  '......rrr.......',
-  '.kk..kRRRk.kkk..',
-  'kddk..krk.kdddk.',
-  '.kddkkkkkkdddk..',
-  '..kddddddddddk..',
-  '..kdkddddkdddk..',
-  '..kddddddddddk..',
+  '.......rRr......',
+  '..kk..kRRRk.kk..',
+  '.kdSk..krk.kdSk.',
+  '..kddkkkkkkkdk..',
+  '...kddddddddk...',
+  '...kdkdddkddk...',
   '...kdddddddk....',
-  '....kdddddk.....',
-  '..kkddddddddkk..',
-  '.kdddddddddddk.',
-  '.kdddddddddddk.',
-  '..kdddddddddk..',
-  '..kddd....dddk..',
+  '....kddrrdk.....',
+  '.....kdddk......',
+  'kkkkkddddddkkkkk',
+  'kddddddddddddddK',
+  'kdSkddddddddkSdk',
+  '.kkkkddddddkkkk.',
+  '...kddd...dddk..',
   '..kkk.....kkkk..',
   '................',
 ], _blackDragonPal);
 
 // ── TzTok-Jad ───────────────────────────────────────────────────
 final _jadIdle = _parse([
-  '..kkk......kkk..',
-  '.krrRk....kRrrk.',
-  '.krrRRkkkkkRrrk.',
-  '..kRRRRRRRRRRk..',
+  '..krrk....krrk..',
+  '.krRRrk..krRRrk.',
+  '.krRRRRkkRRRRrk.',
+  '..kRRoRRRRoRRk..',
   '..kRkRRRRkRRk...',
   '..kRRRRRRRRRk...',
   '...kRRoooRRk....',
   '....kRRRRRk.....',
-  '..kkRRRRRRRkk...',
+  '..kkRRoRRoRkk...',
   '.kRRRRRRRRRRRk..',
-  '.kRRRRRRRRRRRk..',
+  '.kRRRoRRRoRRRk..',
   '..kRRRRRRRRRk...',
   '...kRRRRRRk.....',
   '...kRRr.rRk.....',
@@ -548,16 +548,16 @@ final _jadIdle = _parse([
 
 final _jadAtk = _parse([
   '..yyy...........',
-  '.kyRyk....kkk...',
-  '..kRRkkkkkRrrk..',
-  '..kRRRRRRRRRRk..',
+  '.kyRyk...krrk...',
+  '..kRRRkkRRRRrk..',
+  '..kRRoRRRRoRRk..',
   '..kRkRRRRkRRk...',
   '..kRRRRRRRRRk...',
   '...kRRoooRRk....',
   '....kRRRRRk.....',
-  '.kkkRRRRRRRkkk..',
+  '.kkkRRoRRoRkkk..',
   'kyRRRRRRRRRRRyk.',
-  '.kRRRRRRRRRRRk..',
+  '.kRRRoRRRoRRRk..',
   '..kRRRRRRRRRk...',
   '...kRRRRRRk.....',
   '..kRRr...rRk....',
@@ -572,17 +572,17 @@ final _dustDevilIdle = _parse([
   '.....NSSN.......',
   '....NSSSN.......',
   '....NSkSkN......',
-  '....NSSSN.......',
+  '....NSSSSN......',
   '.....NnN........',
+  '....NnnnN.......',
+  '...NnSnnSN......',
+  '...NnnnnnN......',
+  '..NnSnnnSnN.....',
+  '...NnnnnnN......',
+  '....NnSnN.......',
+  '.....NnN........',
+  '...NNnSnNN......',
   '....NNNNN.......',
-  '...NnnnnnN......',
-  '...NnnnnnN......',
-  '....NnnnN.......',
-  '....NnnnN.......',
-  '.....NnN........',
-  '.....N.N........',
-  '....NN.NN.......',
-  '................',
 ], _dustDevilPal);
 
 final _dustDevilAtk = _parse([
@@ -591,65 +591,64 @@ final _dustDevilAtk = _parse([
   '.....NSSNy......',
   '....NSSSN.......',
   '....NSkSkN......',
-  '....NSSSN.......',
+  '....NSSSSN......',
   '.....NnN........',
-  '...NNNNNNN......',
-  '..NnnnnnnNNN....',
+  '...NNnnnNN......',
+  '..NnSnnSnNNN....',
   '..NnnnnnnnN.....',
+  '.NnSnnnSnnnN....',
+  '..NnnnnnnnN.....',
+  '...NnnSnnnN.....',
   '....NnnnN.......',
-  '....NnnnN.......',
-  '.....NnN........',
-  '....N...N.......',
-  '...NN...NN......',
-  '................',
+  '..NNnSnSnNN.....',
+  '...NNNNNNN......',
 ], _dustDevilPal);
 
 // ── Skeletal Wyvern ─────────────────────────────────────────────
 final _wyvernIdle = _parse([
   '................',
-  '.kk.........kk..',
-  'kwwk.......kwwk.',
-  '.kwwkkkkkkkkwk..',
-  '..kwwwwwwwwwk...',
-  '..kwkwwwwkwk....',
-  '..kwwwwwwwwk....',
-  '...kwwSSSwk.....',
-  '....kwwwwk......',
-  '...kkwwwwwkk....',
-  '..kwwwwwwwwwk...',
-  '..kwwwwwwwwwk...',
+  '..kk........kk..',
+  '.kwNk......kwNk.',
+  '..kwwkkkkkkwwk..',
+  '...kwwwwwwwwk...',
+  '...kwkwwwkwwk...',
   '...kwwwwwwwk....',
-  '....kww.wwk.....',
-  '...kkk..kkk.....',
+  '....kwwBBwk.....',
+  '.....kwwwk......',
+  'kkk.kkwwwwkk.kkk',
+  'kwNkkwwwwwwkkNwk',
+  'kwwkwwwwwwwwkwwk',
+  '.kkkkwwwwwwkkkk.',
+  '....kww..wwk....',
+  '...kkk...kkk....',
   '................',
 ], _wyvernPal);
 
 final _wyvernAtk = _parse([
-  '.....bbb........',
-  '.kk.kBBBk..kk..',
-  'kwwk.kbk..kwwk.',
-  '.kwwkkkkkkkkwk..',
-  '..kwwwwwwwwwk...',
-  '..kwkwwwwkwk....',
-  '..kwwwwwwwwk....',
-  '...kwwSSSwk.....',
-  '....kwwwwk......',
-  '..kkkwwwwwkkk...',
-  '.kwwwwwwwwwwwk..',
-  '.kwwwwwwwwwwwk..',
+  '......bBb.......',
+  '..kk.kBBBk..kk..',
+  '.kwNk.kBk..kwNk.',
+  '..kwwkkkkkkwwk..',
+  '...kwwwwwwwwk...',
+  '...kwkwwwkwwk...',
   '...kwwwwwwwk....',
-  '...kww...wwk....',
-  '..kkk....kkk....',
+  '....kwwBBwk.....',
+  '.....kwwwk......',
+  'kkkkkkwwwwkkkkkk',
+  'kwNwwwwwwwwwwNwk',
+  'kwwkwwwwwwwwkwwk',
+  '.kkkkwwwwwwkkkk.',
+  '...kww....wwk...',
+  '..kkk.....kkk...',
   '................',
 ], _wyvernPal);
 
 // ── Abyssal Demon ───────────────────────────────────────────────
 final _abyssalDemonIdle = _parse([
-  '................',
-  '..kk........kk..',
-  '..kpPk....kPpk..',
-  '...kpPkkkkPpk...',
-  '...kPPPPPPPk....',
+  '..kPk..kPk.kPk..',
+  '..kpk..kpk.kpk..',
+  '...kkkkkkkkk....',
+  '...kPPpPPpPk....',
   '...kPkPPkPPk....',
   '...kPPPPPPPk....',
   '....kPrrPPk.....',
@@ -657,18 +656,18 @@ final _abyssalDemonIdle = _parse([
   '....kkPPPPkk....',
   '...kPPPPPPPPk...',
   '...kPPPPPPPPk...',
-  '....kPPPPPPk....',
+  '....kPPpPPPk....',
+  '.....kPPPPk.....',
   '.....kPp.pPk....',
   '....kkP..kPkk...',
   '................',
 ], _abyssalDemonPal);
 
 final _abyssalDemonAtk = _parse([
-  '......RR........',
-  '..kk.kRRk...kk..',
-  '..kpPk.k..kPpk..',
-  '...kpPkkkkPpk...',
-  '...kPPPPPPPk....',
+  '..kPk..kPk.kPk..',
+  '..kpk..kpk.kpk..',
+  '...kkkkkkkkk....',
+  '...kPPpPPpPk....',
   '...kPkPPkPPk....',
   '...kPPPPPPPk....',
   '....kPrrPPk.....',
@@ -676,7 +675,8 @@ final _abyssalDemonAtk = _parse([
   '..kkkPPPPPkkk...',
   '.kPPPPPPPPPPPk..',
   '..kPPPPPPPPPk...',
-  '....kPPPPPPk....',
+  '....kPPpPPPk....',
+  '.....kPPPPk.....',
   '....kPp...pPk...',
   '...kkP....kPkk..',
   '................',
@@ -685,37 +685,37 @@ final _abyssalDemonAtk = _parse([
 // ── Cerberus ────────────────────────────────────────────────────
 final _cerberusIdle = _parse([
   '................',
-  '.kk..kkk..kk....',
+  '.kkk.kkk.kkk....',
+  'kdrkkdrdkkrdk...',
   'kddkkdddkkddk...',
-  'kdddddddddddk..',
-  'kdkdkdkdkdkdk..',
-  'kdddddddddddk..',
-  '.kddddddddddk..',
-  '..kdddddddk....',
-  '..kddddddddkk..',
-  '..kddddddddddK.',
-  '..kddddddddddK.',
-  '...kddddddddK..',
-  '....kddddddk....',
-  '....kdd.dddk....',
-  '...kkk..kkkk....',
+  'kdkdkdkdkdkdk...',
+  'kdddddddddddk...',
+  '.kdddddddddk....',
+  '..kdddddddk.....',
+  '..kddddddddkk...',
+  '..kdddddddddddk.',
+  '...kdddddddddk..',
+  '...kdddddddddk..',
+  '....kdddddddk...',
+  '....kdd..dddk...',
+  '...kkk...kkkk...',
   '................',
 ], _cerberusPal);
 
 final _cerberusAtk = _parse([
-  '...rr.rrr.rr....',
-  '.kkRkkRRRkkRk...',
+  '..rr..rrr..rr...',
+  '.kRRk.kRRk.kRRk.',
+  'kdrkkdrdkkrdk...',
   'kddkkdddkkddk...',
-  'kdddddddddddk..',
-  'kdkdkdkdkdkdk..',
-  'kdddddddddddk..',
-  '.kddddddddddk..',
-  '..kdddddddk....',
-  '.kkddddddddkkk.',
-  '.kdddddddddddk.',
-  '.kdddddddddddk.',
-  '...kddddddddK..',
-  '....kddddddk....',
+  'kdkdkdkdkdkdk...',
+  'kdddddddddddk...',
+  '.kdddddddddk....',
+  '..kdddddddk.....',
+  '.kkddddddddkkk..',
+  '.kdddddddddddk..',
+  '..kdddddddddk...',
+  '...kdddddddddk..',
+  '....kdddddddk...',
   '...kdd...dddk...',
   '..kkk....kkkk...',
   '................',
@@ -723,18 +723,18 @@ final _cerberusAtk = _parse([
 
 // ── Alchemical Hydra ────────────────────────────────────────────
 final _hydraIdle = _parse([
-  '.kk..kkk..kk....',
-  'kggkkgBgkkggk...',
-  'kgGgkgBBkkgGk...',
-  '.kgkkgBBgkkgk...',
+  'kgk.kBk.kgk.....',
+  'kGgkkBBkkGgk....',
+  '.kgkkkkkkkgk....',
   '..k.kBBBBk.k....',
   '.....kBBBk......',
-  '....kkBBBBkk....',
-  '...kBBBBBBBBk...',
-  '...kBBgBBgBBk...',
-  '...kBBBBBBBBk...',
-  '....kBBBBBBk....',
-  '.....kBBBBk.....',
+  '....kBBBBBk.....',
+  '...kBBgBBgBk....',
+  '...kBBBBBBBk....',
+  '...kBBBBBBBk....',
+  '....kBBBBBk.....',
+  '....kBBBBBk.....',
+  '.....kBBBk......',
   '.....kBB.Bk.....',
   '....kkB..Bkk....',
   '................',
@@ -742,18 +742,18 @@ final _hydraIdle = _parse([
 ], _hydraPal);
 
 final _hydraAtk = _parse([
-  '.kk..kkk..kk....',
-  'kggkkgBgkkggk...',
-  'kgGgkgBBkkgGk...',
-  '.kgkkgBBgkkgk...',
+  'kgk.kBk.kgk.....',
+  'kGgkkBBkkGgk....',
+  '.kgkkkkkkkgk....',
   '..k.kBBBBk.k....',
   '.....kBBBk......',
-  '..kkkBBBBBkkk...',
+  '..kkBBBBBBBkk...',
+  '.kBBBgBBBgBBBk..',
   '.kBBBBBBBBBBBk..',
-  '.kBBgBBBBgBBBk..',
   '..kBBBBBBBBBk...',
-  '....kBBBBBBk....',
-  '.....kBBBBk.....',
+  '....kBBBBBk.....',
+  '....kBBBBBk.....',
+  '.....kBBBk......',
   '....kBB...Bk....',
   '...kkB....Bkk...',
   '................',
@@ -980,7 +980,209 @@ final _weaponFrames = <TrainingStyle, List<WeaponFrame>>{
   TrainingStyle.magic: [_staffIdle, _staffCast1, _staffCast2],
 };
 
-// ── Compositing ─────────────────────────────────────────────────
+// ── Equipment → Armor Tier mapping ───────────────────────────────────
+
+const _bodyToTier = <String, int>{
+  'bronze_platebody': 0,
+  'iron_platebody': 1,
+  'steel_platebody': 2,
+  'mithril_platebody': 4,
+  'adamant_platebody': 5,
+  'rune_platebody': 6,
+  'fighter_torso': 7,
+  'bandos_chestplate': 10,
+  'torva_platebody': 14,
+  'leather_body': 1,
+  'green_dhide_body_eq': 5,
+  'black_dhide_body_eq': 3,
+  'armadyl_chestplate': 11,
+  'wizard_robe_top': 4,
+  'mystic_robe_top': 4,
+  'ahrims_robetop': 8,
+  'ancestral_robe_top': 12,
+};
+
+// ── Equipment → Weapon overlay mapping ─────────────────────────────
+
+List<WeaponFrame> _coloredSword(Color blade, Color handle) => [
+      {
+        (7, 11): handle,
+        (7, 12): handle,
+        (6, 13): blade,
+        (5, 14): blade,
+        (4, 15): blade
+      },
+      {
+        (7, 11): handle,
+        (8, 12): handle,
+        (9, 13): blade,
+        (10, 14): blade,
+        (11, 15): blade
+      },
+      {
+        (8, 11): handle,
+        (8, 12): handle,
+        (8, 13): blade,
+        (8, 14): blade,
+        (8, 15): blade
+      },
+    ];
+
+List<WeaponFrame> _coloredBow(Color wood, Color string, Color arrow) => [
+      {
+        (6, 11): wood,
+        (7, 11): wood,
+        (8, 11): wood,
+        (9, 11): wood,
+        (10, 11): wood,
+        (6, 12): string,
+        (10, 12): string,
+        (8, 12): arrow,
+        (8, 13): arrow,
+        (8, 14): arrow
+      },
+      {
+        (6, 11): wood,
+        (7, 11): wood,
+        (8, 11): wood,
+        (9, 11): wood,
+        (10, 11): wood,
+        (6, 12): string,
+        (10, 12): string,
+        (7, 12): string,
+        (9, 12): string,
+        (8, 12): arrow,
+        (8, 13): arrow
+      },
+      {
+        (6, 11): wood,
+        (7, 11): wood,
+        (8, 11): wood,
+        (9, 11): wood,
+        (10, 11): wood,
+        (6, 12): string,
+        (10, 12): string,
+        (8, 13): arrow,
+        (8, 14): arrow,
+        (8, 15): arrow
+      },
+    ];
+
+List<WeaponFrame> _coloredStaff(Color orb, Color orbLight, Color shaft) => [
+      {
+        (5, 11): orb,
+        (5, 12): orbLight,
+        (6, 11): shaft,
+        (7, 11): shaft,
+        (8, 11): shaft,
+        (9, 11): shaft,
+        (10, 11): shaft
+      },
+      {
+        (5, 11): orb,
+        (5, 12): orbLight,
+        (6, 11): shaft,
+        (7, 11): shaft,
+        (8, 11): shaft,
+        (9, 11): shaft,
+        (10, 11): shaft,
+        (4, 13): orbLight,
+        (3, 14): const Color(0xFF2196F3)
+      },
+      {
+        (5, 11): orb,
+        (5, 12): orbLight,
+        (6, 11): shaft,
+        (7, 11): shaft,
+        (8, 11): shaft,
+        (9, 11): shaft,
+        (10, 11): shaft,
+        (3, 14): const Color(0xFF2196F3),
+        (2, 15): const Color(0xFF64B5F6),
+        (4, 13): orbLight,
+        (3, 13): const Color(0xFF64B5F6)
+      },
+    ];
+
+List<WeaponFrame> _whipFrames(Color cord) => [
+      {(7, 11): _S, (7, 12): _S, (6, 13): cord, (5, 14): cord, (4, 15): cord},
+      {
+        (7, 11): _S,
+        (8, 12): cord,
+        (9, 13): cord,
+        (10, 14): cord,
+        (11, 15): cord
+      },
+      {(8, 11): _S, (8, 12): cord, (8, 13): cord, (7, 14): cord, (6, 15): cord},
+    ];
+
+final _weaponIdToFrames = <String, List<WeaponFrame>>{
+  // Bronze→Rune scimitars
+  'bronze_scimitar': _coloredSword(const Color(0xFFCD853F), _S),
+  'iron_scimitar': _coloredSword(const Color(0xFFC0C0C0), _S),
+  'steel_scimitar': _coloredSword(const Color(0xFFB0B0B0), _S),
+  'mithril_scimitar': _coloredSword(const Color(0xFF7986CB), _S),
+  'adamant_scimitar': _coloredSword(const Color(0xFF66BB6A), _S),
+  'rune_scimitar': _coloredSword(const Color(0xFF4DD0E1), _S),
+  'dragon_scimitar':
+      _coloredSword(const Color(0xFFFF8A80), const Color(0xFFB71C1C)),
+  // High-tier melee
+  'abyssal_whip_eq': _whipFrames(const Color(0xFFFF5252)),
+  'tentacle_whip': _whipFrames(const Color(0xFF3F51B5)),
+  'ghrazi_rapier': _coloredSword(_w, const Color(0xFFFFD700)),
+  'dragon_claws':
+      _coloredSword(const Color(0xFFFF8A80), const Color(0xFFB71C1C)),
+  'elder_maul': _coloredSword(_S, _n),
+  // Ranged
+  'shortbow': _coloredBow(_n, _N, _S),
+  'maple_shortbow': _coloredBow(_n, _N, _S),
+  'magic_shortbow': _coloredBow(const Color(0xFF7B1FA2), _N, _S),
+  'rune_crossbow': _coloredBow(const Color(0xFF00838F), _N, _S),
+  'armadyl_crossbow': _coloredBow(_w, const Color(0xFFFFD700), _S),
+  'twisted_bow':
+      _coloredBow(const Color(0xFF8D6E63), const Color(0xFFFFD700), _S),
+  'dragon_hunter_crossbow': _coloredBow(const Color(0xFFB71C1C), _N, _S),
+  // Magic
+  'staff_of_fire':
+      _coloredStaff(const Color(0xFFFF5252), const Color(0xFFD4A017), _n),
+  'mystic_fire_staff':
+      _coloredStaff(const Color(0xFFFF5252), const Color(0xFFD4A017), _n),
+  'ancient_staff':
+      _coloredStaff(const Color(0xFF9C27B0), const Color(0xFFCE93D8), _n),
+  'trident_of_the_seas':
+      _coloredStaff(const Color(0xFF2196F3), const Color(0xFF64B5F6), _n),
+  'sanguinesti_staff':
+      _coloredStaff(const Color(0xFFB71C1C), const Color(0xFFFF5252), _n),
+  'kodai_wand':
+      _coloredStaff(const Color(0xFF2196F3), const Color(0xFF64B5F6), _n),
+};
+
+// Determine weapon category from equipped weapon ID
+String _weaponCategory(String? weaponId) {
+  if (weaponId == null) return 'melee';
+  const rangedIds = {
+    'shortbow',
+    'maple_shortbow',
+    'magic_shortbow',
+    'rune_crossbow',
+    'armadyl_crossbow',
+    'twisted_bow',
+    'dragon_hunter_crossbow'
+  };
+  const magicIds = {
+    'staff_of_fire',
+    'mystic_fire_staff',
+    'ancient_staff',
+    'trident_of_the_seas',
+    'sanguinesti_staff',
+    'kodai_wand'
+  };
+  if (rangedIds.contains(weaponId)) return 'ranged';
+  if (magicIds.contains(weaponId)) return 'magic';
+  return 'melee';
+}
+
+// ── Compositing ───────────────────────────────────────────────────
 
 /// Build a complete player sprite for the given gear level, style, and frame.
 PixelGrid getPlayerSprite(int gearLevel, TrainingStyle style, {int frame = 0}) {
@@ -1038,5 +1240,97 @@ List<PixelGrid> getPlayerFrames(int gearLevel, TrainingStyle style) {
   return List.generate(
     frames.length,
     (i) => getPlayerSprite(gearLevel, style, frame: i),
+  );
+}
+
+// ── Equipment-aware compositing ─────────────────────────────────
+
+/// Build a player sprite using actual equipped item IDs.
+/// [equipment] is Map<slotName, itemId> from IdleGameState.equipment.
+/// [style] is the current TrainingStyle (used as fallback for weapon type).
+PixelGrid getPlayerSpriteFromEquipment(
+  Map<String, String> equipment,
+  TrainingStyle style, {
+  int frame = 0,
+}) {
+  final grid = _baseBody.map((row) => List<Color?>.from(row)).toList();
+
+  // Determine armor tier from equipped body piece
+  final bodyId = equipment['body'];
+  final tierIdx = (bodyId != null && _bodyToTier.containsKey(bodyId))
+      ? _bodyToTier[bodyId]!
+      : 0;
+  final armor =
+      _armorRows(_armorTiers[tierIdx.clamp(0, _armorTiers.length - 1)]);
+  for (int i = 0; i < armor.length; i++) {
+    final row = 8 + i;
+    if (row >= grid.length) break;
+    for (int x = 0; x < armor[i].length && x < 16; x++) {
+      if (armor[i][x] != null) grid[row][x] = armor[i][x];
+    }
+  }
+
+  // Determine weapon overlay from equipped weapon
+  final weaponId = equipment['weapon'];
+  List<WeaponFrame> weaponFrameList;
+
+  if (weaponId != null && _weaponIdToFrames.containsKey(weaponId)) {
+    weaponFrameList = _weaponIdToFrames[weaponId]!;
+  } else {
+    // Fallback: use weapon category to pick generic weapon type
+    final cat = _weaponCategory(weaponId);
+    switch (cat) {
+      case 'ranged':
+        weaponFrameList = _weaponFrames[TrainingStyle.ranged]!;
+        break;
+      case 'magic':
+        weaponFrameList = _weaponFrames[TrainingStyle.magic]!;
+        break;
+      default:
+        weaponFrameList =
+            _weaponFrames[style] ?? _weaponFrames[TrainingStyle.balanced]!;
+    }
+  }
+
+  final weaponFrame =
+      weaponFrameList[frame.clamp(0, weaponFrameList.length - 1)];
+  for (final entry in weaponFrame.entries) {
+    final (wy, wx) = entry.key;
+    if (wy >= 0 && wy < 16 && wx >= 0 && wx < 16) {
+      grid[wy][wx] = entry.value;
+    }
+  }
+
+  return grid;
+}
+
+/// Get all player frames using actual equipped items.
+List<PixelGrid> getPlayerFramesFromEquipment(
+  Map<String, String> equipment,
+  TrainingStyle style,
+) {
+  // Determine frame count from weapon
+  final weaponId = equipment['weapon'];
+  int frameCount;
+  if (weaponId != null && _weaponIdToFrames.containsKey(weaponId)) {
+    frameCount = _weaponIdToFrames[weaponId]!.length;
+  } else {
+    final cat = _weaponCategory(weaponId);
+    switch (cat) {
+      case 'ranged':
+        frameCount = _weaponFrames[TrainingStyle.ranged]!.length;
+        break;
+      case 'magic':
+        frameCount = _weaponFrames[TrainingStyle.magic]!.length;
+        break;
+      default:
+        frameCount =
+            (_weaponFrames[style] ?? _weaponFrames[TrainingStyle.balanced]!)
+                .length;
+    }
+  }
+  return List.generate(
+    frameCount,
+    (i) => getPlayerSpriteFromEquipment(equipment, style, frame: i),
   );
 }

@@ -140,6 +140,49 @@ ActiveEnemy spawnEnemy(int wave) {
 bool isBossWave(int wave) =>
     wave % enemyDefs.length == 0 && !isTreasureWave(wave);
 
+// ─── Boss Definitions ──────────────────────────────────────────
+
+const bossDefs = <EnemyDef>[
+  EnemyDef(
+      id: 'kbd',
+      name: 'King Black Dragon',
+      baseHp: 500,
+      baseSpeed: 0.0008,
+      baseGpReward: 500,
+      baseDamage: 15),
+  EnemyDef(
+      id: 'jad_boss',
+      name: 'TzTok-Jad',
+      baseHp: 800,
+      baseSpeed: 0.0006,
+      baseGpReward: 800,
+      baseDamage: 25),
+  EnemyDef(
+      id: 'bandos',
+      name: 'General Graardor',
+      baseHp: 1200,
+      baseSpeed: 0.0007,
+      baseGpReward: 1200,
+      baseDamage: 35),
+];
+
+ActiveEnemy spawnBoss(int wave) {
+  final bossIdx = ((wave ~/ enemyDefs.length) - 1) % bossDefs.length;
+  final def = bossDefs[bossIdx];
+  final cycle = (wave - 1) ~/ enemyDefs.length;
+  final hpMult = 1.0 + cycle * 0.5;
+  final hp = (def.baseHp * hpMult).roundToDouble();
+  return ActiveEnemy(
+    defIndex: bossIdx,
+    hp: hp,
+    maxHp: hp,
+    speed: def.baseSpeed,
+    gpReward: (def.baseGpReward * (1.0 + cycle * 0.5)).round(),
+    damage: def.baseDamage + cycle * 5,
+    isBoss: true,
+  );
+}
+
 int waveCompletionBonus(int wave) => 20 + wave * 8;
 
 // ─── Tower Definitions ──────────────────────────────────────────
@@ -282,6 +325,29 @@ int garrisonUpgradeCost(int currentLevel) =>
 int peasantCost(int ownedCount) => 10 + ownedCount * 5;
 const peasantMoveSpeed = 0.004;
 
+const peasantNames = [
+  'Hans',
+  'Giles',
+  'Ned',
+  'Eliza',
+  'Bob',
+  'Lowe',
+  'Aubury',
+  'Zaff',
+  'Osman',
+  'Hetty',
+  'Aggie',
+  'Turael',
+  'Juna',
+  'Nieve',
+  'Konar',
+  'Duradel',
+  'Vannaka',
+  'Mazchna',
+  'Chaeldar',
+  'Krystilia',
+];
+
 // Gather ticks by node level — diminishing returns, min 20 ticks
 int peasantGatherTicksForLevel(int nodeLevel) =>
     max(20, (180 * pow(0.7, nodeLevel - 1)).round());
@@ -315,15 +381,15 @@ double healAmount() => 0.30; // 30% of max HP
 // ─── Hero Stats ─────────────────────────────────────────────────
 
 const heroPurchaseCost = 50;
-const heroBaseHp = 30;
-const heroBaseDamage = 3.0;
-const heroAttackSpeed = 40.0; // ticks
-const heroMeleeRange = 0.05;
-const heroPatrolSpeed = 0.002;
-const heroRespawnTicks = 300;
+const heroBaseHp = 50;
+const heroBaseDamage = 6.0;
+const heroAttackSpeed = 25.0; // ticks
+const heroMeleeRange = 0.08;
+const heroMoveSpeed = 0.003;
+const heroRespawnTicks = 180;
 
-double heroDamageAtLevel(int level) => heroBaseDamage + (level - 1) * 1.0;
-int heroMaxHpAtLevel(int level) => heroBaseHp + (level - 1) * 10;
+double heroDamageAtLevel(int level) => heroBaseDamage + (level - 1) * 2.0;
+int heroMaxHpAtLevel(int level) => heroBaseHp + (level - 1) * 15;
 int heroUpgradeCost(int currentLevel) =>
     (25 * pow(1.2, currentLevel - 1)).round();
 
@@ -399,6 +465,11 @@ List<TowerSlot> createTowerSlots() => [
       TowerSlot(x: 0.30, y: 0.55),
       TowerSlot(x: 0.70, y: 0.62),
       TowerSlot(x: 0.35, y: 0.72),
+      // New slots
+      TowerSlot(x: 0.55, y: 0.12),
+      TowerSlot(x: 0.50, y: 0.25),
+      TowerSlot(x: 0.55, y: 0.55),
+      TowerSlot(x: 0.50, y: 0.72),
     ];
 
 // ─── Resource Node Positions ─────────────────────────────────────
@@ -446,6 +517,37 @@ WaveModifier rollModifier(int wave) {
   return mods[_rng.nextInt(mods.length)];
 }
 
+WaveModifier previewModifier(int wave) {
+  if (wave <= 10) return WaveModifier.none;
+  if (isTreasureWave(wave)) return WaveModifier.none;
+  const mods = [
+    WaveModifier.armoured,
+    WaveModifier.swift,
+    WaveModifier.horde,
+    WaveModifier.regen,
+    WaveModifier.shielded,
+  ];
+  return mods[wave % mods.length];
+}
+
+String modifierLabel(WaveModifier m) => switch (m) {
+      WaveModifier.none => '',
+      WaveModifier.armoured => '🛡️ Armoured',
+      WaveModifier.swift => '⚡ Swift',
+      WaveModifier.horde => '👥 Horde',
+      WaveModifier.regen => '💚 Regen',
+      WaveModifier.shielded => '🔵 Shielded',
+    };
+
+String enemyNameForWave(int wave) {
+  if (isTreasureWave(wave)) return 'Treasure Imps';
+  if (isBossWave(wave)) {
+    final bossIdx = ((wave ~/ enemyDefs.length) - 1) % bossDefs.length;
+    return bossDefs[bossIdx].name;
+  }
+  return enemyDefs[enemyDefIndexForWave(wave)].name;
+}
+
 double modifierHpMult(WaveModifier m) => switch (m) {
       WaveModifier.armoured => 1.6,
       WaveModifier.horde => 0.6,
@@ -476,13 +578,31 @@ const prestigeCosts = <String, int>{
   'garrisonHp': 1,
 };
 
-int prestigeStartingGold(PrestigeBonuses b) => 25 + b.startingGoldBonus * 15;
-int prestigePeasantCap(PrestigeBonuses b) => 2 + b.peasantCapBonus;
-double prestigeTowerDmgMult(PrestigeBonuses b) =>
-    1.0 + b.towerDmgPercent * 0.05;
-int prestigeGarrisonMaxHp(PrestigeBonuses b, int healthLevel) =>
-    ((100 + (healthLevel - 1) * 20) * (1.0 + b.garrisonHpPercent * 0.10))
+int prestigeStartingGold(PrestigeBonuses b, int prestigeLevel) =>
+    25 + b.startingGoldBonus * 15 + prestigeLevel * 50;
+int prestigePeasantCap(PrestigeBonuses b, int prestigeLevel) =>
+    2 + b.peasantCapBonus + prestigeLevel * 2;
+double prestigeTowerDmgMult(PrestigeBonuses b, [int prestigeLevel = 0]) =>
+    1.0 + b.towerDmgPercent * 0.05 + prestigeLevel * 0.15;
+int prestigeGarrisonMaxHp(PrestigeBonuses b, int healthLevel,
+        [int prestigeLevel = 0]) =>
+    ((100 + (healthLevel - 1) * 20) *
+            (1.0 + b.garrisonHpPercent * 0.10 + prestigeLevel * 0.25))
         .round();
+double prestigeHeroDmgBonus(int prestigeLevel) => prestigeLevel * 3.0;
+double prestigePassiveGoldPerSec(int prestigeLevel) => prestigeLevel * 1.0;
+double prestigeEnemyHpMult(int prestigeLevel) => 1.0 + prestigeLevel * 0.30;
+int prestigeEnemyDmgBonus(int prestigeLevel) => prestigeLevel;
+int prestigePointsForPrestige(int wave) => 10 + wave ~/ 5;
+
+// ─── Loot Sell Prices ───────────────────────────────────────────
+
+int lootSellPrice(LootRarity rarity) => switch (rarity) {
+      LootRarity.common => 10,
+      LootRarity.uncommon => 25,
+      LootRarity.rare => 75,
+      LootRarity.legendary => 200,
+    };
 
 // ─── Loot Table ─────────────────────────────────────────────────
 
