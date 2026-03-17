@@ -33,6 +33,7 @@ class GoalsScreen extends HookConsumerWidget {
           CharacterType.hcim,
           CharacterType.uim,
           CharacterType.gim,
+          CharacterType.hcgim,
         }.contains(activeChar.characterType);
 
     // Build player levels from hiscores

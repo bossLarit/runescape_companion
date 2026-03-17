@@ -154,25 +154,25 @@ final achievements = <Achievement>[
 
   // ── Gear ───────────────────────────────────────────────────
   Achievement(
-    id: 'rune_armour',
-    name: 'Rune Armour',
-    description: 'Reach Rune tier gear',
+    id: 'first_equip',
+    name: 'Geared Up',
+    description: 'Equip your first item',
     icon: '🔵',
-    check: (s) => s.gearLevel >= 7, // index 7 = Rune
+    check: (s) => s.equipment.isNotEmpty,
   ),
   Achievement(
-    id: 'dragon_armour',
-    name: 'Dragon Armour',
-    description: 'Reach Dragon tier gear',
+    id: 'full_gear',
+    name: 'Fully Equipped',
+    description: 'Fill all 11 equipment slots',
     icon: '🔴',
-    check: (s) => s.gearLevel >= 8, // index 8 = Dragon
+    check: (s) => s.equipment.length >= 11,
   ),
   Achievement(
     id: 'bandos_armour',
     name: 'Bandos Armour',
-    description: 'Reach Bandos tier gear',
+    description: 'Equip a Bandos piece',
     icon: '🟤',
-    check: (s) => s.gearLevel >= 11, // index 11 = Bandos
+    check: (s) => s.equipment.values.any((id) => id.startsWith('bandos')),
   ),
 
   // ── Economy ────────────────────────────────────────────────

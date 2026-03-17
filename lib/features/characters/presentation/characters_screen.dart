@@ -174,14 +174,12 @@ class _CharacterCard extends HookConsumerWidget {
                           context: context,
                           builder: (_) => HiscoresDialog(
                             initialName: character.displayName,
-                            mode: character.characterType == CharacterType.iron
-                                ? 'ironman'
-                                : character.characterType == CharacterType.hcim
-                                    ? 'hardcore'
-                                    : character.characterType ==
-                                            CharacterType.uim
-                                        ? 'ultimate'
-                                        : 'normal',
+                            mode: switch (character.characterType) {
+                              CharacterType.iron => 'ironman',
+                              CharacterType.hcim => 'hardcore',
+                              CharacterType.uim => 'ultimate',
+                              _ => 'normal',
+                            },
                           ),
                         ));
                       } else if (value == 'edit') {

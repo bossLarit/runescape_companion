@@ -6,6 +6,7 @@ enum CharacterType {
   hcim,
   uim,
   gim,
+  hcgim,
   alt,
   pure,
   skiller,
@@ -23,6 +24,8 @@ enum CharacterType {
         return 'UIM';
       case CharacterType.gim:
         return 'GIM';
+      case CharacterType.hcgim:
+        return 'HCGIM';
       case CharacterType.alt:
         return 'Alt';
       case CharacterType.pure:
@@ -131,10 +134,15 @@ class Character {
       currentGrind: json['currentGrind'] as String? ?? '',
       nextLoginPurpose: json['nextLoginPurpose'] as String? ?? '',
       securityChecklist: json['securityChecklist'] != null
-          ? SecurityChecklist.fromJson(json['securityChecklist'] as Map<String, dynamic>)
+          ? SecurityChecklist.fromJson(
+              json['securityChecklist'] as Map<String, dynamic>)
           : SecurityChecklist(),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
     );
   }
 }

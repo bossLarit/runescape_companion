@@ -412,6 +412,7 @@ class _CharacterStep extends StatelessWidget {
                           CharacterType.hcim,
                           CharacterType.uim,
                           CharacterType.gim,
+                          CharacterType.hcgim,
                         ])
                           _AccountTypeChip(
                             type: type,

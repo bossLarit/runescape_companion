@@ -61,9 +61,9 @@ class IdleGameNotifier extends StateNotifier<IdleGameState> {
             }
           }
 
-          final monster = getMonster(loaded.monsterIndex, loaded.zone);
+          final monster = getMonster(loaded.monsterIndex);
           state = loaded.copyWith(
-            monsterCurrentHp: monster.maxHp,
+            monsterCurrentHp: monster.hitpoints,
             playerCurrentHp: loaded.stats.hitpointsLevel,
           );
 
@@ -100,10 +100,10 @@ class IdleGameNotifier extends StateNotifier<IdleGameState> {
     if (state.isRunning) return;
     // Mutual exclusion: stop skilling first
     _stopSkillingInternal();
-    final monster = getMonster(state.monsterIndex, state.zone);
+    final monster = getMonster(state.monsterIndex);
     state = state.copyWith(
       isRunning: true,
-      monsterCurrentHp: monster.maxHp,
+      monsterCurrentHp: monster.hitpoints,
       playerCurrentHp: state.stats.hitpointsLevel,
     );
     _tickTimer?.cancel();
@@ -121,21 +121,16 @@ class IdleGameNotifier extends StateNotifier<IdleGameState> {
     _save();
   }
 
-  void selectMonster(int index, int zone) {
+  void selectMonster(int index) {
     final wasRunning = state.isRunning;
     if (wasRunning) stopCombat();
-    final monster = getMonster(index, zone);
+    final monster = getMonster(index);
     state = state.copyWith(
       monsterIndex: index,
-      zone: zone,
-      monsterCurrentHp: monster.maxHp,
+      monsterCurrentHp: monster.hitpoints,
       playerCurrentHp: state.stats.hitpointsLevel,
     );
     if (wasRunning) startCombat();
-  }
-
-  void nextZone() {
-    selectMonster(0, state.zone + 1);
   }
 
   void setTrainingStyle(TrainingStyle style) {
@@ -146,31 +141,150 @@ class IdleGameNotifier extends StateNotifier<IdleGameState> {
     state = moveFoodToInventory(state, cookedItemId, qty);
   }
 
-  void buyGearUpgrade() {
-    final cost = gearUpgradeCost(state.gearLevel);
-    if (state.gp < cost) return;
+  // ── Raids ─────────────────────────────────────────────────────
+
+  /// Start a raid. Requires 90+ Attack, Strength, Defence.
+  bool startRaid(String raidId) {
+    if (state.isRunning) return false;
+    final raidDef = getRaidDefById(raidId);
+    if (raidDef == null) return false;
+
+    // Check stat requirements
+    if (state.stats.attackLevel < raidDef.minAttack) return false;
+    if (state.stats.strengthLevel < raidDef.minStrength) return false;
+    if (state.stats.defenceLevel < raidDef.minDefence) return false;
+
+    _stopSkillingInternal();
+    final firstBoss = raidDef.bosses.first;
+
     state = state.copyWith(
-      gp: state.gp - cost,
-      gearLevel: state.gearLevel + 1,
+      isRunning: true,
+      activeRaid: RaidState(raidId: raidId, bossIndex: 0),
+      raidBossCurrentHp: firstBoss.hitpoints,
+      playerCurrentHp: state.stats.hitpointsLevel,
+      combatLog: ['⚔️ ${raidDef.name} begins! First boss: ${firstBoss.name}'],
     );
+
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
+      _raidTick();
+    });
+    _saveTimer?.cancel();
+    _saveTimer = Timer.periodic(const Duration(seconds: 30), (_) => _save());
+    return true;
   }
 
-  void buyRangedGearUpgrade() {
-    final cost = gearUpgradeCost(state.rangedGearLevel);
-    if (state.gp < cost) return;
-    state = state.copyWith(
-      gp: state.gp - cost,
-      rangedGearLevel: state.rangedGearLevel + 1,
-    );
+  void _raidTick() {
+    state = processRaidTick(state);
+    // If raid ended (completed or failed), stop the timer
+    if (state.activeRaid == null) {
+      _tickTimer?.cancel();
+      _saveTimer?.cancel();
+      state = state.copyWith(isRunning: false);
+      _save();
+    }
   }
 
-  void buyMagicGearUpgrade() {
-    final cost = gearUpgradeCost(state.magicGearLevel);
-    if (state.gp < cost) return;
+  void stopRaid() {
+    _tickTimer?.cancel();
+    _saveTimer?.cancel();
     state = state.copyWith(
-      gp: state.gp - cost,
-      magicGearLevel: state.magicGearLevel + 1,
+      isRunning: false,
+      clearActiveRaid: true,
+      raidBossCurrentHp: 0,
+      combatLog: [...state.combatLog, '🚪 Raid abandoned.'],
     );
+    _save();
+  }
+
+  // ── Equipment ──────────────────────────────────────────────────
+
+  /// Equip an item from the bank or shop purchase.
+  /// Returns false if player doesn't meet requirements.
+  bool equipItem(String itemId) {
+    final def = getEquipmentDefById(itemId);
+    if (def == null) return false;
+    // Check level requirements
+    if (state.stats.attackLevel < def.attackReq) return false;
+    if (state.stats.defenceLevel < def.defenceReq) return false;
+    if (state.stats.rangedLevel < def.rangedReq) return false;
+    if (state.stats.magicLevel < def.magicReq) return false;
+    if (state.prayerLevel < def.prayerReq) return false;
+
+    final slotName = def.slot.name;
+    final newEquipment = Map<String, String>.from(state.equipment);
+
+    // Unequip current item in that slot → return to bank
+    final oldItemId = newEquipment[slotName];
+    final newBank = Map<String, int>.from(state.bank);
+    if (oldItemId != null) {
+      newBank[oldItemId] = (newBank[oldItemId] ?? 0) + 1;
+    }
+
+    // Remove item from bank (use original itemId as bank key)
+    final bankQty = newBank[itemId] ?? 0;
+    if (bankQty > 0) {
+      newBank[itemId] = bankQty - 1;
+      if (newBank[itemId]! <= 0) newBank.remove(itemId);
+    }
+
+    // Store the canonical equipment def ID (handles aliases like fire_cape → fire_cape_eq)
+    newEquipment[slotName] = def.id;
+    state = state.copyWith(equipment: newEquipment, bank: newBank);
+    _save();
+    return true;
+  }
+
+  /// Unequip an item from a slot → goes to bank.
+  void unequipSlot(EquipmentSlot slot) {
+    final slotName = slot.name;
+    final itemId = state.equipment[slotName];
+    if (itemId == null) return;
+
+    final newEquipment = Map<String, String>.from(state.equipment);
+    newEquipment.remove(slotName);
+
+    final newBank = Map<String, int>.from(state.bank);
+    newBank[itemId] = (newBank[itemId] ?? 0) + 1;
+
+    state = state.copyWith(equipment: newEquipment, bank: newBank);
+    _save();
+  }
+
+  /// Buy equipment from the shop and equip it.
+  bool buyAndEquipItem(String itemId) {
+    final def = getEquipmentDefById(itemId);
+    if (def == null || def.buyPrice <= 0) return false;
+    if (state.gp < def.buyPrice) return false;
+    // Check level requirements
+    if (state.stats.attackLevel < def.attackReq) return false;
+    if (state.stats.defenceLevel < def.defenceReq) return false;
+    if (state.stats.rangedLevel < def.rangedReq) return false;
+    if (state.stats.magicLevel < def.magicReq) return false;
+    if (state.prayerLevel < def.prayerReq) return false;
+
+    // Deduct GP
+    state = state.copyWith(gp: state.gp - def.buyPrice);
+
+    // Add to bank first, then equip
+    final newBank = Map<String, int>.from(state.bank);
+    newBank[itemId] = (newBank[itemId] ?? 0) + 1;
+    state = state.copyWith(bank: newBank);
+
+    return equipItem(itemId);
+  }
+
+  /// Buy equipment to bank (without equipping).
+  bool buyItemToBank(String itemId) {
+    final def = getEquipmentDefById(itemId);
+    if (def == null || def.buyPrice <= 0) return false;
+    if (state.gp < def.buyPrice) return false;
+
+    final newBank = Map<String, int>.from(state.bank);
+    newBank[itemId] = (newBank[itemId] ?? 0) + 1;
+    state = state.copyWith(gp: state.gp - def.buyPrice, bank: newBank);
+    _save();
+    return true;
   }
 
   void queueSpecialAttack() {

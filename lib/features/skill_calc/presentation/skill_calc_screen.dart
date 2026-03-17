@@ -122,6 +122,7 @@ class SkillCalcScreen extends HookConsumerWidget {
           CharacterType.hcim,
           CharacterType.uim,
           CharacterType.gim,
+          CharacterType.hcgim,
         }.contains(activeChar.characterType);
 
     final playerLevels = <String, int>{};

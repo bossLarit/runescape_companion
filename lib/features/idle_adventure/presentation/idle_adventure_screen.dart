@@ -1811,6 +1811,7 @@ class _GearIcon extends StatelessWidget {
   const _GearIcon({
     required this.itemId,
     required this.fallbackIcon,
+    // ignore: unused_element_parameter
     this.scale = 1.5,
   });
 

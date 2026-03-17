@@ -36,7 +36,8 @@ class GoalPlannerScreen extends HookConsumerWidget {
           CharacterType.iron,
           CharacterType.hcim,
           CharacterType.uim,
-          CharacterType.gim
+          CharacterType.gim,
+          CharacterType.hcgim
         }.contains(activeChar.characterType);
 
     // Auto-lookup hiscores for active character (deferred to avoid
@@ -266,8 +267,8 @@ class GoalPlannerScreen extends HookConsumerWidget {
                       onSelectionChanged: (s) => intensityPref.value = s.first,
                       style: const ButtonStyle(
                         visualDensity: VisualDensity.compact,
-                        textStyle: WidgetStatePropertyAll(
-                            TextStyle(fontSize: 11)),
+                        textStyle:
+                            WidgetStatePropertyAll(TextStyle(fontSize: 11)),
                       ),
                     ),
                     const SizedBox(width: 12),

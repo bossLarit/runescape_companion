@@ -16,7 +16,6 @@ import '../../goal_planner/data/micro_goals_engine.dart';
 import '../../ironman_supply/data/supply_chain_data.dart';
 import '../../idle_adventure/presentation/providers/idle_game_provider.dart';
 import '../../idle_adventure/data/idle_game_data.dart';
-import '../../idle_adventure/domain/idle_models.dart' hide xpForLevel;
 import 'providers/daily_checklist_provider.dart';
 
 // Local aliases for semantic accent colors used throughout this screen.
@@ -46,7 +45,8 @@ class DashboardScreen extends HookConsumerWidget {
           CharacterType.iron,
           CharacterType.hcim,
           CharacterType.uim,
-          CharacterType.gim
+          CharacterType.gim,
+          CharacterType.hcgim
         }.contains(activeChar.characterType);
 
     // Build player levels from hiscores
@@ -1367,7 +1367,7 @@ class _IdleAdventurerCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final game = ref.watch(idleGameProvider);
     final notifier = ref.read(idleGameProvider.notifier);
-    final monster = getMonster(game.monsterIndex, game.zone);
+    final monster = getMonster(game.monsterIndex);
 
     return Card(
       child: Padding(
@@ -1462,7 +1462,8 @@ class _IdleAdventurerCard extends ConsumerWidget {
                                     fontWeight: FontWeight.w600,
                                     color: _cream),
                                 overflow: TextOverflow.ellipsis),
-                            Text('HP ${game.monsterCurrentHp}/${monster.maxHp}',
+                            Text(
+                                'HP ${game.monsterCurrentHp}/${monster.hitpoints}',
                                 style: const TextStyle(
                                     fontSize: 9, color: Colors.white38)),
                           ],
@@ -1491,7 +1492,7 @@ class _IdleAdventurerCard extends ConsumerWidget {
                 // Gear level
                 _IdleMiniStat(
                   icon: Icons.shield,
-                  value: gearName(game.gearLevel),
+                  value: '${game.equipment.length}/11',
                   label: 'Gear',
                   color: _blue,
                 ),

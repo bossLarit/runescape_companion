@@ -151,95 +151,117 @@ class CombatStats {
       );
 }
 
-// ─── Gear (endless level-based) ──────────────────────────────────
+// ─── Equipment ──────────────────────────────────────────────────
 
-const _tierNames = [
-  'Bronze',
-  'Iron',
-  'Steel',
-  'Black',
-  'Mithril',
-  'Adamant',
-  'Rune',
-  'Dragon',
-  'Barrows',
-  'Abyssal',
-  'Bandos',
-  'Armadyl',
-  'Ancestral',
-  'Justiciar',
-  'Torva',
-  'Masori',
-  'Virtus',
-  'Vestas',
-  'Statius',
-  'Morrigans',
-];
-
-/// Derive a display name from an infinite gear level.
-String gearName(int level) {
-  if (level <= 0) return _tierNames[0];
-  final idx = (level - 1) % _tierNames.length;
-  final cycle = (level - 1) ~/ _tierNames.length;
-  final base = _tierNames[idx];
-  return cycle > 0 ? '$base +$cycle' : base;
+enum EquipmentSlot {
+  head,
+  cape,
+  neck,
+  ammo,
+  weapon,
+  body,
+  shield,
+  legs,
+  hands,
+  feet,
+  ring
 }
 
-/// Bonuses scale linearly with gear level.
-int gearAttackBonus(int level) => level * 4;
-int gearStrengthBonus(int level) => level * 5;
-int gearDefenceBonus(int level) => level * 4;
-int gearRangedAttackBonus(int level) => level * 4;
-int gearRangedStrengthBonus(int level) => level * 4;
-int gearMagicAttackBonus(int level) => level * 3;
-int gearMagicStrengthBonus(int level) => level * 4;
+class EquipmentItemDef {
+  final String id;
+  final String name;
+  final String icon;
+  final EquipmentSlot slot;
+  final int meleeAttack;
+  final int meleeStrength;
+  final int meleeDefence;
+  final int rangedAttack;
+  final int rangedStrength;
+  final int magicAttack;
+  final int magicStrength;
+  final int prayerBonus;
+  final int attackReq;
+  final int defenceReq;
+  final int rangedReq;
+  final int magicReq;
+  final int prayerReq;
+  final int buyPrice; // 0 = not buyable
 
-// ─── Monster (base definition, scaled by zone) ──────────────────
+  const EquipmentItemDef({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.slot,
+    this.meleeAttack = 0,
+    this.meleeStrength = 0,
+    this.meleeDefence = 0,
+    this.rangedAttack = 0,
+    this.rangedStrength = 0,
+    this.magicAttack = 0,
+    this.magicStrength = 0,
+    this.prayerBonus = 0,
+    this.attackReq = 0,
+    this.defenceReq = 0,
+    this.rangedReq = 0,
+    this.magicReq = 0,
+    this.prayerReq = 0,
+    this.buyPrice = 0,
+  });
+}
+
+/// Sum stat bonuses across all equipped items.
+class EquipmentBonuses {
+  final int meleeAttack;
+  final int meleeStrength;
+  final int meleeDefence;
+  final int rangedAttack;
+  final int rangedStrength;
+  final int magicAttack;
+  final int magicStrength;
+  final int prayerBonus;
+
+  const EquipmentBonuses({
+    this.meleeAttack = 0,
+    this.meleeStrength = 0,
+    this.meleeDefence = 0,
+    this.rangedAttack = 0,
+    this.rangedStrength = 0,
+    this.magicAttack = 0,
+    this.magicStrength = 0,
+    this.prayerBonus = 0,
+  });
+}
+
+// ─── Monster (fixed OSRS stats, no zone scaling) ────────────────
 
 class MonsterDef {
   final String id;
   final String name;
   final String icon;
-  final int baseHp;
-  final int baseAttack;
-  final int baseStrength;
-  final int baseDefence;
-  final int baseGpMin;
-  final int baseGpMax;
-  final double dropChance; // base chance to drop a gear upgrade (0.0–1.0)
+  final int hitpoints;
+  final int attack;
+  final int strength;
+  final int defence;
+  final int maxHit;
+  final int combatLevel;
+  final int gpMin;
+  final int gpMax;
+  final bool isBoss;
 
   const MonsterDef({
     required this.id,
     required this.name,
-    required this.icon,
-    required this.baseHp,
-    required this.baseAttack,
-    required this.baseStrength,
-    required this.baseDefence,
-    required this.baseGpMin,
-    required this.baseGpMax,
-    required this.dropChance,
+    this.icon = '👹',
+    required this.hitpoints,
+    required this.attack,
+    required this.strength,
+    required this.defence,
+    required this.maxHit,
+    required this.combatLevel,
+    this.gpMin = 0,
+    this.gpMax = 0,
+    this.isBoss = false,
   });
-}
-
-/// A monster scaled to a specific zone.
-class ScaledMonster {
-  final MonsterDef def;
-  final int zone;
-
-  const ScaledMonster(this.def, this.zone);
-
-  double get _mult => 1.0 + (zone * 0.5);
-  String get id => '${def.id}_z$zone';
-  String get name => zone == 0 ? def.name : '${def.name} (Zone ${zone + 1})';
-  String get icon => def.icon;
-  int get maxHp => (def.baseHp * _mult).ceil();
-  int get attack => (def.baseAttack * _mult).ceil();
-  int get strength => (def.baseStrength * _mult).ceil();
-  int get defence => (def.baseDefence * _mult).ceil();
-  int get gpMin => (def.baseGpMin * _mult).ceil();
-  int get gpMax => (def.baseGpMax * _mult).ceil();
-  double get dropChance => def.dropChance;
 }
 
 // ─── Loot Item ──────────────────────────────────────────────────
@@ -501,20 +523,84 @@ class SlayerTask {
       );
 }
 
+// ─── Raids ──────────────────────────────────────────────────────
+
+class RaidDropEntry {
+  final String itemId;
+  final int weight; // relative weight within the unique table
+
+  const RaidDropEntry({required this.itemId, this.weight = 1});
+}
+
+class RaidDef {
+  final String id;
+  final String name;
+  final String icon;
+  final List<MonsterDef> bosses;
+  final double uniqueDropChance; // 0.0–1.0 per completion
+  final List<RaidDropEntry> uniqueDropTable;
+  final int minAttack;
+  final int minStrength;
+  final int minDefence;
+
+  const RaidDef({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.bosses,
+    required this.uniqueDropChance,
+    required this.uniqueDropTable,
+    this.minAttack = 90,
+    this.minStrength = 90,
+    this.minDefence = 90,
+  });
+}
+
+class RaidState {
+  final String raidId;
+  final int bossIndex; // current boss in the sequence
+  final bool isActive;
+
+  const RaidState({
+    required this.raidId,
+    this.bossIndex = 0,
+    this.isActive = true,
+  });
+
+  RaidState copyWith({String? raidId, int? bossIndex, bool? isActive}) =>
+      RaidState(
+        raidId: raidId ?? this.raidId,
+        bossIndex: bossIndex ?? this.bossIndex,
+        isActive: isActive ?? this.isActive,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'raidId': raidId,
+        'bossIndex': bossIndex,
+        'isActive': isActive,
+      };
+
+  factory RaidState.fromJson(Map<String, dynamic> j) => RaidState(
+        raidId: j['raidId'] as String? ?? '',
+        bossIndex: j['bossIndex'] as int? ?? 0,
+        isActive: j['isActive'] as bool? ?? false,
+      );
+}
+
 // ─── Offline Progress Result ─────────────────────────────────────
 
 class OfflineProgressResult {
   final int ticksSimulated;
   final int killsGained;
   final int gpGained;
-  final int gearLevelsGained;
+  final int equipmentDropsGained;
   final Duration elapsed;
 
   const OfflineProgressResult({
     this.ticksSimulated = 0,
     this.killsGained = 0,
     this.gpGained = 0,
-    this.gearLevelsGained = 0,
+    this.equipmentDropsGained = 0,
     this.elapsed = Duration.zero,
   });
 }
@@ -524,11 +610,8 @@ class OfflineProgressResult {
 class IdleGameState {
   final CombatStats stats;
   final int gp;
-  final int gearLevel; // melee gear, endless, starts at 0
-  final int rangedGearLevel;
-  final int magicGearLevel;
-  final int zone; // monster zone (0 = base, 1+ = scaled)
-  final int monsterIndex; // index into base monster list
+  final Map<String, String> equipment; // slot name → equipped item id
+  final int monsterIndex; // index into monster list
   final int monsterCurrentHp;
   final int playerCurrentHp;
   final int totalKills;
@@ -537,7 +620,7 @@ class IdleGameState {
   final bool isRunning;
   final int? lastDamageDealt;
   final int? lastDamageTaken;
-  final String? lastDrop; // name of last gear drop, null if none
+  final String? lastDrop; // name of last drop, null if none
   final TrainingStyle trainingStyle;
   final Map<String, int> foodInventory; // foodId → quantity
   final int specialAttackCooldown; // ticks remaining (0 = ready)
@@ -552,22 +635,21 @@ class IdleGameState {
   final ActivePrayer activePrayer;
   final Map<String, int> monsterKillCounts; // monsterId → total kills
   final int totalGearDrops;
-  final bool
-      autoAdvance; // auto-advance to next monster when current is trivial
+  final bool autoAdvance;
   final Map<String, int> bank; // itemId → quantity (loot bank)
   final int deathCount;
   final int respawnTicksLeft; // ticks until respawn (0 = alive)
   final SkillingStats skillingStats;
   final ActiveSkillingState? activeSkilling; // null = not skilling
   final List<String> skillingLog; // last N skilling log lines
+  final RaidState? activeRaid; // null = not raiding
+  final int raidBossCurrentHp;
+  final Map<String, int> raidCompletions; // raidId → completion count
 
   const IdleGameState({
     this.stats = const CombatStats(),
     this.gp = 0,
-    this.gearLevel = 0,
-    this.rangedGearLevel = 0,
-    this.magicGearLevel = 0,
-    this.zone = 0,
+    this.equipment = const {},
     this.monsterIndex = 0,
     this.monsterCurrentHp = 3,
     this.playerCurrentHp = 10,
@@ -599,21 +681,21 @@ class IdleGameState {
     this.skillingStats = const SkillingStats(),
     this.activeSkilling,
     this.skillingLog = const [],
+    this.activeRaid,
+    this.raidBossCurrentHp = 0,
+    this.raidCompletions = const {},
   });
 
   int get slayerLevel => levelForXp(slayerXp);
   int get prayerLevel => levelForXp(prayerXp);
   int get maxPrayerPoints => prayerLevel; // 1 point per prayer level like OSRS
 
-  String get gearDisplayName => gearName(gearLevel);
+  String? equippedInSlot(EquipmentSlot slot) => equipment[slot.name];
 
   IdleGameState copyWith({
     CombatStats? stats,
     int? gp,
-    int? gearLevel,
-    int? rangedGearLevel,
-    int? magicGearLevel,
-    int? zone,
+    Map<String, String>? equipment,
     int? monsterIndex,
     int? monsterCurrentHp,
     int? playerCurrentHp,
@@ -648,14 +730,15 @@ class IdleGameState {
     ActiveSkillingState? activeSkilling,
     bool clearActiveSkilling = false,
     List<String>? skillingLog,
+    RaidState? activeRaid,
+    bool clearActiveRaid = false,
+    int? raidBossCurrentHp,
+    Map<String, int>? raidCompletions,
   }) =>
       IdleGameState(
         stats: stats ?? this.stats,
         gp: gp ?? this.gp,
-        gearLevel: gearLevel ?? this.gearLevel,
-        rangedGearLevel: rangedGearLevel ?? this.rangedGearLevel,
-        magicGearLevel: magicGearLevel ?? this.magicGearLevel,
-        zone: zone ?? this.zone,
+        equipment: equipment ?? this.equipment,
         monsterIndex: monsterIndex ?? this.monsterIndex,
         monsterCurrentHp: monsterCurrentHp ?? this.monsterCurrentHp,
         playerCurrentHp: playerCurrentHp ?? this.playerCurrentHp,
@@ -692,6 +775,9 @@ class IdleGameState {
             ? null
             : (activeSkilling ?? this.activeSkilling),
         skillingLog: skillingLog ?? this.skillingLog,
+        activeRaid: clearActiveRaid ? null : (activeRaid ?? this.activeRaid),
+        raidBossCurrentHp: raidBossCurrentHp ?? this.raidBossCurrentHp,
+        raidCompletions: raidCompletions ?? this.raidCompletions,
       );
 
   int get totalFood => foodInventory.values.fold(0, (a, b) => a + b);
@@ -699,10 +785,7 @@ class IdleGameState {
   Map<String, dynamic> toJson() => {
         'stats': stats.toJson(),
         'gp': gp,
-        'gearLevel': gearLevel,
-        'rangedGearLevel': rangedGearLevel,
-        'magicGearLevel': magicGearLevel,
-        'zone': zone,
+        'equipment': equipment,
         'monsterIndex': monsterIndex,
         'totalKills': totalKills,
         'prestigeLevel': prestigeLevel,
@@ -724,6 +807,8 @@ class IdleGameState {
         'skillingStats': skillingStats.toJson(),
         'activeSkilling': activeSkilling?.toJson(),
         'skillingLog': skillingLog,
+        'activeRaid': activeRaid?.toJson(),
+        'raidCompletions': raidCompletions,
       };
 
   factory IdleGameState.fromJson(Map<String, dynamic> j) {
@@ -732,13 +817,13 @@ class IdleGameState {
     final foodRaw = j['foodInventory'] as Map<String, dynamic>? ?? {};
     final foodInv = foodRaw.map((k, v) => MapEntry(k, v as int? ?? 0));
     final styleIdx = j['trainingStyle'] as int? ?? TrainingStyle.balanced.index;
+    final eqRaw = j['equipment'] as Map<String, dynamic>? ?? {};
+    final eq = eqRaw.map((k, v) => MapEntry(k, v as String? ?? ''));
+    eq.removeWhere((k, v) => v.isEmpty);
     return IdleGameState(
       stats: stats,
       gp: j['gp'] as int? ?? 0,
-      gearLevel: j['gearLevel'] as int? ?? j['gearIndex'] as int? ?? 0,
-      rangedGearLevel: j['rangedGearLevel'] as int? ?? 0,
-      magicGearLevel: j['magicGearLevel'] as int? ?? 0,
-      zone: j['zone'] as int? ?? 0,
+      equipment: eq,
       monsterIndex: j['monsterIndex'] as int? ?? 0,
       playerCurrentHp: stats.hitpointsLevel,
       totalKills: j['totalKills'] as int? ?? 0,
@@ -773,6 +858,11 @@ class IdleGameState {
       skillingLog: (j['skillingLog'] as List<dynamic>? ?? [])
           .map((e) => e as String)
           .toList(),
+      activeRaid: j['activeRaid'] != null
+          ? RaidState.fromJson(j['activeRaid'] as Map<String, dynamic>)
+          : null,
+      raidCompletions: (j['raidCompletions'] as Map<String, dynamic>? ?? {})
+          .map((k, v) => MapEntry(k, v as int? ?? 0)),
     );
   }
 

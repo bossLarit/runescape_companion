@@ -1246,7 +1246,7 @@ List<PixelGrid> getPlayerFrames(int gearLevel, TrainingStyle style) {
 // ── Equipment-aware compositing ─────────────────────────────────
 
 /// Build a player sprite using actual equipped item IDs.
-/// [equipment] is Map<slotName, itemId> from IdleGameState.equipment.
+/// [equipment] is a `Map<slotName, itemId>` from IdleGameState.equipment.
 /// [style] is the current TrainingStyle (used as fallback for weapon type).
 PixelGrid getPlayerSpriteFromEquipment(
   Map<String, String> equipment,

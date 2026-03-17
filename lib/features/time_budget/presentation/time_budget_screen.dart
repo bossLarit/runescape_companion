@@ -44,7 +44,8 @@ class TimeBudgetScreen extends HookConsumerWidget {
           CharacterType.iron,
           CharacterType.hcim,
           CharacterType.uim,
-          CharacterType.gim
+          CharacterType.gim,
+          CharacterType.hcgim
         }.contains(activeChar.characterType);
 
     final bankState = ref.watch(bankProvider);

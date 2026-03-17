@@ -9,12 +9,14 @@ class HiscoresDialog extends HookConsumerWidget {
   final String initialName;
   final String mode;
 
-  const HiscoresDialog({super.key, this.initialName = '', this.mode = 'normal'});
+  const HiscoresDialog(
+      {super.key, this.initialName = '', this.mode = 'normal'});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nameCtrl = useTextEditingController(text: initialName);
     final selectedMode = useState(mode);
+    final hasSearched = useState(false);
     final hiscoresAsync = ref.watch(hiscoresProvider);
 
     return AlertDialog(
@@ -30,8 +32,12 @@ class HiscoresDialog extends HookConsumerWidget {
                 Expanded(
                   child: TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Player Name', isDense: true),
-                    onSubmitted: (_) => _doLookup(ref, nameCtrl.text, selectedMode.value),
+                    decoration: const InputDecoration(
+                        labelText: 'Player Name', isDense: true),
+                    onSubmitted: (_) {
+                      hasSearched.value = true;
+                      _doLookup(ref, nameCtrl.text, selectedMode.value);
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -47,7 +53,10 @@ class HiscoresDialog extends HookConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () => _doLookup(ref, nameCtrl.text, selectedMode.value),
+                  onPressed: () {
+                    hasSearched.value = true;
+                    _doLookup(ref, nameCtrl.text, selectedMode.value);
+                  },
                   child: const Text('Lookup'),
                 ),
               ],
@@ -56,10 +65,17 @@ class HiscoresDialog extends HookConsumerWidget {
             Expanded(
               child: hiscoresAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
+                error: (e, _) => Center(
+                    child: Text('Error: $e',
+                        style: const TextStyle(color: Colors.red))),
                 data: (result) {
                   if (result == null) {
-                    return const Center(child: Text('Enter a player name and click Lookup', style: TextStyle(color: Colors.white54)));
+                    return Center(
+                        child: Text(
+                            hasSearched.value
+                                ? 'Player not found on this hiscore'
+                                : 'Enter a player name and click Lookup',
+                            style: const TextStyle(color: Colors.white54)));
                   }
                   return _HiscoresResultView(result: result);
                 },
@@ -69,7 +85,9 @@ class HiscoresDialog extends HookConsumerWidget {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close')),
       ],
     );
   }
@@ -86,9 +104,11 @@ class _HiscoresResultView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final skills = result.skills.entries.where((e) => e.key != 'Overall').toList();
+    final skills =
+        result.skills.entries.where((e) => e.key != 'Overall').toList();
     final overall = result.skills['Overall'];
-    final bossKills = result.activities.entries.where((e) => e.value.score > 0).toList();
+    final bossKills =
+        result.activities.entries.where((e) => e.value.score > 0).toList();
 
     return DefaultTabController(
       length: 2,
@@ -119,7 +139,7 @@ class _HiscoresResultView extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 200,
-                    childAspectRatio: 3.2,
+                    childAspectRatio: 2.4,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
                   ),
@@ -129,17 +149,48 @@ class _HiscoresResultView extends StatelessWidget {
                     return Card(
                       margin: EdgeInsets.zero,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Row(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 80,
-                              child: Text(skill.key, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(skill.key,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600)),
+                                ),
+                                Text('${skill.value.level}',
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amber)),
+                              ],
                             ),
-                            Expanded(
-                              child: Text('${skill.value.level}', style: const TextStyle(fontSize: 13, color: Colors.amber)),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text('Rank ',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.35))),
+                                Text(_formatRank(skill.value.rank),
+                                    style: const TextStyle(
+                                        fontSize: 10, color: Colors.white54)),
+                                const Spacer(),
+                                Text('XP ',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.35))),
+                                Text(_formatXp(skill.value.xp),
+                                    style: const TextStyle(
+                                        fontSize: 10, color: Colors.white54)),
+                              ],
                             ),
-                            Text(_formatXp(skill.value.xp), style: const TextStyle(fontSize: 10, color: Colors.white38)),
                           ],
                         ),
                       ),
@@ -147,7 +198,9 @@ class _HiscoresResultView extends StatelessWidget {
                   },
                 ),
                 bossKills.isEmpty
-                    ? const Center(child: Text('No boss kills found', style: TextStyle(color: Colors.white54)))
+                    ? const Center(
+                        child: Text('No boss kills found',
+                            style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
                         padding: const EdgeInsets.only(top: 8),
                         itemCount: bossKills.length,
@@ -157,8 +210,11 @@ class _HiscoresResultView extends StatelessWidget {
                             margin: const EdgeInsets.only(bottom: 2),
                             child: ListTile(
                               dense: true,
-                              title: Text(boss.key, style: const TextStyle(fontSize: 12)),
-                              trailing: Text('${boss.value.score} KC', style: const TextStyle(fontSize: 12, color: Colors.amber)),
+                              title: Text(boss.key,
+                                  style: const TextStyle(fontSize: 12)),
+                              trailing: Text('${boss.value.score} KC',
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.amber)),
                             ),
                           );
                         },
@@ -196,8 +252,10 @@ class _StatChip extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54)),
+        Text(value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        Text(label,
+            style: const TextStyle(fontSize: 10, color: Colors.white54)),
       ],
     );
   }

@@ -27,12 +27,10 @@ double hitChance(int attackLevel, int attackBonus, int monsterDefence) {
 /// Uses the appropriate stats based on the active training style.
 int rollPlayerDamage(
   CombatStats stats,
-  int meleeGearLevel,
-  ScaledMonster m, {
+  EquipmentBonuses gear,
+  MonsterDef m, {
   bool pietyActive = false,
   TrainingStyle style = TrainingStyle.balanced,
-  int rangedGearLevel = 0,
-  int magicGearLevel = 0,
 }) {
   int atkBonus;
   int strBonus;
@@ -41,20 +39,20 @@ int rollPlayerDamage(
 
   switch (style) {
     case TrainingStyle.ranged:
-      atkBonus = gearRangedAttackBonus(rangedGearLevel);
-      strBonus = gearRangedStrengthBonus(rangedGearLevel);
+      atkBonus = gear.rangedAttack;
+      strBonus = gear.rangedStrength;
       effectiveAtk = stats.rangedLevel;
-      effectiveStr = stats.rangedLevel; // ranged uses same stat for atk+str
+      effectiveStr = stats.rangedLevel;
       break;
     case TrainingStyle.magic:
-      atkBonus = gearMagicAttackBonus(magicGearLevel);
-      strBonus = gearMagicStrengthBonus(magicGearLevel);
+      atkBonus = gear.magicAttack;
+      strBonus = gear.magicStrength;
       effectiveAtk = stats.magicLevel;
       effectiveStr = stats.magicLevel;
       break;
     default: // melee styles
-      atkBonus = gearAttackBonus(meleeGearLevel);
-      strBonus = gearStrengthBonus(meleeGearLevel);
+      atkBonus = gear.meleeAttack;
+      strBonus = gear.meleeStrength;
       // Piety: +20% attack, +23% strength (OSRS accurate)
       effectiveAtk =
           pietyActive ? (stats.attackLevel * 1.20).floor() : stats.attackLevel;
@@ -71,38 +69,34 @@ int rollPlayerDamage(
 }
 
 /// Roll monster damage against the player.
-int rollMonsterDamage(ScaledMonster m, CombatStats stats, int gearLevel) {
-  final defBonus = gearDefenceBonus(gearLevel);
+/// Monsters use their maxHit directly (OSRS-style).
+int rollMonsterDamage(MonsterDef m, CombatStats stats, EquipmentBonuses gear) {
+  final defBonus = gear.meleeDefence;
   final chance = hitChance(m.attack, 0, stats.defenceLevel + defBonus);
   if (_rng.nextDouble() > chance) return 0;
-  final max = maxHit(m.strength, 0);
-  return _rng.nextInt(max + 1);
+  // Use monster's pre-defined maxHit from OSRS wiki
+  return _rng.nextInt(m.maxHit + 1);
 }
 
 /// XP gained per kill.
-int combatXpPerKill(ScaledMonster m, double prestigeMultiplier) {
-  return (m.maxHp * 4 * prestigeMultiplier).floor();
+int combatXpPerKill(MonsterDef m, double prestigeMultiplier) {
+  return (m.hitpoints * 4 * prestigeMultiplier).floor();
 }
 
-int hpXpPerKill(ScaledMonster m, double prestigeMultiplier) {
-  return (m.maxHp * 1.33 * prestigeMultiplier).floor();
+int hpXpPerKill(MonsterDef m, double prestigeMultiplier) {
+  return (m.hitpoints * 1.33 * prestigeMultiplier).floor();
 }
 
 /// GP drop from a monster.
-int rollGpDrop(ScaledMonster m) {
+int rollGpDrop(MonsterDef m) {
   if (m.gpMax <= m.gpMin) return m.gpMin;
   return m.gpMin + _rng.nextInt(m.gpMax - m.gpMin + 1);
 }
 
-/// Roll for a gear drop. Returns true if the monster dropped an upgrade.
-bool rollGearDrop(ScaledMonster m) {
-  return _rng.nextDouble() < m.dropChance;
-}
-
 /// Roll loot drops from a monster's drop table.
 /// Returns a map of itemId → quantity gained.
-Map<String, int> rollLootDrops(ScaledMonster m) {
-  final table = monsterDropTables[m.def.id];
+Map<String, int> rollLootDrops(MonsterDef m) {
+  final table = monsterDropTables[m.id];
   if (table == null) return {};
   final drops = <String, int>{};
   for (final entry in table) {
@@ -114,6 +108,40 @@ Map<String, int> rollLootDrops(ScaledMonster m) {
     }
   }
   return drops;
+}
+
+/// Calculate total equipment bonuses from equipped items.
+EquipmentBonuses calcEquipmentBonuses(Map<String, String> equipment) {
+  int mAtk = 0,
+      mStr = 0,
+      mDef = 0,
+      rAtk = 0,
+      rStr = 0,
+      magAtk = 0,
+      magStr = 0,
+      pray = 0;
+  for (final itemId in equipment.values) {
+    final def = getEquipmentDefById(itemId);
+    if (def == null) continue;
+    mAtk += def.meleeAttack;
+    mStr += def.meleeStrength;
+    mDef += def.meleeDefence;
+    rAtk += def.rangedAttack;
+    rStr += def.rangedStrength;
+    magAtk += def.magicAttack;
+    magStr += def.magicStrength;
+    pray += def.prayerBonus;
+  }
+  return EquipmentBonuses(
+    meleeAttack: mAtk,
+    meleeStrength: mStr,
+    meleeDefence: mDef,
+    rangedAttack: rAtk,
+    rangedStrength: rStr,
+    magicAttack: magAtk,
+    magicStrength: magStr,
+    prayerBonus: pray,
+  );
 }
 
 /// Add items to a bank map, returning the new bank.
@@ -169,6 +197,209 @@ IdleGameState _tryAutoEat(IdleGameState s, int maxHp) {
   );
 }
 
+/// Roll a unique drop from a raid's unique drop table.
+/// Returns the itemId or null if no unique.
+String? rollRaidUnique(RaidDef raid) {
+  if (_rng.nextDouble() > raid.uniqueDropChance) return null;
+  if (raid.uniqueDropTable.isEmpty) return null;
+  final totalWeight =
+      raid.uniqueDropTable.fold<int>(0, (sum, e) => sum + e.weight);
+  int roll = _rng.nextInt(totalWeight);
+  for (final entry in raid.uniqueDropTable) {
+    roll -= entry.weight;
+    if (roll < 0) return entry.itemId;
+  }
+  return raid.uniqueDropTable.last.itemId;
+}
+
+/// Process one raid combat tick. Returns the updated game state.
+IdleGameState processRaidTick(IdleGameState state) {
+  if (!state.isRunning) return state;
+  final raid = state.activeRaid;
+  if (raid == null || !raid.isActive) return state;
+
+  final raidDef = getRaidDefById(raid.raidId);
+  if (raidDef == null) {
+    return state.copyWith(clearActiveRaid: true);
+  }
+
+  final boss = raidDef.bosses[raid.bossIndex];
+  final gear = calcEquipmentBonuses(state.equipment);
+  final maxHp = state.stats.hitpointsLevel;
+
+  // Auto-eat before combat
+  var s = _tryAutoEat(state, maxHp);
+
+  // Player attacks boss
+  final playerDmg = rollPlayerDamage(
+    s.stats,
+    gear,
+    boss,
+    pietyActive: s.activePrayer == ActivePrayer.piety,
+    style: s.trainingStyle,
+  );
+  final bossHp = s.raidBossCurrentHp - playerDmg;
+  var log =
+      _appendLog(s.combatLog, 'You hit ${boss.name} for $playerDmg damage');
+
+  // Boss attacks player
+  final bossDmg = rollMonsterDamage(boss, s.stats, gear);
+  final adjustedDmg =
+      s.activePrayer == ActivePrayer.protectFromMelee ? 0 : bossDmg;
+  final playerHp = s.playerCurrentHp - adjustedDmg;
+  if (adjustedDmg > 0) {
+    log = _appendLog(log, '${boss.name} hits you for $adjustedDmg damage');
+  }
+
+  // Prayer drain
+  var prayerPts = s.prayerPoints;
+  if (s.activePrayer != ActivePrayer.none) {
+    prayerPts -= prayerDrainPerTick(s.activePrayer);
+    if (prayerPts < 0) prayerPts = 0;
+  }
+
+  // XP from damage dealt
+  var stats = s.stats;
+  if (playerDmg > 0) {
+    final xp = (playerDmg * 4 * s.prestigeMultiplier).floor();
+    final hpXp = (playerDmg * 1.33 * s.prestigeMultiplier).floor();
+    switch (s.trainingStyle) {
+      case TrainingStyle.attack:
+        stats = stats.copyWith(
+            attackXp: stats.attackXp + xp,
+            hitpointsXp: stats.hitpointsXp + hpXp);
+        break;
+      case TrainingStyle.strength:
+        stats = stats.copyWith(
+            strengthXp: stats.strengthXp + xp,
+            hitpointsXp: stats.hitpointsXp + hpXp);
+        break;
+      case TrainingStyle.defence:
+        stats = stats.copyWith(
+            defenceXp: stats.defenceXp + xp,
+            hitpointsXp: stats.hitpointsXp + hpXp);
+        break;
+      case TrainingStyle.balanced:
+        final share = xp ~/ 3;
+        stats = stats.copyWith(
+            attackXp: stats.attackXp + share,
+            strengthXp: stats.strengthXp + share,
+            defenceXp: stats.defenceXp + share,
+            hitpointsXp: stats.hitpointsXp + hpXp);
+        break;
+      case TrainingStyle.ranged:
+        stats = stats.copyWith(
+            rangedXp: stats.rangedXp + xp,
+            hitpointsXp: stats.hitpointsXp + hpXp);
+        break;
+      case TrainingStyle.magic:
+        stats = stats.copyWith(
+            magicXp: stats.magicXp + xp, hitpointsXp: stats.hitpointsXp + hpXp);
+        break;
+    }
+  }
+
+  // Player died → raid fails
+  if (playerHp <= 0) {
+    log = _appendLog(log, '☠️ You died! Raid failed.');
+    return s.copyWith(
+      stats: stats,
+      playerCurrentHp: maxHp,
+      raidBossCurrentHp: 0,
+      clearActiveRaid: true,
+      combatLog: log,
+      deathCount: s.deathCount + 1,
+      prayerPoints: prayerPts,
+      lastDamageDealt: playerDmg,
+      lastDamageTaken: adjustedDmg,
+    );
+  }
+
+  // Boss died → advance or complete
+  if (bossHp <= 0) {
+    final nextBoss = raid.bossIndex + 1;
+    log = _appendLog(log, '✅ ${boss.name} defeated!');
+
+    if (nextBoss >= raidDef.bosses.length) {
+      // Raid complete!
+      log = _appendLog(log, '🏆 ${raidDef.name} complete!');
+
+      // Roll for unique
+      final uniqueId = rollRaidUnique(raidDef);
+      final bank = Map<String, int>.from(s.bank);
+      if (uniqueId != null) {
+        bank[uniqueId] = (bank[uniqueId] ?? 0) + 1;
+        final equipDef = getEquipmentDefById(uniqueId);
+        final item = getItemById(uniqueId);
+        final name = equipDef?.name ?? item?.name ?? uniqueId;
+        log = _appendLog(log, '💜 UNIQUE DROP: $name!');
+      } else {
+        // Common loot: GP
+        final gpReward = 50000 + _rng.nextInt(100000);
+        log = _appendLog(log, 'Common loot: ${gpReward}gp');
+        return s.copyWith(
+          stats: stats,
+          gp: s.gp + gpReward,
+          playerCurrentHp: playerHp,
+          raidBossCurrentHp: 0,
+          clearActiveRaid: true,
+          combatLog: log,
+          prayerPoints: prayerPts,
+          raidCompletions: {
+            ...s.raidCompletions,
+            raidDef.id: (s.raidCompletions[raidDef.id] ?? 0) + 1,
+          },
+          lastDamageDealt: playerDmg,
+          lastDamageTaken: adjustedDmg,
+        );
+      }
+
+      final completions = Map<String, int>.from(s.raidCompletions);
+      completions[raidDef.id] = (completions[raidDef.id] ?? 0) + 1;
+
+      return s.copyWith(
+        stats: stats,
+        playerCurrentHp: playerHp,
+        raidBossCurrentHp: 0,
+        clearActiveRaid: true,
+        bank: bank,
+        combatLog: log,
+        prayerPoints: prayerPts,
+        raidCompletions: completions,
+        lastDamageDealt: playerDmg,
+        lastDamageTaken: adjustedDmg,
+      );
+    } else {
+      // Advance to next boss
+      final nextBossDef = raidDef.bosses[nextBoss];
+      log = _appendLog(
+          log, '➡️ Next: ${nextBossDef.name} (${nextBossDef.hitpoints} HP)');
+      return s.copyWith(
+        stats: stats,
+        playerCurrentHp: playerHp,
+        raidBossCurrentHp: nextBossDef.hitpoints,
+        activeRaid: raid.copyWith(bossIndex: nextBoss),
+        combatLog: log,
+        prayerPoints: prayerPts,
+        lastDamageDealt: playerDmg,
+        lastDamageTaken: adjustedDmg,
+      );
+    }
+  }
+
+  // Normal tick — both alive
+  s = s.copyWith(
+    stats: stats,
+    playerCurrentHp: playerHp,
+    raidBossCurrentHp: bossHp,
+    combatLog: log,
+    prayerPoints: prayerPts,
+    lastDamageDealt: playerDmg,
+    lastDamageTaken: adjustedDmg,
+  );
+  return _tryAutoEat(s, maxHp);
+}
+
 /// Process one combat tick. Returns the updated game state.
 IdleGameState processTick(IdleGameState state) {
   if (!state.isRunning) return state;
@@ -180,7 +411,8 @@ IdleGameState processTick(IdleGameState state) {
     );
   }
 
-  final monster = getMonster(state.monsterIndex, state.zone);
+  final monster = getMonster(state.monsterIndex);
+  final gear = calcEquipmentBonuses(state.equipment);
   var log = List<String>.from(state.combatLog);
 
   // ── Prayer drain ──────────────────────────────────────────
@@ -200,13 +432,10 @@ IdleGameState processTick(IdleGameState state) {
   final specCd =
       (state.specialAttackCooldown > 0) ? state.specialAttackCooldown - 1 : 0;
 
-  // Player attacks monster (with possible special attack)
-  // Piety: +20% attack accuracy, +23% strength (max hit)
-  int playerDmg = rollPlayerDamage(state.stats, state.gearLevel, monster,
+  // Player attacks monster
+  int playerDmg = rollPlayerDamage(state.stats, gear, monster,
       pietyActive: currentPrayer == ActivePrayer.piety,
-      style: state.trainingStyle,
-      rangedGearLevel: state.rangedGearLevel,
-      magicGearLevel: state.magicGearLevel);
+      style: state.trainingStyle);
   bool usedSpec = false;
   if (state.specialAttackQueued &&
       state.specialAttackCooldown <= 0 &&
@@ -224,8 +453,7 @@ IdleGameState processTick(IdleGameState state) {
   final monsterHp = state.monsterCurrentHp - playerDmg;
 
   // Monster attacks player
-  // Protect from Melee: 100% damage reduction (like OSRS)
-  int monsterDmg = rollMonsterDamage(monster, state.stats, state.gearLevel);
+  int monsterDmg = rollMonsterDamage(monster, state.stats, gear);
   if (currentPrayer == ActivePrayer.protectFromMelee && monsterDmg > 0) {
     monsterDmg = 0;
   }
@@ -260,7 +488,7 @@ IdleGameState processTick(IdleGameState state) {
     }
     return updated.copyWith(
       playerCurrentHp: state.stats.hitpointsLevel,
-      monsterCurrentHp: monster.maxHp,
+      monsterCurrentHp: monster.hitpoints,
       gp: state.gp - gpLost,
       foodInventory: const {},
       deathCount: state.deathCount + 1,
@@ -272,7 +500,7 @@ IdleGameState processTick(IdleGameState state) {
     );
   }
 
-  // Monster died → award XP + GP + possible gear drop, spawn next
+  // Monster died → award XP + GP, spawn next
   if (monsterHp <= 0) {
     final xpGain = combatXpPerKill(monster, state.prestigeMultiplier);
     final hpGain = hpXpPerKill(monster, state.prestigeMultiplier);
@@ -307,29 +535,8 @@ IdleGameState processTick(IdleGameState state) {
     }
     newStats = newStats.copyWith(hitpointsXp: newStats.hitpointsXp + hpGain);
 
-    // Roll for gear drop — applies to the active combat style's gear track
-    final gotDrop = rollGearDrop(monster);
-    final isRanged = state.trainingStyle == TrainingStyle.ranged;
-    final isMagic = state.trainingStyle == TrainingStyle.magic;
-    final newGearLevel = gotDrop && !isRanged && !isMagic
-        ? state.gearLevel + 1
-        : state.gearLevel;
-    final newRangedGear =
-        gotDrop && isRanged ? state.rangedGearLevel + 1 : state.rangedGearLevel;
-    final newMagicGear =
-        gotDrop && isMagic ? state.magicGearLevel + 1 : state.magicGearLevel;
-    final dropGearLvl = isRanged
-        ? newRangedGear
-        : isMagic
-            ? newMagicGear
-            : newGearLevel;
-    final dropName = gotDrop ? gearName(dropGearLvl) : null;
-
     log = _appendLog(
         log, '💀 ${monster.name} defeated! +${gpGain}gp +${xpGain}xp');
-    if (gotDrop) {
-      log = _appendLog(log, '🎉 Gear drop: ${gearName(dropGearLvl)}!');
-    }
 
     // Slayer task progress
     var slayerXpGain = 0;
@@ -339,13 +546,11 @@ IdleGameState processTick(IdleGameState state) {
     int tasksCompleted = state.slayerTasksCompleted;
 
     if (updatedTask != null && !updatedTask.isComplete) {
-      // Check if killed monster matches the task (base id without zone)
-      if (monster.def.id == updatedTask.monsterId) {
+      if (monster.id == updatedTask.monsterId) {
         updatedTask = updatedTask.copyWith(
           amountKilled: updatedTask.amountKilled + 1,
         );
-        // Base slayer XP per kill = monster's HP
-        slayerXpGain = monster.maxHp;
+        slayerXpGain = monster.hitpoints;
 
         if (updatedTask.isComplete) {
           taskJustCompleted = true;
@@ -359,11 +564,11 @@ IdleGameState processTick(IdleGameState state) {
     }
 
     // Prayer XP from auto-burying bones
-    final prayerXpGain = prayerXpPerKill(monster.def.baseHp);
+    final prayerXpGain = prayerXpPerKill(monster.hitpoints);
 
     // Collection log: track kills per monster
     final newKillCounts = Map<String, int>.from(state.monsterKillCounts);
-    newKillCounts[monster.def.id] = (newKillCounts[monster.def.id] ?? 0) + 1;
+    newKillCounts[monster.id] = (newKillCounts[monster.id] ?? 0) + 1;
 
     // Roll loot drops and add to bank
     final lootDrops = rollLootDrops(monster);
@@ -371,7 +576,9 @@ IdleGameState processTick(IdleGameState state) {
     if (lootDrops.isNotEmpty) {
       final lootSummary = lootDrops.entries.map((e) {
         final item = getItemById(e.key);
-        return '${item?.name ?? e.key} x${e.value}';
+        final equipDef = item == null ? getEquipmentDefById(e.key) : null;
+        final name = item?.name ?? equipDef?.name ?? e.key;
+        return '$name x${e.value}';
       }).join(', ');
       log = _appendLog(log, '📦 Loot: $lootSummary');
     }
@@ -379,24 +586,20 @@ IdleGameState processTick(IdleGameState state) {
     final result = updated.copyWith(
       stats: newStats,
       gp: state.gp + gpGain + slayerBonusGp,
-      gearLevel: newGearLevel,
-      rangedGearLevel: newRangedGear,
-      magicGearLevel: newMagicGear,
-      monsterCurrentHp: monster.maxHp,
+      monsterCurrentHp: monster.hitpoints,
       playerCurrentHp: playerHp,
       totalKills: state.totalKills + 1,
       prayerXp: state.prayerXp + prayerXpGain,
       lastDamageDealt: playerDmg,
       lastDamageTaken: monsterDmg,
-      lastDrop: dropName,
-      clearDrop: !gotDrop,
+      clearDrop: true,
       combatLog: log,
       slayerXp: state.slayerXp + slayerXpGain,
       currentSlayerTask: updatedTask,
       clearSlayerTask: taskJustCompleted,
       slayerTasksCompleted: tasksCompleted,
       monsterKillCounts: newKillCounts,
-      totalGearDrops: state.totalGearDrops + (gotDrop ? 1 : 0),
+      totalGearDrops: state.totalGearDrops,
       bank: newBank,
     );
 
@@ -404,13 +607,13 @@ IdleGameState processTick(IdleGameState state) {
     var afterEat = _tryAutoEat(result, newStats.hitpointsLevel);
 
     // Auto-advance: if the monster died in one tick, move to next monster
-    if (afterEat.autoAdvance && playerDmg >= monster.maxHp) {
+    if (afterEat.autoAdvance && playerDmg >= monster.hitpoints) {
       final nextIdx = state.monsterIndex + 1;
       if (nextIdx < monsterDefs.length) {
-        final nextMonster = getMonster(nextIdx, state.zone);
+        final nextMonster = getMonster(nextIdx);
         afterEat = afterEat.copyWith(
           monsterIndex: nextIdx,
-          monsterCurrentHp: nextMonster.maxHp,
+          monsterCurrentHp: nextMonster.hitpoints,
           combatLog: _appendLog(
               afterEat.combatLog, '⏩ Auto-advancing to ${nextMonster.name}...'),
         );
@@ -439,7 +642,6 @@ const int _maxOfflineTicks = 24000; // 8 hours at 1.2s per tick
 const int _msPerTick = 1200;
 
 /// Simulate offline progress using statistical averages for speed.
-/// Returns the updated state and a summary of gains.
 ({IdleGameState state, OfflineProgressResult result}) simulateOfflineProgress(
     IdleGameState state) {
   if (state.lastSaveEpochMs <= 0) {
@@ -452,33 +654,29 @@ const int _msPerTick = 1200;
   final now = DateTime.now().millisecondsSinceEpoch;
   final elapsedMs = now - state.lastSaveEpochMs;
   if (elapsedMs < _msPerTick * 5) {
-    // Less than ~6 seconds, not worth simulating
     return (state: state, result: const OfflineProgressResult());
   }
 
   final elapsed = Duration(milliseconds: elapsedMs);
   final ticks = (elapsedMs / _msPerTick).floor().clamp(0, _maxOfflineTicks);
 
-  final monster = getMonster(state.monsterIndex, state.zone);
-  final atkBonus = gearAttackBonus(state.gearLevel);
-  final strBonus = gearStrengthBonus(state.gearLevel);
-  final defBonus = gearDefenceBonus(state.gearLevel);
+  final monster = getMonster(state.monsterIndex);
+  final gear = calcEquipmentBonuses(state.equipment);
 
   // Average player hit
   final playerHitChance =
-      hitChance(state.stats.attackLevel, atkBonus, monster.defence);
-  final playerMaxHit = maxHit(state.stats.strengthLevel, strBonus);
+      hitChance(state.stats.attackLevel, gear.meleeAttack, monster.defence);
+  final playerMaxHit = maxHit(state.stats.strengthLevel, gear.meleeStrength);
   final avgPlayerDmg = playerHitChance * (playerMaxHit / 2.0);
 
   // Average monster hit
-  final monsterHitChance =
-      hitChance(monster.attack, 0, state.stats.defenceLevel + defBonus);
-  final monsterMaxHit = maxHit(monster.strength, 0);
-  final avgMonsterDmg = monsterHitChance * (monsterMaxHit / 2.0);
+  final monsterHitChance = hitChance(
+      monster.attack, 0, state.stats.defenceLevel + gear.meleeDefence);
+  final avgMonsterDmg = monsterHitChance * (monster.maxHit / 2.0);
 
   // Estimated ticks per kill
   final ticksPerKill =
-      avgPlayerDmg > 0 ? (monster.maxHp / avgPlayerDmg).ceil() : 999;
+      avgPlayerDmg > 0 ? (monster.hitpoints / avgPlayerDmg).ceil() : 999;
 
   // Estimated damage taken per kill
   final dmgPerKill = (avgMonsterDmg * ticksPerKill).ceil();
@@ -487,13 +685,10 @@ const int _msPerTick = 1200;
   var s = state;
   int totalKills = 0;
   int totalGp = 0;
-  int totalGearLevels = 0;
   int ticksUsed = 0;
 
   while (ticksUsed + ticksPerKill <= ticks) {
-    // Check if player can survive the fight
     if (dmgPerKill >= maxHpVal && s.foodInventory.isEmpty) {
-      // Player would die every fight with no food — stop simulating
       break;
     }
 
@@ -535,35 +730,24 @@ const int _msPerTick = 1200;
     final gpGain = rollGpDrop(monster);
     totalGp += gpGain;
 
-    // Gear drop — applies to active style's gear track
-    final gotDrop = rollGearDrop(monster);
-    if (gotDrop) totalGearLevels++;
-    final offIsRanged = s.trainingStyle == TrainingStyle.ranged;
-    final offIsMagic = s.trainingStyle == TrainingStyle.magic;
-
     s = s.copyWith(
       stats: newStats,
       gp: s.gp + gpGain,
-      gearLevel: s.gearLevel + (gotDrop && !offIsRanged && !offIsMagic ? 1 : 0),
-      rangedGearLevel: s.rangedGearLevel + (gotDrop && offIsRanged ? 1 : 0),
-      magicGearLevel: s.magicGearLevel + (gotDrop && offIsMagic ? 1 : 0),
       totalKills: s.totalKills + 1,
     );
   }
 
   // Reset HP to full after offline session
-  final finalMonster = getMonster(s.monsterIndex, s.zone);
+  final finalMonster = getMonster(s.monsterIndex);
   s = s.copyWith(
-    monsterCurrentHp: finalMonster.maxHp,
+    monsterCurrentHp: finalMonster.hitpoints,
     playerCurrentHp: s.stats.hitpointsLevel,
     lastSaveEpochMs: now,
     combatLog: totalKills > 0
         ? [
             '📴 Offline progress: ${elapsed.inHours}h ${elapsed.inMinutes % 60}m',
-            '💀 Killed $totalKills ${monster.def.name}s',
+            '💀 Killed $totalKills ${monster.name}s',
             '💰 Earned ${totalGp}gp',
-            if (totalGearLevels > 0)
-              '🎉 Found $totalGearLevels gear upgrade${totalGearLevels > 1 ? 's' : ''}!',
           ]
         : s.combatLog,
   );
@@ -574,7 +758,6 @@ const int _msPerTick = 1200;
       ticksSimulated: ticksUsed,
       killsGained: totalKills,
       gpGained: totalGp,
-      gearLevelsGained: totalGearLevels,
       elapsed: elapsed,
     ),
   );
@@ -687,8 +870,7 @@ IdleGameState prestige(IdleGameState state) {
     prestigeLevel: newPrestige,
     prestigeMultiplier: newMultiplier,
     gp: 0,
-    gearLevel: 0,
-    zone: 0,
+    equipment: const {},
     monsterIndex: 0,
     isRunning: false,
   );
