@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../domain/idle_models.dart';
 import '../data/idle_game_data.dart';
+import '../data/idle_game_engine.dart';
 import '../data/idle_items.dart';
 import '../data/idle_achievements.dart';
 import '../../characters/presentation/providers/characters_provider.dart';
@@ -10,6 +11,7 @@ import '../../characters/presentation/providers/hiscores_provider.dart';
 import 'providers/idle_game_provider.dart';
 import 'widgets/pixel_sprite.dart';
 import '../data/pixel_art_data.dart';
+import '../data/gear_sprites.dart';
 
 const _gold = Color(0xFFD4A017);
 const _parchment = Color(0xFFD2C3A3);
@@ -29,7 +31,7 @@ class IdleAdventureScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final game = ref.watch(idleGameProvider);
     final notifier = ref.read(idleGameProvider.notifier);
-    final monster = getMonster(game.monsterIndex, game.zone);
+    final monster = getMonster(game.monsterIndex);
     final offlineResult = notifier.pendingOfflineResult;
 
     return Scaffold(
@@ -58,11 +60,6 @@ class IdleAdventureScreen extends ConsumerWidget {
                     color: Colors.purple,
                   ),
                 ],
-                const SizedBox(width: 12),
-                _Badge(
-                  text: 'Zone ${game.zone + 1}',
-                  color: const Color(0xFF2196F3),
-                ),
                 const Spacer(),
                 _GpDisplay(gp: game.gp),
                 const SizedBox(width: 16),
@@ -108,84 +105,145 @@ class IdleAdventureScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 16),
 
-                  // Right: Stats + Gear + Shop + Monsters + Prestige
+                  // Right: Tabbed sidebar
                   SizedBox(
-                    width: 300,
-                    child: ListView(
-                      children: [
-                        _StatsPanel(
-                            stats: game.stats, gearLevel: game.gearLevel),
-                        const SizedBox(height: 12),
-                        _StatsComparisonPanel(game: game),
-                        const SizedBox(height: 12),
-                        _TrainingStyleSelector(
-                          current: game.trainingStyle,
-                          onChanged: notifier.setTrainingStyle,
-                        ),
-                        const SizedBox(height: 12),
-                        _SlayerPanel(
-                          game: game,
-                          onGetTask: notifier.getNewSlayerTask,
-                          onCancelTask: notifier.cancelSlayerTask,
-                        ),
-                        const SizedBox(height: 12),
-                        _PrayerPanel(
-                          game: game,
-                          onSetPrayer: notifier.setActivePrayer,
-                          onBuyPotion: notifier.buyPrayerPotion,
-                          onBuyPotion10: notifier.buyPrayerPotion10,
-                          onRecharge: notifier.rechargePrayerAtAltar,
-                        ),
-                        const SizedBox(height: 12),
-                        _GearPanel(
-                          gearLevel: game.gearLevel,
-                          rangedGearLevel: game.rangedGearLevel,
-                          magicGearLevel: game.magicGearLevel,
-                          gp: game.gp,
-                          onUpgradeMelee: notifier.buyGearUpgrade,
-                          onUpgradeRanged: notifier.buyRangedGearUpgrade,
-                          onUpgradeMagic: notifier.buyMagicGearUpgrade,
-                        ),
-                        const SizedBox(height: 12),
-                        _BankPanel(
-                          game: game,
-                          onWithdrawFood: notifier.withdrawFood,
-                        ),
-                        const SizedBox(height: 12),
-                        _SkillingPanel(
-                          game: game,
-                          onStartSkilling: notifier.startSkilling,
-                          onStopSkilling: notifier.stopSkilling,
-                        ),
-                        const SizedBox(height: 12),
-                        _MonsterSelector(
-                          currentIndex: game.monsterIndex,
-                          zone: game.zone,
-                          onSelect: notifier.selectMonster,
-                          onNextZone: notifier.nextZone,
-                        ),
-                        const SizedBox(height: 8),
-                        _AutoAdvanceToggle(
-                          enabled: game.autoAdvance,
-                          onToggle: notifier.toggleAutoAdvance,
-                        ),
-                        const SizedBox(height: 12),
-                        _PrestigeCard(
-                          game: game,
-                          onPrestige: notifier.doPrestige,
-                        ),
-                        const SizedBox(height: 12),
-                        _CollectionLogPanel(game: game),
-                        const SizedBox(height: 12),
-                        _AchievementsPanel(game: game),
-                      ],
-                    ),
+                    width: 320,
+                    child: _SidebarTabs(game: game, notifier: notifier),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Sidebar Tabs ──────────────────────────────────────────────
+
+class _SidebarTabs extends StatelessWidget {
+  final IdleGameState game;
+  final IdleGameNotifier notifier;
+
+  const _SidebarTabs({required this.game, required this.notifier});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 4,
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: _cardBg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _gold.withValues(alpha: 0.15)),
+            ),
+            child: TabBar(
+              labelColor: _gold,
+              unselectedLabelColor: _parchment.withValues(alpha: 0.35),
+              indicatorColor: _gold,
+              indicatorWeight: 2,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelStyle:
+                  const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+              unselectedLabelStyle: const TextStyle(fontSize: 10),
+              labelPadding: EdgeInsets.zero,
+              tabs: const [
+                Tab(icon: Icon(Icons.sports_kabaddi, size: 16), text: 'Combat'),
+                Tab(icon: Icon(Icons.auto_graph, size: 16), text: 'Skills'),
+                Tab(icon: Icon(Icons.shield, size: 16), text: 'Gear'),
+                Tab(icon: Icon(Icons.emoji_events, size: 16), text: 'Progress'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: TabBarView(
+              children: [
+                // ── Combat tab ──
+                ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _MonsterSelector(
+                      currentIndex: game.monsterIndex,
+                      onSelect: notifier.selectMonster,
+                      autoAdvance: game.autoAdvance,
+                      onToggleAutoAdvance: notifier.toggleAutoAdvance,
+                    ),
+                    const SizedBox(height: 12),
+                    _TrainingStyleSelector(
+                      current: game.trainingStyle,
+                      onChanged: notifier.setTrainingStyle,
+                    ),
+                    const SizedBox(height: 12),
+                    _StatsPanel(stats: game.stats),
+                    const SizedBox(height: 12),
+                    _RaidPanel(game: game, notifier: notifier),
+                  ],
+                ),
+                // ── Skills tab ──
+                ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _SlayerPanel(
+                      game: game,
+                      onGetTask: notifier.getNewSlayerTask,
+                      onCancelTask: notifier.cancelSlayerTask,
+                    ),
+                    const SizedBox(height: 12),
+                    _PrayerPanel(
+                      game: game,
+                      onSetPrayer: notifier.setActivePrayer,
+                      onBuyPotion: notifier.buyPrayerPotion,
+                      onBuyPotion10: notifier.buyPrayerPotion10,
+                      onRecharge: notifier.rechargePrayerAtAltar,
+                    ),
+                    const SizedBox(height: 12),
+                    _SkillingPanel(
+                      game: game,
+                      onStartSkilling: notifier.startSkilling,
+                      onStopSkilling: notifier.stopSkilling,
+                    ),
+                  ],
+                ),
+                // ── Gear tab ──
+                ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _EquipmentPanel(game: game, notifier: notifier),
+                    const SizedBox(height: 12),
+                    _GeneralShopPanel(game: game, notifier: notifier),
+                    const SizedBox(height: 12),
+                    _BankPanel(
+                      game: game,
+                      onWithdrawFood: notifier.withdrawFood,
+                      notifier: notifier,
+                    ),
+                  ],
+                ),
+                // ── Progress tab ──
+                ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _StatsComparisonPanel(game: game),
+                    const SizedBox(height: 12),
+                    _CollectionLogPanel(game: game),
+                    const SizedBox(height: 12),
+                    _AchievementsPanel(game: game),
+                    const SizedBox(height: 12),
+                    _PrestigeCard(
+                      game: game,
+                      onPrestige: notifier.doPrestige,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -289,8 +347,7 @@ class _OfflineProgressBanner extends StatelessWidget {
                 Text(
                   'While you were away ($timeStr): '
                   '${result.killsGained} kills, '
-                  '+${_formatGp(result.gpGained)} gp'
-                  '${result.gearLevelsGained > 0 ? ', ${result.gearLevelsGained} gear upgrade${result.gearLevelsGained > 1 ? 's' : ''}' : ''}',
+                  '+${_formatGp(result.gpGained)} gp',
                   style: TextStyle(
                       color: _parchment.withValues(alpha: 0.7), fontSize: 12),
                 ),
@@ -762,7 +819,7 @@ class _GpDisplay extends StatelessWidget {
 
 class _CombatArea extends StatelessWidget {
   final IdleGameState game;
-  final ScaledMonster monster;
+  final MonsterDef monster;
   final VoidCallback onSpecialAttack;
 
   const _CombatArea({
@@ -774,8 +831,9 @@ class _CombatArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final monsterFrames =
-        monsterSprites[monster.def.id] ?? monsterSprites['chicken']!;
-    final playerFrames = getPlayerFrames(game.gearLevel, game.trainingStyle);
+        monsterSprites[monster.id] ?? monsterSprites['chicken']!;
+    final playerFrames =
+        getPlayerFramesFromEquipment(game.equipment, game.trainingStyle);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -786,63 +844,87 @@ class _CombatArea extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Monster name + pixel sprite
-          Text(monster.name,
-              style: const TextStyle(
-                  color: _parchment,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          AnimatedPixelSprite(
-            frames: monsterFrames,
-            scale: 3,
-            hitTrigger: game.lastDamageDealt,
-            attackTrigger: game.lastDamageTaken,
+          // Combatants side-by-side (Player left, Monster right)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Player (left)
+                Expanded(
+                  child: Column(
+                    children: [
+                      AnimatedPixelSprite(
+                        frames: playerFrames,
+                        scale: 3,
+                        attackTrigger: game.lastDamageDealt,
+                        hitTrigger: game.lastDamageTaken,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('You',
+                          style: TextStyle(
+                              color: _parchment,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 14),
+                      const Spacer(),
+                      _HpBar(
+                        label: 'You',
+                        current: game.playerCurrentHp,
+                        max: game.stats.hitpointsLevel,
+                        color: const Color(0xFF4CAF50),
+                        damage: game.lastDamageTaken,
+                      ),
+                    ],
+                  ),
+                ),
+                // VS
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  child: Text('VS',
+                      style: TextStyle(
+                          color: _gold.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
+                ),
+                // Monster (right)
+                Expanded(
+                  child: Column(
+                    children: [
+                      AnimatedPixelSprite(
+                        frames: monsterFrames,
+                        scale: 3,
+                        hitTrigger: game.lastDamageDealt,
+                        attackTrigger: game.lastDamageTaken,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(monster.name,
+                          style: const TextStyle(
+                              color: _parchment,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold)),
+                      Text('CB Lv ${monster.combatLevel}',
+                          style: TextStyle(
+                              color: _gold.withValues(alpha: 0.5),
+                              fontSize: 10)),
+                      const SizedBox(height: 6),
+                      const Spacer(),
+                      _HpBar(
+                        label: monster.name,
+                        current: game.monsterCurrentHp,
+                        max: monster.hitpoints,
+                        color: const Color(0xFFB33831),
+                        damage: game.lastDamageDealt,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 2),
-          Text('Drop: ${(monster.dropChance * 100).toStringAsFixed(0)}%',
-              style:
-                  TextStyle(color: _gold.withValues(alpha: 0.5), fontSize: 10)),
-          const SizedBox(height: 6),
-          _HpBar(
-            label: monster.name,
-            current: game.monsterCurrentHp,
-            max: monster.maxHp,
-            color: const Color(0xFFB33831),
-            damage: game.lastDamageDealt,
-          ),
-          const SizedBox(height: 12),
-          // VS divider
-          Row(
-            children: [
-              Expanded(child: Divider(color: _gold.withValues(alpha: 0.2))),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('VS',
-                    style: TextStyle(
-                        color: _gold.withValues(alpha: 0.5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-              ),
-              Expanded(child: Divider(color: _gold.withValues(alpha: 0.2))),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Player avatar + HP
-          AnimatedPixelSprite(
-            frames: playerFrames,
-            scale: 3,
-            attackTrigger: game.lastDamageDealt,
-            hitTrigger: game.lastDamageTaken,
-          ),
-          const SizedBox(height: 4),
-          _HpBar(
-            label: 'You (${gearName(game.gearLevel)} gear)',
-            current: game.playerCurrentHp,
-            max: game.stats.hitpointsLevel,
-            color: const Color(0xFF4CAF50),
-            damage: game.lastDamageTaken,
-          ),
+          const SizedBox(height: 10),
+          // Stats + special attack
+          Divider(color: _gold.withValues(alpha: 0.12), height: 1),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -871,17 +953,16 @@ class _CombatArea extends StatelessWidget {
                         color: _parchment.withValues(alpha: 0.5),
                         fontSize: 10)),
               ],
+              const SizedBox(width: 16),
+              _SpecialAttackButton(
+                cooldown: game.specialAttackCooldown,
+                queued: game.specialAttackQueued,
+                isRunning: game.isRunning,
+                onPressed: onSpecialAttack,
+              ),
             ],
           ),
-          const SizedBox(height: 6),
-          // Special attack button
-          _SpecialAttackButton(
-            cooldown: game.specialAttackCooldown,
-            queued: game.specialAttackQueued,
-            isRunning: game.isRunning,
-            onPressed: onSpecialAttack,
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           // Combat log
           Expanded(
             child: game.combatLog.isEmpty && !game.isRunning
@@ -1058,9 +1139,8 @@ class _SpecialAttackButton extends StatelessWidget {
 
 class _StatsPanel extends StatelessWidget {
   final CombatStats stats;
-  final int gearLevel;
 
-  const _StatsPanel({required this.stats, required this.gearLevel});
+  const _StatsPanel({required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -1114,6 +1194,177 @@ class _StatsPanel extends StatelessWidget {
               level: stats.magicLevel,
               xp: stats.magicXp,
               color: const Color(0xFF9C27B0)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Raid Panel ─────────────────────────────────────────────────
+
+class _RaidPanel extends StatelessWidget {
+  final IdleGameState game;
+  final IdleGameNotifier notifier;
+
+  const _RaidPanel({required this.game, required this.notifier});
+
+  @override
+  Widget build(BuildContext context) {
+    const raid = coxRaidDef;
+    final activeRaid = game.activeRaid;
+    final isInRaid = activeRaid != null && activeRaid.raidId == raid.id;
+    final completions = game.raidCompletions[raid.id] ?? 0;
+    final meetsReqs = game.stats.attackLevel >= raid.minAttack &&
+        game.stats.strengthLevel >= raid.minStrength &&
+        game.stats.defenceLevel >= raid.minDefence;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: isInRaid
+                ? Colors.purpleAccent.withValues(alpha: 0.4)
+                : _gold.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('${raid.icon} ${raid.name}',
+                  style: const TextStyle(
+                      color: _gold, fontWeight: FontWeight.bold, fontSize: 14)),
+              const Spacer(),
+              Text('$completions kc',
+                  style: TextStyle(
+                      color: _parchment.withValues(alpha: 0.5), fontSize: 10)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Boss list with progress
+          ...List.generate(raid.bosses.length, (i) {
+            final boss = raid.bosses[i];
+            final isCurrentBoss = isInRaid && activeRaid.bossIndex == i;
+            final isDefeated = isInRaid && activeRaid.bossIndex > i;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    child: Text(
+                      isDefeated
+                          ? '✅'
+                          : isCurrentBoss
+                              ? '⚔️'
+                              : '⬜',
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${boss.name} (${boss.hitpoints} HP)',
+                      style: TextStyle(
+                        color: isCurrentBoss
+                            ? _gold
+                            : isDefeated
+                                ? _parchment.withValues(alpha: 0.3)
+                                : _parchment.withValues(alpha: 0.6),
+                        fontSize: 11,
+                        fontWeight:
+                            isCurrentBoss ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  if (isCurrentBoss)
+                    Text(
+                      '${game.raidBossCurrentHp}/${boss.hitpoints}',
+                      style: TextStyle(
+                          color: Colors.redAccent.withValues(alpha: 0.8),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
+            );
+          }),
+          if (isInRaid) ...[
+            const SizedBox(height: 8),
+            // Boss HP bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: game.raidBossCurrentHp /
+                    raid.bosses[activeRaid.bossIndex].hitpoints,
+                backgroundColor: Colors.red.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.redAccent.withValues(alpha: 0.7)),
+                minHeight: 6,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          // Action button
+          if (!game.isRunning && !isInRaid)
+            SizedBox(
+              width: double.infinity,
+              height: 32,
+              child: ElevatedButton(
+                onPressed: meetsReqs ? () => notifier.startRaid(raid.id) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: meetsReqs
+                      ? _gold.withValues(alpha: 0.15)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  foregroundColor: meetsReqs ? _gold : Colors.grey,
+                  side: BorderSide(
+                      color: meetsReqs
+                          ? _gold.withValues(alpha: 0.3)
+                          : Colors.grey.withValues(alpha: 0.2)),
+                ),
+                child: Text(
+                  meetsReqs ? 'Start Raid' : 'Requires 90+ Atk/Str/Def',
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+            ),
+          if (isInRaid)
+            SizedBox(
+              width: double.infinity,
+              height: 32,
+              child: OutlinedButton(
+                onPressed: () => notifier.stopRaid(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: BorderSide(
+                      color: Colors.redAccent.withValues(alpha: 0.3)),
+                ),
+                child:
+                    const Text('Abandon Raid', style: TextStyle(fontSize: 11)),
+              ),
+            ),
+          if (!meetsReqs && !isInRaid)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Atk: ${game.stats.attackLevel}/90  Str: ${game.stats.strengthLevel}/90  Def: ${game.stats.defenceLevel}/90',
+                style: TextStyle(
+                    color: _parchment.withValues(alpha: 0.4), fontSize: 9),
+              ),
+            ),
+          // Unique drop chance info
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              '~${(raid.uniqueDropChance * 100).toStringAsFixed(0)}% unique drop chance per completion (1/${(1 / raid.uniqueDropChance).round()})',
+              style: TextStyle(
+                  color: Colors.purpleAccent.withValues(alpha: 0.5),
+                  fontSize: 9),
+            ),
+          ),
         ],
       ),
     );
@@ -1453,216 +1704,17 @@ class _CompareBar extends StatelessWidget {
   }
 }
 
-// ─── Gear Panel ─────────────────────────────────────────────────
+// ─── Equipment Panel ─────────────────────────────────────────────
 
-class _GearPanel extends StatelessWidget {
-  final int gearLevel;
-  final int rangedGearLevel;
-  final int magicGearLevel;
-  final int gp;
-  final VoidCallback onUpgradeMelee;
-  final VoidCallback onUpgradeRanged;
-  final VoidCallback onUpgradeMagic;
+class _EquipmentPanel extends StatelessWidget {
+  final IdleGameState game;
+  final IdleGameNotifier notifier;
 
-  const _GearPanel({
-    required this.gearLevel,
-    required this.rangedGearLevel,
-    required this.magicGearLevel,
-    required this.gp,
-    required this.onUpgradeMelee,
-    required this.onUpgradeRanged,
-    required this.onUpgradeMagic,
-  });
+  const _EquipmentPanel({required this.game, required this.notifier});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _gold.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Equipped Gear',
-              style: TextStyle(
-                  color: _gold, fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 8),
-          _GearTrackRow(
-            label: 'Melee',
-            icon: Icons.shield,
-            level: gearLevel,
-            color: _gold,
-            gp: gp,
-            onUpgrade: onUpgradeMelee,
-          ),
-          const SizedBox(height: 6),
-          _GearTrackRow(
-            label: 'Ranged',
-            icon: Icons.my_location,
-            level: rangedGearLevel,
-            color: const Color(0xFF8BC34A),
-            gp: gp,
-            onUpgrade: onUpgradeRanged,
-          ),
-          const SizedBox(height: 6),
-          _GearTrackRow(
-            label: 'Magic',
-            icon: Icons.auto_fix_high,
-            level: magicGearLevel,
-            color: const Color(0xFF9C27B0),
-            gp: gp,
-            onUpgrade: onUpgradeMagic,
-          ),
-          const SizedBox(height: 4),
-          Text('Or kill monsters for free drops',
-              style: TextStyle(
-                  color: _parchment.withValues(alpha: 0.35), fontSize: 10)),
-        ],
-      ),
-    );
-  }
-}
-
-class _GearTrackRow extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final int level;
-  final Color color;
-  final int gp;
-  final VoidCallback onUpgrade;
-
-  const _GearTrackRow({
-    required this.label,
-    required this.icon,
-    required this.level,
-    required this.color,
-    required this.gp,
-    required this.onUpgrade,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cost = gearUpgradeCost(level);
-    final canBuy = gp >= cost;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: color.withValues(alpha: 0.7)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text('$label: ${gearName(level)}',
-                  style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-            ),
-            Text('Lv $level',
-                style: TextStyle(
-                    color: color.withValues(alpha: 0.5), fontSize: 10)),
-          ],
-        ),
-        const SizedBox(height: 3),
-        SizedBox(
-          width: double.infinity,
-          height: 26,
-          child: OutlinedButton(
-            onPressed: canBuy ? onUpgrade : null,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: canBuy ? color : Colors.white24,
-              side: BorderSide(
-                  color: canBuy
-                      ? color.withValues(alpha: 0.3)
-                      : Colors.white.withValues(alpha: 0.06)),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: Text('Upgrade ${_formatGp(cost)} gp',
-                style: const TextStyle(fontSize: 10)),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Auto-Advance Toggle ────────────────────────────────────────
-
-class _AutoAdvanceToggle extends StatelessWidget {
-  final bool enabled;
-  final VoidCallback onToggle;
-
-  const _AutoAdvanceToggle({required this.enabled, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onToggle,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: enabled
-              ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-              color: enabled
-                  ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.06)),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              enabled ? Icons.fast_forward : Icons.fast_forward_outlined,
-              size: 16,
-              color: enabled
-                  ? const Color(0xFF4CAF50)
-                  : _parchment.withValues(alpha: 0.3),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text('Auto-advance monsters',
-                  style: TextStyle(
-                      color: enabled
-                          ? const Color(0xFF81C784)
-                          : _parchment.withValues(alpha: 0.4),
-                      fontSize: 11)),
-            ),
-            Icon(
-              enabled ? Icons.toggle_on : Icons.toggle_off,
-              size: 24,
-              color: enabled
-                  ? const Color(0xFF4CAF50)
-                  : _parchment.withValues(alpha: 0.3),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Monster Selector ──────────────────────────────────────────
-
-class _MonsterSelector extends StatelessWidget {
-  final int currentIndex;
-  final int zone;
-  final void Function(int index, int zone) onSelect;
-  final VoidCallback onNextZone;
-
-  const _MonsterSelector({
-    required this.currentIndex,
-    required this.zone,
-    required this.onSelect,
-    required this.onNextZone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+    final bonuses = calcEquipmentBonuses(game.equipment);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1675,33 +1727,333 @@ class _MonsterSelector extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('Monsters',
+              const Text('Equipment',
                   style: TextStyle(
                       color: _gold, fontWeight: FontWeight.bold, fontSize: 14)),
               const Spacer(),
-              Text('Zone ${zone + 1}',
+              Text('${game.equipment.length}/11 slots',
                   style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.4), fontSize: 11)),
+                      color: _parchment.withValues(alpha: 0.4), fontSize: 10)),
             ],
           ),
           const SizedBox(height: 8),
-          for (int i = 0; i < monsterDefs.length; i++)
-            _MonsterTile(
-              monster: getMonster(i, zone),
-              isSelected: i == currentIndex,
-              onTap: () => onSelect(i, zone),
+          // Show equipped items by slot
+          for (final slot in EquipmentSlot.values)
+            _EquipSlotRow(
+              slot: slot,
+              equippedId: game.equipment[slot.name],
+              onUnequip: () => notifier.unequipSlot(slot),
             ),
           const SizedBox(height: 8),
+          // Bonus summary
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _BonusStat('⚔️', bonuses.meleeAttack),
+                _BonusStat('💪', bonuses.meleeStrength),
+                _BonusStat('🛡️', bonuses.meleeDefence),
+                _BonusStat('🏹', bonuses.rangedAttack),
+                _BonusStat('🔮', bonuses.magicAttack),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Equip from bank
+          if (game.bank.entries.any((e) => getEquipmentDefById(e.key) != null))
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Bank equipment:',
+                    style: TextStyle(
+                        color: _parchment.withValues(alpha: 0.5),
+                        fontSize: 10)),
+                const SizedBox(height: 4),
+                for (final entry in game.bank.entries)
+                  if (getEquipmentDefById(entry.key) != null)
+                    _BankEquipRow(
+                      itemId: entry.key,
+                      qty: entry.value,
+                      onEquip: () => notifier.equipItem(entry.key),
+                    ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BonusStat extends StatelessWidget {
+  final String icon;
+  final int value;
+  const _BonusStat(this.icon, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('$icon$value',
+        style: TextStyle(
+            color: value > 0 ? _parchment : _parchment.withValues(alpha: 0.3),
+            fontSize: 11));
+  }
+}
+
+class _GearIcon extends StatelessWidget {
+  final String itemId;
+  final String fallbackIcon;
+  final double scale;
+
+  const _GearIcon({
+    required this.itemId,
+    required this.fallbackIcon,
+    this.scale = 1.5,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sprite = gearSprites[itemId];
+    if (sprite != null) {
+      return SizedBox(
+        width: 8 * scale,
+        height: 8 * scale,
+        child: PixelSprite(grid: sprite, scale: scale),
+      );
+    }
+    return Text(fallbackIcon, style: const TextStyle(fontSize: 12));
+  }
+}
+
+class _EquipSlotRow extends StatelessWidget {
+  final EquipmentSlot slot;
+  final String? equippedId;
+  final VoidCallback onUnequip;
+
+  const _EquipSlotRow({
+    required this.slot,
+    required this.equippedId,
+    required this.onUnequip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final def = equippedId != null ? getEquipmentDefById(equippedId!) : null;
+    final slotLabel = slot.name[0].toUpperCase() + slot.name.substring(1);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
           SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onNextZone,
-              icon: const Icon(Icons.arrow_forward, size: 14),
-              label: Text('Zone ${zone + 2}'),
+            width: 55,
+            child: Text(slotLabel,
+                style: TextStyle(
+                    color: _parchment.withValues(alpha: 0.4), fontSize: 10)),
+          ),
+          if (def != null) ...[
+            _GearIcon(itemId: equippedId!, fallbackIcon: def.icon),
+            const SizedBox(width: 4),
+          ],
+          Expanded(
+            child: def != null
+                ? Text(def.name,
+                    style: const TextStyle(color: _parchment, fontSize: 11),
+                    overflow: TextOverflow.ellipsis)
+                : Text('Empty',
+                    style: TextStyle(
+                        color: _parchment.withValues(alpha: 0.2),
+                        fontSize: 10)),
+          ),
+          if (def != null)
+            InkWell(
+              onTap: onUnequip,
+              child: Icon(Icons.close,
+                  size: 12, color: Colors.red.withValues(alpha: 0.5)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BankEquipRow extends StatelessWidget {
+  final String itemId;
+  final int qty;
+  final VoidCallback onEquip;
+
+  const _BankEquipRow({
+    required this.itemId,
+    required this.qty,
+    required this.onEquip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final def = getEquipmentDefById(itemId);
+    if (def == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          _GearIcon(itemId: itemId, fallbackIcon: def.icon),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(def.name,
+                style: TextStyle(
+                    color: _parchment.withValues(alpha: 0.7), fontSize: 11),
+                overflow: TextOverflow.ellipsis),
+          ),
+          Text('x$qty ',
+              style: TextStyle(
+                  color: _parchment.withValues(alpha: 0.3), fontSize: 10)),
+          SizedBox(
+            height: 22,
+            child: OutlinedButton(
+              onPressed: onEquip,
               style: OutlinedButton.styleFrom(
                 foregroundColor: _gold,
                 side: BorderSide(color: _gold.withValues(alpha: 0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
+              child: const Text('Equip', style: TextStyle(fontSize: 9)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Monster Selector ──────────────────────────────────────────
+
+class _MonsterSelector extends StatelessWidget {
+  final int currentIndex;
+  final void Function(int index) onSelect;
+  final bool autoAdvance;
+  final VoidCallback onToggleAutoAdvance;
+
+  const _MonsterSelector({
+    required this.currentIndex,
+    required this.onSelect,
+    required this.autoAdvance,
+    required this.onToggleAutoAdvance,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const monsters = monsterDefs;
+    const bosses = bossDefs;
+    final bossStartIndex = monsters.length;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _gold.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Combat Targets',
+                  style: TextStyle(
+                      color: _gold, fontWeight: FontWeight.bold, fontSize: 14)),
+              const Spacer(),
+              InkWell(
+                onTap: onToggleAutoAdvance,
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: autoAdvance
+                        ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                        : Colors.white.withValues(alpha: 0.02),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: autoAdvance
+                            ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.06)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        autoAdvance
+                            ? Icons.fast_forward
+                            : Icons.fast_forward_outlined,
+                        size: 12,
+                        color: autoAdvance
+                            ? const Color(0xFF4CAF50)
+                            : _parchment.withValues(alpha: 0.3),
+                      ),
+                      const SizedBox(width: 4),
+                      Text('Auto',
+                          style: TextStyle(
+                              color: autoAdvance
+                                  ? const Color(0xFF81C784)
+                                  : _parchment.withValues(alpha: 0.3),
+                              fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 380,
+            child: ListView(
+              children: [
+                // ── Monsters section ──
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('Monsters',
+                      style: TextStyle(
+                          color: _parchment.withValues(alpha: 0.5),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10)),
+                ),
+                for (int i = 0; i < monsters.length; i++)
+                  _MonsterTile(
+                    monster: monsters[i],
+                    isSelected: i == currentIndex,
+                    onTap: () => onSelect(i),
+                  ),
+                // ── Bosses section ──
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Text('Bosses',
+                          style: TextStyle(
+                              color: Colors.redAccent.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: Colors.redAccent.withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (int i = 0; i < bosses.length; i++)
+                  _MonsterTile(
+                    monster: bosses[i],
+                    isSelected: (bossStartIndex + i) == currentIndex,
+                    onTap: () => onSelect(bossStartIndex + i),
+                    isBoss: true,
+                  ),
+              ],
             ),
           ),
         ],
@@ -1711,14 +2063,16 @@ class _MonsterSelector extends StatelessWidget {
 }
 
 class _MonsterTile extends StatelessWidget {
-  final ScaledMonster monster;
+  final MonsterDef monster;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isBoss;
 
   const _MonsterTile({
     required this.monster,
     required this.isSelected,
     required this.onTap,
+    this.isBoss = false,
   });
 
   @override
@@ -1741,21 +2095,23 @@ class _MonsterTile extends StatelessWidget {
               width: 18,
               height: 18,
               child: PixelSprite(
-                grid: (monsterSprites[monster.def.id] ??
+                grid: (monsterSprites[monster.id] ??
                     monsterSprites['chicken']!)[0],
                 scale: 1,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(monster.def.name,
+              child: Text(monster.name,
                   style: TextStyle(
                       color: isSelected
                           ? _gold
-                          : _parchment.withValues(alpha: 0.7),
+                          : isBoss
+                              ? Colors.redAccent.withValues(alpha: 0.7)
+                              : _parchment.withValues(alpha: 0.7),
                       fontSize: 12)),
             ),
-            Text('HP ${monster.maxHp}',
+            Text('HP ${monster.hitpoints}',
                 style: TextStyle(
                     color: _parchment.withValues(alpha: 0.4), fontSize: 11)),
           ],
@@ -1856,15 +2212,206 @@ class _TrainingStyleSelector extends StatelessWidget {
   }
 }
 
+// ─── General Shop Panel ─────────────────────────────────────────
+
+class _GeneralShopPanel extends StatelessWidget {
+  final IdleGameState game;
+  final IdleGameNotifier notifier;
+
+  const _GeneralShopPanel({required this.game, required this.notifier});
+
+  static const _slotOrder = [
+    EquipmentSlot.weapon,
+    EquipmentSlot.head,
+    EquipmentSlot.body,
+    EquipmentSlot.legs,
+    EquipmentSlot.shield,
+    EquipmentSlot.cape,
+    EquipmentSlot.neck,
+    EquipmentSlot.hands,
+    EquipmentSlot.feet,
+    EquipmentSlot.ammo,
+    EquipmentSlot.ring,
+  ];
+
+  static const _slotLabels = {
+    EquipmentSlot.weapon: 'Weapons',
+    EquipmentSlot.head: 'Helmets',
+    EquipmentSlot.body: 'Bodies',
+    EquipmentSlot.legs: 'Legs',
+    EquipmentSlot.shield: 'Shields',
+    EquipmentSlot.cape: 'Capes',
+    EquipmentSlot.neck: 'Necklaces',
+    EquipmentSlot.hands: 'Gloves',
+    EquipmentSlot.feet: 'Boots',
+    EquipmentSlot.ammo: 'Ammo',
+    EquipmentSlot.ring: 'Rings',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final items = shopEquipment;
+    final grouped = <EquipmentSlot, List<EquipmentItemDef>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.slot, () => []).add(item);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _gold.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('General Store',
+                  style: TextStyle(
+                      color: _gold, fontWeight: FontWeight.bold, fontSize: 14)),
+              const Spacer(),
+              Text('${items.length} items',
+                  style: TextStyle(
+                      color: _parchment.withValues(alpha: 0.4), fontSize: 10)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final slot in _slotOrder)
+            if (grouped.containsKey(slot)) ...[
+              Text(_slotLabels[slot] ?? slot.name,
+                  style: TextStyle(
+                      color: _parchment.withValues(alpha: 0.4),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 2),
+              for (final item in grouped[slot]!)
+                _ShopItemRow(
+                  item: item,
+                  canAfford: game.gp >= item.buyPrice,
+                  meetsReqs: _meetsRequirements(item),
+                  onBuyEquip: () => notifier.buyAndEquipItem(item.id),
+                  onBuyToBank: () => notifier.buyItemToBank(item.id),
+                ),
+              const SizedBox(height: 4),
+            ],
+        ],
+      ),
+    );
+  }
+
+  bool _meetsRequirements(EquipmentItemDef item) {
+    if (game.stats.attackLevel < item.attackReq) return false;
+    if (game.stats.defenceLevel < item.defenceReq) return false;
+    if (game.stats.rangedLevel < item.rangedReq) return false;
+    if (game.stats.magicLevel < item.magicReq) return false;
+    if (game.prayerLevel < item.prayerReq) return false;
+    return true;
+  }
+}
+
+class _ShopItemRow extends StatelessWidget {
+  final EquipmentItemDef item;
+  final bool canAfford;
+  final bool meetsReqs;
+  final VoidCallback onBuyEquip;
+  final VoidCallback onBuyToBank;
+
+  const _ShopItemRow({
+    required this.item,
+    required this.canAfford,
+    required this.meetsReqs,
+    required this.onBuyEquip,
+    required this.onBuyToBank,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = canAfford && meetsReqs;
+    final statParts = <String>[];
+    if (item.meleeAttack > 0) statParts.add('⚔️${item.meleeAttack}');
+    if (item.meleeStrength > 0) statParts.add('💪${item.meleeStrength}');
+    if (item.meleeDefence > 0) statParts.add('🛡️${item.meleeDefence}');
+    if (item.rangedAttack > 0) statParts.add('🏹${item.rangedAttack}');
+    if (item.rangedStrength > 0) statParts.add('🏹str${item.rangedStrength}');
+    if (item.magicAttack > 0) statParts.add('🔮${item.magicAttack}');
+    if (item.prayerBonus > 0) statParts.add('🙏${item.prayerBonus}');
+
+    final reqParts = <String>[];
+    if (item.attackReq > 0) reqParts.add('Atk ${item.attackReq}');
+    if (item.defenceReq > 0) reqParts.add('Def ${item.defenceReq}');
+    if (item.rangedReq > 0) reqParts.add('Rng ${item.rangedReq}');
+    if (item.magicReq > 0) reqParts.add('Mag ${item.magicReq}');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          _GearIcon(itemId: item.id, fallbackIcon: item.icon),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name,
+                    style: TextStyle(
+                        color: enabled
+                            ? _parchment.withValues(alpha: 0.8)
+                            : _parchment.withValues(alpha: 0.35),
+                        fontSize: 11),
+                    overflow: TextOverflow.ellipsis),
+                if (statParts.isNotEmpty)
+                  Text(statParts.join(' '),
+                      style: TextStyle(
+                          color: _parchment.withValues(alpha: 0.35),
+                          fontSize: 9)),
+                if (reqParts.isNotEmpty && !meetsReqs)
+                  Text(reqParts.join(', '),
+                      style: TextStyle(
+                          color: Colors.red.withValues(alpha: 0.5),
+                          fontSize: 9)),
+              ],
+            ),
+          ),
+          Text('${_formatGp(item.buyPrice)}gp ',
+              style: TextStyle(
+                  color: canAfford
+                      ? _gold.withValues(alpha: 0.7)
+                      : Colors.red.withValues(alpha: 0.5),
+                  fontSize: 10)),
+          SizedBox(
+            height: 22,
+            child: OutlinedButton(
+              onPressed: enabled ? onBuyEquip : null,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _gold,
+                side: BorderSide(
+                    color: enabled
+                        ? _gold.withValues(alpha: 0.3)
+                        : _parchment.withValues(alpha: 0.1)),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+              ),
+              child: const Text('Buy', style: TextStyle(fontSize: 9)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── Bank Panel ─────────────────────────────────────────────────
 
 class _BankPanel extends StatelessWidget {
   final IdleGameState game;
   final void Function(String cookedItemId, int qty) onWithdrawFood;
+  final IdleGameNotifier notifier;
 
   const _BankPanel({
     required this.game,
     required this.onWithdrawFood,
+    required this.notifier,
   });
 
   @override
@@ -1876,12 +2423,14 @@ class _BankPanel extends StatelessWidget {
     final categories = <String, List<MapEntry<String, int>>>{};
     for (final entry in bank.entries) {
       if (entry.value <= 0) continue;
+      final equipDef = getEquipmentDefById(entry.key);
       final item = getItemById(entry.key);
-      final cat = item?.category ?? 'misc';
+      final cat = equipDef != null ? 'equipment' : (item?.category ?? 'misc');
       categories.putIfAbsent(cat, () => []).add(entry);
     }
 
     final categoryOrder = [
+      'equipment',
       'fish_cooked',
       'fish_raw',
       'ore',
@@ -1893,6 +2442,7 @@ class _BankPanel extends StatelessWidget {
       'misc'
     ];
     final categoryNames = {
+      'equipment': 'Equipment',
       'fish_cooked': 'Cooked Food',
       'fish_raw': 'Raw Food',
       'ore': 'Ores',
@@ -1957,11 +2507,15 @@ class _BankPanel extends StatelessWidget {
                     itemId: entry.key,
                     qty: entry.value,
                     isFood: cat == 'fish_cooked',
+                    isEquipment: cat == 'equipment',
                     onWithdraw: cat == 'fish_cooked'
                         ? () => onWithdrawFood(entry.key, 1)
                         : null,
                     onWithdrawAll: cat == 'fish_cooked'
                         ? () => onWithdrawFood(entry.key, entry.value)
+                        : null,
+                    onEquip: cat == 'equipment'
+                        ? () => notifier.equipItem(entry.key)
                         : null,
                   ),
                 const SizedBox(height: 4),
@@ -1976,29 +2530,34 @@ class _BankItemRow extends StatelessWidget {
   final String itemId;
   final int qty;
   final bool isFood;
+  final bool isEquipment;
   final VoidCallback? onWithdraw;
   final VoidCallback? onWithdrawAll;
+  final VoidCallback? onEquip;
 
   const _BankItemRow({
     required this.itemId,
     required this.qty,
     required this.isFood,
+    this.isEquipment = false,
     this.onWithdraw,
     this.onWithdrawAll,
+    this.onEquip,
   });
 
   @override
   Widget build(BuildContext context) {
     final item = getItemById(itemId);
-    final name = item?.name ?? itemId;
-    final icon = item?.icon ?? '?';
+    final equipDef = getEquipmentDefById(itemId);
+    final name = item?.name ?? equipDef?.name ?? itemId;
+    final icon = item?.icon ?? equipDef?.icon ?? '?';
     final heal = cookedFoodHealAmounts[itemId];
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 13)),
+          _GearIcon(itemId: itemId, fallbackIcon: icon),
           const SizedBox(width: 6),
           Expanded(
             child: Column(
@@ -2019,6 +2578,21 @@ class _BankItemRow extends StatelessWidget {
           Text('×$qty',
               style: const TextStyle(
                   color: _gold, fontSize: 10, fontWeight: FontWeight.bold)),
+          if (isEquipment && onEquip != null) ...[
+            const SizedBox(width: 6),
+            SizedBox(
+              height: 22,
+              child: OutlinedButton(
+                onPressed: onEquip,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _gold,
+                  side: BorderSide(color: _gold.withValues(alpha: 0.3)),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text('Equip', style: TextStyle(fontSize: 9)),
+              ),
+            ),
+          ],
           if (isFood && onWithdraw != null) ...[
             const SizedBox(width: 6),
             InkWell(
@@ -2427,18 +3001,25 @@ class _SkillResourcePicker extends StatelessWidget {
 
 // ─── Achievements Panel ─────────────────────────────────────────
 
-class _AchievementsPanel extends StatelessWidget {
+class _AchievementsPanel extends StatefulWidget {
   final IdleGameState game;
   const _AchievementsPanel({required this.game});
 
   @override
+  State<_AchievementsPanel> createState() => _AchievementsPanelState();
+}
+
+class _AchievementsPanelState extends State<_AchievementsPanel> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final game = widget.game;
     final completed = completedAchievements(game);
     final locked = lockedAchievements(game);
     final total = achievements.length;
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(10),
@@ -2448,47 +3029,78 @@ class _AchievementsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text('Achievements',
-                  style: TextStyle(
-                      color: Color(0xFFFFD700),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14)),
-              const Spacer(),
-              Text('${completed.length}/$total',
-                  style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.5), fontSize: 11)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: total > 0 ? completed.length / total : 0.0,
-              minHeight: 6,
-              backgroundColor: Colors.white.withValues(alpha: 0.05),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Achievements',
+                          style: TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                      const Spacer(),
+                      Text('${completed.length}/$total',
+                          style: TextStyle(
+                              color: _parchment.withValues(alpha: 0.5),
+                              fontSize: 11)),
+                      const SizedBox(width: 8),
+                      Icon(
+                        _expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 18,
+                        color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: total > 0 ? completed.length / total : 0.0,
+                      minHeight: 6,
+                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFFFFD700)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          // Completed achievements
-          for (final a in completed)
-            _AchievementRow(
-                icon: a.icon, name: a.name, desc: a.description, done: true),
-          // Locked achievements (show next few)
-          for (final a in locked.take(3))
-            _AchievementRow(
-                icon: '🔒', name: a.name, desc: a.description, done: false),
-          if (locked.length > 3)
+          if (_expanded)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '+${locked.length - 3} more locked',
-                style: TextStyle(
-                    color: _parchment.withValues(alpha: 0.3), fontSize: 9),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final a in completed)
+                    _AchievementRow(
+                        icon: a.icon,
+                        name: a.name,
+                        desc: a.description,
+                        done: true),
+                  for (final a in locked.take(3))
+                    _AchievementRow(
+                        icon: '🔒',
+                        name: a.name,
+                        desc: a.description,
+                        done: false),
+                  if (locked.length > 3)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '+${locked.length - 3} more locked',
+                        style: TextStyle(
+                            color: _parchment.withValues(alpha: 0.3),
+                            fontSize: 9),
+                      ),
+                    ),
+                ],
               ),
             ),
         ],
@@ -2548,19 +3160,26 @@ class _AchievementRow extends StatelessWidget {
 
 // ─── Collection Log Panel ────────────────────────────────────────
 
-class _CollectionLogPanel extends StatelessWidget {
+class _CollectionLogPanel extends StatefulWidget {
   final IdleGameState game;
   const _CollectionLogPanel({required this.game});
 
   @override
+  State<_CollectionLogPanel> createState() => _CollectionLogPanelState();
+}
+
+class _CollectionLogPanelState extends State<_CollectionLogPanel> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final game = widget.game;
     final allMonsters = allMonsterDefs;
     final killed =
         allMonsters.where((m) => (game.monsterKillCounts[m.id] ?? 0) > 0);
     final discovered = killed.length;
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(10),
@@ -2569,55 +3188,81 @@ class _CollectionLogPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text('Collection Log',
-                  style: TextStyle(
-                      color: _gold, fontWeight: FontWeight.bold, fontSize: 14)),
-              const Spacer(),
-              Text('$discovered/${allMonsters.length}',
-                  style: TextStyle(
-                      color: _parchment.withValues(alpha: 0.5), fontSize: 11)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${game.totalKills} total kills · ${game.totalGearDrops} gear drops',
-            style: TextStyle(
-                color: _parchment.withValues(alpha: 0.35), fontSize: 10),
-          ),
-          const SizedBox(height: 8),
-          for (final m in allMonsters)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 1),
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Text(m.icon, style: const TextStyle(fontSize: 12)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      m.name,
+                  const Text('Collection Log',
                       style: TextStyle(
-                        color: (game.monsterKillCounts[m.id] ?? 0) > 0
-                            ? _parchment.withValues(alpha: 0.7)
-                            : _parchment.withValues(alpha: 0.2),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '${game.monsterKillCounts[m.id] ?? 0}',
-                    style: TextStyle(
-                      color: (game.monsterKillCounts[m.id] ?? 0) > 0
-                          ? _gold
-                          : _parchment.withValues(alpha: 0.15),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: _gold,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  const Spacer(),
+                  Text('$discovered/${allMonsters.length}',
+                      style: TextStyle(
+                          color: _parchment.withValues(alpha: 0.5),
+                          fontSize: 11)),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: _gold.withValues(alpha: 0.4),
                   ),
                 ],
               ),
             ),
+          ),
+          if (_expanded) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${game.totalKills} total kills · ${game.totalGearDrops} gear drops',
+                    style: TextStyle(
+                        color: _parchment.withValues(alpha: 0.35),
+                        fontSize: 10),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final m in allMonsters)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 1),
+                      child: Row(
+                        children: [
+                          Text(m.icon, style: const TextStyle(fontSize: 12)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              m.name,
+                              style: TextStyle(
+                                color: (game.monsterKillCounts[m.id] ?? 0) > 0
+                                    ? _parchment.withValues(alpha: 0.7)
+                                    : _parchment.withValues(alpha: 0.2),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${game.monsterKillCounts[m.id] ?? 0}',
+                            style: TextStyle(
+                              color: (game.monsterKillCounts[m.id] ?? 0) > 0
+                                  ? _gold
+                                  : _parchment.withValues(alpha: 0.15),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -2626,21 +3271,28 @@ class _CollectionLogPanel extends StatelessWidget {
 
 // ─── Prestige Card ─────────────────────────────────────────────
 
-class _PrestigeCard extends StatelessWidget {
+class _PrestigeCard extends StatefulWidget {
   final IdleGameState game;
   final VoidCallback onPrestige;
 
   const _PrestigeCard({required this.game, required this.onPrestige});
 
   @override
+  State<_PrestigeCard> createState() => _PrestigeCardState();
+}
+
+class _PrestigeCardState extends State<_PrestigeCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final game = widget.game;
     final canPrestige = game.stats.attackLevel >= 99 &&
         game.stats.strengthLevel >= 99 &&
         game.stats.defenceLevel >= 99 &&
         game.stats.hitpointsLevel >= 99;
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(10),
@@ -2652,39 +3304,79 @@ class _PrestigeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Prestige',
-              style: TextStyle(
-                  color: Colors.purpleAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14)),
-          const SizedBox(height: 4),
-          Text(
-            canPrestige
-                ? 'Reset all stats for +10% XP permanently!'
-                : 'Max all combat stats (99) to prestige',
-            style: TextStyle(
-                color: _parchment.withValues(alpha: 0.5), fontSize: 11),
-          ),
-          if (game.prestigeLevel > 0) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Current bonus: ${((game.prestigeMultiplier - 1) * 100).toStringAsFixed(0)}% XP',
-              style: const TextStyle(color: Colors.purpleAccent, fontSize: 11),
-            ),
-          ],
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: canPrestige ? onPrestige : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.white.withValues(alpha: 0.05),
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  const Text('Prestige',
+                      style: TextStyle(
+                          color: Colors.purpleAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  if (game.prestigeLevel > 0) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '${((game.prestigeMultiplier - 1) * 100).toStringAsFixed(0)}% XP bonus',
+                      style: const TextStyle(
+                          color: Colors.purpleAccent, fontSize: 10),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (canPrestige)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text('READY',
+                          style: TextStyle(
+                              color: Colors.purpleAccent, fontSize: 9)),
+                    ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: Colors.purpleAccent.withValues(alpha: 0.4),
+                  ),
+                ],
               ),
-              child: const Text('Prestige'),
             ),
           ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    canPrestige
+                        ? 'Reset all stats for +10% XP permanently!'
+                        : 'Max all combat stats (99) to prestige',
+                    style: TextStyle(
+                        color: _parchment.withValues(alpha: 0.5), fontSize: 11),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: canPrestige ? widget.onPrestige : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor:
+                            Colors.white.withValues(alpha: 0.05),
+                      ),
+                      child: const Text('Prestige'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
