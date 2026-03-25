@@ -171,6 +171,256 @@ final _hydraPal = <String, Color>{
   'r': _r,
 };
 
+final _giantRatPal = <String, Color>{
+  'k': _k, 'n': _n, 'N': _N, 's': _s, 'p': const Color(0xFFFFB6C1), // pink
+};
+
+final _darkWizardPal = <String, Color>{
+  'k': _k,
+  'p': _p,
+  'P': _P,
+  'b': _b,
+  's': _s,
+  'd': _d,
+};
+
+final _alKharidPal = <String, Color>{
+  'k': _k,
+  's': _s,
+  'o': _o,
+  'y': _y,
+  'w': _w,
+  'r': _r,
+  'n': _n,
+};
+
+final _barbarianPal = <String, Color>{
+  'k': _k,
+  's': _s,
+  'n': _n,
+  'N': _N,
+  'r': _r,
+  'S': _S,
+};
+
+final _skeletonPal = <String, Color>{
+  'k': _k,
+  'w': _w,
+  'S': _S,
+  'd': _d,
+};
+
+final _hobgoblinPal = <String, Color>{
+  'k': _k,
+  'n': _n,
+  'N': _N,
+  'r': _r,
+  'g': _g,
+  'G': _G,
+};
+
+final _iceGiantPal = <String, Color>{
+  'k': _k,
+  'b': _b,
+  'B': _B,
+  'w': _w,
+  'S': _S,
+};
+
+final _cyclopsPal = <String, Color>{
+  'k': _k,
+  's': _s,
+  'n': _n,
+  'N': _N,
+  'r': _r,
+};
+
+final _crocodilePal = <String, Color>{
+  'k': _k,
+  'g': _g,
+  'G': _G,
+  'y': _y,
+  'r': _r,
+};
+
+final _greenDragonPal = <String, Color>{
+  'k': _k,
+  'g': _g,
+  'G': _G,
+  'r': _r,
+  'R': _R,
+  'y': _y,
+};
+
+final _fireGiantPal = <String, Color>{
+  'k': _k,
+  'r': _r,
+  'R': _R,
+  'o': _o,
+  'y': _y,
+  's': _s,
+};
+
+final _blueDragonPal = <String, Color>{
+  'k': _k,
+  'b': _b,
+  'B': _B,
+  'w': _w,
+  'r': _r,
+  'y': _y,
+};
+
+final _spiritualMagePal = <String, Color>{
+  'k': _k,
+  'p': _p,
+  'P': _P,
+  'b': _b,
+  'B': _B,
+  'w': _w,
+};
+
+final _hellhoundPal = <String, Color>{
+  'k': _k,
+  'r': _r,
+  'R': _R,
+  'd': _d,
+  'o': _o,
+};
+
+final _monkeyGuardPal = <String, Color>{
+  'k': _k,
+  'n': _n,
+  'N': _N,
+  'o': _o,
+  'y': _y,
+  'r': _r,
+};
+
+final _blackDemonPal = <String, Color>{
+  'k': _k,
+  'd': _d,
+  'S': _S,
+  'r': _r,
+  'R': _R,
+  'p': _p,
+};
+
+final _ironDragonPal = <String, Color>{
+  'k': _k,
+  'S': _S,
+  'd': _d,
+  'w': _w,
+  'r': _r,
+};
+
+final _steelDragonPal = <String, Color>{
+  'k': _k,
+  'S': _S,
+  'w': _w,
+  'b': _b,
+  'B': _B,
+  'r': _r,
+};
+
+// Boss palettes
+final _barrowsPal = <String, Color>{
+  'k': _k,
+  'd': _d,
+  'S': _S,
+  'p': _p,
+  'P': _P,
+  'r': _r,
+};
+
+final _kbdPal = <String, Color>{
+  'k': _k,
+  'd': _d,
+  'S': _S,
+  'r': _r,
+  'R': _R,
+  'o': _o,
+  'y': _y,
+};
+
+final _dagRexPal = <String, Color>{
+  'k': _k,
+  'g': _g,
+  'G': _G,
+  'n': _n,
+  'r': _r,
+  'o': _o,
+};
+
+final _dagSupremePal = <String, Color>{
+  'k': _k,
+  'b': _b,
+  'B': _B,
+  'n': _n,
+  'r': _r,
+};
+
+final _dagPrimePal = <String, Color>{
+  'k': _k,
+  'p': _p,
+  'P': _P,
+  'n': _n,
+  'b': _b,
+};
+
+final _kqPal = <String, Color>{
+  'k': _k,
+  'g': _g,
+  'G': _G,
+  'y': _y,
+  'n': _n,
+  'r': _r,
+};
+
+final _kreePal = <String, Color>{
+  'k': _k,
+  'b': _b,
+  'B': _B,
+  'w': _w,
+  'y': _y,
+};
+
+final _zilyPal = <String, Color>{
+  'k': _k,
+  'w': _w,
+  'b': _b,
+  'B': _B,
+  'y': _y,
+  'p': _p,
+};
+
+final _graardorPal = <String, Color>{
+  'k': _k,
+  'n': _n,
+  'N': _N,
+  'S': _S,
+  'r': _r,
+  'y': _y,
+};
+
+final _krilPal = <String, Color>{
+  'k': _k,
+  'r': _r,
+  'R': _R,
+  'd': _d,
+  'o': _o,
+  'y': _y,
+};
+
+final _nexPal = <String, Color>{
+  'k': _k,
+  'p': _p,
+  'P': _P,
+  'd': _d,
+  'w': _w,
+  'r': _r,
+  'b': _b,
+};
+
 // ═══════════════════════════════════════════════════════════════
 // MONSTER SPRITES  (idle frame + attack frames)
 // ═══════════════════════════════════════════════════════════════
@@ -760,26 +1010,1189 @@ final _hydraAtk = _parse([
   '................',
 ], _hydraPal);
 
+// ── Giant Rat ──────────────────────────────────────────────────
+final _giantRatIdle = _parse([
+  '................',
+  '..kk............',
+  '.knNk...........',
+  '.knnNk..........',
+  '..knkNk.........',
+  '..knnnNk........',
+  '...knnnnNk......',
+  '...knnnnnNk.....',
+  '....knnnnnnk....',
+  '....knnnnnnk....',
+  '.....knnnnk.....',
+  '......knnk......',
+  '......kn.nk.....',
+  '.....kpk.kpk....',
+  '................',
+  '................',
+], _giantRatPal);
+
+final _giantRatAtk = _parse([
+  '................',
+  '.kk.............',
+  'knNk............',
+  'knnNk...........',
+  '.knkNk..........',
+  '.knnnNk.........',
+  '..knnnnNk.......',
+  '..knnnnnNk......',
+  '...knnnnnnk.....',
+  '...knnnnnnk.....',
+  '....knnnnk......',
+  '.....knnk.......',
+  '.....kn.nk......',
+  '....kpk.kpk.....',
+  '................',
+  '................',
+], _giantRatPal);
+
+// ── Dark Wizard ───────────────────────────────────────────────
+final _darkWizardIdle = _parse([
+  '.....kkkkk......',
+  '....kpppppk.....',
+  '....kpPPpPk.....',
+  '....kpppppk.....',
+  '.....kssskk.....',
+  '.....kskskk.....',
+  '.....kssskk.....',
+  '......ksk.......',
+  '....kkpppkk.....',
+  '...kpkpppk.k....',
+  '...kpkpppk......',
+  '....kkpppk......',
+  '.....kpppk......',
+  '.....kdkdk......',
+  '......k.k.......',
+  '.....kk.kk......',
+], _darkWizardPal);
+
+final _darkWizardAtk = _parse([
+  '.....kkkkk......',
+  '....kpppppk.....',
+  '....kpPPpPk.....',
+  '....kpppppk.....',
+  '.....kssskk.....',
+  '.....kskskk.....',
+  '.....kssskk.....',
+  '......ksk.......',
+  '...kkkpppkkk....',
+  '..kbPkpppk.k....',
+  '..kbk.kpppk.....',
+  '..kkk.kpppk.....',
+  '.....kpppk......',
+  '.....kdkdk......',
+  '....kk..k.......',
+  '....k...kk......',
+], _darkWizardPal);
+
+// ── Al-Kharid Warrior ─────────────────────────────────────────
+final _alKharidIdle = _parse([
+  '.....kkkkk......',
+  '....koooook.....',
+  '....koyoyok.....',
+  '.....kssskk.....',
+  '.....kskskk.....',
+  '.....kssskk.....',
+  '......ksk.......',
+  '....kknnnkkk....',
+  '...ksknnnnk.k...',
+  '...ksknnnnk.....',
+  '....kknnnk......',
+  '.....knnnnk.....',
+  '.....knkknk.....',
+  '......k..k......',
+  '.....kk..kk.....',
+  '................',
+], _alKharidPal);
+
+final _alKharidAtk = _parse([
+  '.....kkkkk......',
+  '....koooook.....',
+  '....koyoyok.....',
+  '.....kssskk.....',
+  '.....kskskk.....',
+  '.....kssskk.....',
+  '......ksk.......',
+  '...kkknnnkkkk...',
+  '..kssknnnnk.kw..',
+  '..kok.knnnnkkwk.',
+  '..kkk.knnnnkwk..',
+  '.....knnnk......',
+  '.....knkknk.....',
+  '....kk..k.......',
+  '....k...kk......',
+  '................',
+], _alKharidPal);
+
+// ── Barbarian ─────────────────────────────────────────────────
+final _barbarianIdle = _parse([
+  '.....kkkk.......',
+  '....kNNNNk......',
+  '....kNNNNk......',
+  '....kssskk......',
+  '....kskskk......',
+  '....kssskk......',
+  '.....ksk........',
+  '....kknnnkk.....',
+  '...ksknnnnk.....',
+  '...ksknnnnk.....',
+  '....kknnnnk.....',
+  '.....knnnk......',
+  '.....ksskk......',
+  '......k.k.......',
+  '.....kk.kk......',
+  '................',
+], _barbarianPal);
+
+final _barbarianAtk = _parse([
+  '.....kkkk.......',
+  '....kNNNNk......',
+  '....kNNNNk......',
+  '....kssskk......',
+  '....kskskk......',
+  '....kssskk......',
+  '.....ksk........',
+  '...kkknnnkkk....',
+  '..kSSknnnnkSkk..',
+  '..kok.knnnnkSk..',
+  '..kkk.knnnk.....',
+  '.....knnnk......',
+  '.....ksskk......',
+  '....kk..k.......',
+  '....k...kk......',
+  '................',
+], _barbarianPal);
+
+// ── Skeleton ──────────────────────────────────────────────────
+final _skeletonIdle = _parse([
+  '.....kkkk.......',
+  '....kwwwwk......',
+  '....kwkwkk......',
+  '....kwwwwk......',
+  '.....kwwk.......',
+  '.....kSk........',
+  '....kkwwkk......',
+  '...kwkwwkwk.....',
+  '...kwkwwk.......',
+  '....kkwwk.......',
+  '.....kwwk.......',
+  '.....kwwk.......',
+  '.....kw.wk......',
+  '....kkw.wkk.....',
+  '................',
+  '................',
+], _skeletonPal);
+
+final _skeletonAtk = _parse([
+  '.....kkkk.......',
+  '....kwwwwk......',
+  '....kwkwkk......',
+  '....kwwwwk......',
+  '.....kwwk.......',
+  '.....kSk........',
+  '...kkkwwkkk.....',
+  '..kwwkwwkwwk....',
+  '..kwk.kwwk.k....',
+  '..kkk.kwwk......',
+  '.....kwwk.......',
+  '.....kwwk.......',
+  '....kw...wk.....',
+  '...kkw...wkk....',
+  '................',
+  '................',
+], _skeletonPal);
+
+// ── Hobgoblin ─────────────────────────────────────────────────
+final _hobgoblinIdle = _parse([
+  '...kkk..kkk.....',
+  '..kGgkkkgGk.....',
+  '....kggggk......',
+  '....kgGGgk......',
+  '...kgkggkgk.....',
+  '...kggGGggk.....',
+  '....kgrrk.......',
+  '.....kggk.......',
+  '...kknnnnnkk....',
+  '..kgknnnnnkgk...',
+  '..kgknnnnnkgk...',
+  '...k.knnnk.k....',
+  '.....kggk.......',
+  '......k..k......',
+  '.....kk..kk.....',
+  '................',
+], _hobgoblinPal);
+
+final _hobgoblinAtk = _parse([
+  '...kkk..kkk.....',
+  '..kGgkkkgGk.....',
+  '....kggggk......',
+  '....kgGGgk......',
+  '...kgkggkgk.....',
+  '...kggGGggk.kk..',
+  '....kgrrk..kNk..',
+  '.....kggk..kNk..',
+  '..kkknnnnnkkk...',
+  '.kggknnnnnkggk..',
+  '..kgknnnnnkgk...',
+  '...k.knnnk.k....',
+  '.....kggk.......',
+  '....kk..kk......',
+  '................',
+  '................',
+], _hobgoblinPal);
+
+// ── Ice Giant ─────────────────────────────────────────────────
+final _iceGiantIdle = _parse([
+  '...kkkkkkkk.....',
+  '..kBBBBBBBBk....',
+  '..kBkBBkBBBk....',
+  '..kBBBBBBBk.....',
+  '...kBBwwBBk.....',
+  '....kBBBk.......',
+  '..kkBBBBBBkk....',
+  '.kBBBBBBBBBBk...',
+  '.kBBBBBBBBBBk...',
+  '.kBBBBBBBBBBk...',
+  '..kBBBBBBBBk....',
+  '..kwBBBBBwk.....',
+  '...kBBBBBk......',
+  '...kBB..BBk.....',
+  '..kkk...kkk.....',
+  '................',
+], _iceGiantPal);
+
+final _iceGiantAtk = _parse([
+  '...kkkkkkkk.....',
+  '..kBBBBBBBBk....',
+  '..kBkBBkBBBk....',
+  '..kBBBBBBBk.....',
+  '...kBBwwBBk.....',
+  '....kBBBk.......',
+  '.kkkBBBBBkkkkk..',
+  'kBBBBBBBBBBkwSk.',
+  '.kBBBBBBBBBkkSk.',
+  '.kBBBBBBBBBBkk..',
+  '..kBBBBBBBBk....',
+  '..kwBBBBBwk.....',
+  '...kBBBBBk......',
+  '..kBB....BBk....',
+  '.kkk......kkk...',
+  '................',
+], _iceGiantPal);
+
+// ── Cyclops ───────────────────────────────────────────────────
+final _cyclopsIdle = _parse([
+  '....kkkkkkk.....',
+  '...ksssssssk....',
+  '...ksNNNNssk....',
+  '...kskrrkNsk....',
+  '...ksNNNNssk....',
+  '....kssssk......',
+  '.....ksk........',
+  '...kknnnnkk.....',
+  '..ksknnnnnsk....',
+  '..ksknnnnnnk....',
+  '...kknnnnnnk....',
+  '....knnnnk......',
+  '....kss.ssk.....',
+  '...kkk..kkk.....',
+  '................',
+  '................',
+], _cyclopsPal);
+
+final _cyclopsAtk = _parse([
+  '....kkkkkkk.....',
+  '...ksssssssk....',
+  '...ksNNNNssk....',
+  '...kskrrkNsk....',
+  '...ksNNNNssk....',
+  '....kssssk......',
+  '.....ksk........',
+  '.kkkknnnnnkkkk..',
+  'kssssnnnnnnsnsk.',
+  '.ksknnnnnnnnk...',
+  '...kknnnnnnk....',
+  '....knnnnk......',
+  '...kss....ssk...',
+  '..kkk.....kkk...',
+  '................',
+  '................',
+], _cyclopsPal);
+
+// ── Crocodile ─────────────────────────────────────────────────
+final _crocodileIdle = _parse([
+  '................',
+  '................',
+  '................',
+  '..kkk...........',
+  '.kggGk..........',
+  '.kgkgGk.........',
+  '.kgggGGk........',
+  '..kgggGGGk......',
+  '..kGGgGGGGGk....',
+  '...kGGGGGGGGGk..',
+  '...kGGGGGGGGGk..',
+  '....kGGGGGGGk...',
+  '.....kGGGGGk....',
+  '....kgk.kgkgk...',
+  '....kk..kk.kk...',
+  '................',
+], _crocodilePal);
+
+final _crocodileAtk = _parse([
+  '................',
+  '..krk...........',
+  '.kgrk...........',
+  '.kggGk..........',
+  '.kgkgGk.........',
+  '.kgggGGk........',
+  '..kgggGGGk......',
+  '..kGGgGGGGGk....',
+  '...kGGGGGGGGGk..',
+  '...kGGGGGGGGGk..',
+  '....kGGGGGGGk...',
+  '.....kGGGGGk....',
+  '.....kGGGGGk....',
+  '....kgk.kgkgk...',
+  '....kk..kk.kk...',
+  '................',
+], _crocodilePal);
+
+// ── Green Dragon ──────────────────────────────────────────────
+final _greenDragonIdle = _parse([
+  '................',
+  '..kk........kk..',
+  '.kgGk......kgGk.',
+  '..kggkkkkkkkgk..',
+  '...kgggggggGk...',
+  '...kgkgggkgGk...',
+  '...kggggggGk....',
+  '....kggrrGk.....',
+  '.....kgggk......',
+  'kkk.kggggggkkkk.',
+  'kGgkkggggggkkgGk',
+  'kgGkggggggggkGgk',
+  '.kkkkggggggkkkk.',
+  '....kgg..gGk....',
+  '...kkk...kkk....',
+  '................',
+], _greenDragonPal);
+
+final _greenDragonAtk = _parse([
+  '.......rRr......',
+  '..kk..kRRRk.kk..',
+  '.kgGk..krk.kgGk.',
+  '..kggkkkkkkkgk..',
+  '...kgggggggGk...',
+  '...kgkgggkgGk...',
+  '...kggggggGk....',
+  '....kggrrGk.....',
+  '.....kgggk......',
+  'kkkkkggggggkkkkk',
+  'kGGGGggggggGGGGk',
+  'kgGkggggggggkGgk',
+  '.kkkkggggggkkkk.',
+  '...kgg....gGk...',
+  '..kkk.....kkk...',
+  '................',
+], _greenDragonPal);
+
+// ── Fire Giant ────────────────────────────────────────────────
+final _fireGiantIdle = _parse([
+  '...kkkkkkkk.....',
+  '..krrRrRrrRk....',
+  '..krkRrkRRRk....',
+  '..krrRRRrrk.....',
+  '...krrooRRk.....',
+  '....krrRk.......',
+  '..kkRRRRRRkk....',
+  '.kRRRRRRRRRRk...',
+  '.kRRRRRRRRRRk...',
+  '.kRRRRRRRRRRk...',
+  '..kRRRRRRRRk....',
+  '..ksRRRRRsk.....',
+  '...kRRRRRk......',
+  '...kRr..rRk.....',
+  '..kkk...kkk.....',
+  '................',
+], _fireGiantPal);
+
+final _fireGiantAtk = _parse([
+  '...kkkkkkkk.....',
+  '..krrRrRrrRk....',
+  '..krkRrkRRRk....',
+  '..krrRRRrrk.....',
+  '...krrooRRk.....',
+  '....krrRk.......',
+  '.kkkRRRRRRkkkkk.',
+  'kRRRRRRRRRRkyok.',
+  '.kRRRRRRRRRkkyk.',
+  '.kRRRRRRRRRRkk..',
+  '..kRRRRRRRRk....',
+  '..ksRRRRRsk.....',
+  '...kRRRRRk......',
+  '..kRr....rRk....',
+  '.kkk......kkk...',
+  '................',
+], _fireGiantPal);
+
+// ── Blue Dragon ───────────────────────────────────────────────
+final _blueDragonIdle = _parse([
+  '................',
+  '..kk........kk..',
+  '.kbBk......kbBk.',
+  '..kbbkkkkkkkbk..',
+  '...kbbbbbbbBk...',
+  '...kbkbbbkbBk...',
+  '...kbbbbbbBk....',
+  '....kbbrrBk.....',
+  '.....kbbbk......',
+  'kkk.kbbbbbbkkkk.',
+  'kBbkkbbbbbbkkbBk',
+  'kbBkbbbbbbbbkBbk',
+  '.kkkkbbbbbbkkkk.',
+  '....kbb..bBk....',
+  '...kkk...kkk....',
+  '................',
+], _blueDragonPal);
+
+final _blueDragonAtk = _parse([
+  '.......ryr......',
+  '..kk..kyyyk.kk..',
+  '.kbBk..kyk.kbBk.',
+  '..kbbkkkkkkkbk..',
+  '...kbbbbbbbBk...',
+  '...kbkbbbkbBk...',
+  '...kbbbbbbBk....',
+  '....kbbrrBk.....',
+  '.....kbbbk......',
+  'kkkkkbbbbbbkkkkk',
+  'kBBBBbbbbbbBBBBk',
+  'kbBkbbbbbbbbkBbk',
+  '.kkkkbbbbbbkkkk.',
+  '...kbb....bBk...',
+  '..kkk.....kkk...',
+  '................',
+], _blueDragonPal);
+
+// ── Spiritual Mage ────────────────────────────────────────────
+final _spiritualMageIdle = _parse([
+  '.....kkkkk......',
+  '....kPPPPPk.....',
+  '....kPpPpPk.....',
+  '.....kwwwkk.....',
+  '.....kwkwkk.....',
+  '.....kwwwkk.....',
+  '......kwk.......',
+  '....kkpppkk.....',
+  '...kBkpppk.k....',
+  '...kBkpppk......',
+  '....kkpppk......',
+  '.....kpppk......',
+  '.....kpkpk......',
+  '......k.k.......',
+  '.....kk.kk......',
+  '................',
+], _spiritualMagePal);
+
+final _spiritualMageAtk = _parse([
+  '.....kkkkk......',
+  '....kPPPPPk.....',
+  '....kPpPpPk.....',
+  '.....kwwwkk.....',
+  '.....kwkwkk.....',
+  '.....kwwwkk.....',
+  '......kwk.......',
+  '...kkkpppkkk....',
+  '..kBBkpppk.k....',
+  '..kbk.kpppk.....',
+  '..kkk.kpppk.....',
+  '.....kpppk......',
+  '.....kpkpk......',
+  '....kk..k.......',
+  '....k...kk......',
+  '................',
+], _spiritualMagePal);
+
+// ── Hellhound ─────────────────────────────────────────────────
+final _hellhoundIdle = _parse([
+  '................',
+  '..kk.....kk.....',
+  '.krRk...krRk....',
+  '.krrRkkkkrrk....',
+  '..krrrrrrrrk....',
+  '..krkkrrkrrk....',
+  '..krrrrrrrk.....',
+  '...krrrrrrk.....',
+  '..kdrrrrrrdk....',
+  '.kdrrrrrrrrdk...',
+  '.kdrrrrrrrdk....',
+  '..kdrrrrdk......',
+  '...krrrrk.......',
+  '...krr.rrk......',
+  '..kkk..kkk......',
+  '................',
+], _hellhoundPal);
+
+final _hellhoundAtk = _parse([
+  '................',
+  '..kk.....kk.....',
+  '.krRk...krRk....',
+  '.krrRkkkkrrk....',
+  '..krrokorrk.....',
+  '..krkkrrkrrk....',
+  '..krrrrrrrk.....',
+  '..krrrrrrrrk....',
+  '.kdrrrrrrrrdk...',
+  'kdrrrrrrrrrrrdk.',
+  '.kdrrrrrrrrrdk..',
+  '..kdrrrrrrdk....',
+  '...krrrrrrk.....',
+  '..krr.....rrk...',
+  '.kkk.......kkk..',
+  '................',
+], _hellhoundPal);
+
+// ── Monkey Guard ──────────────────────────────────────────────
+final _monkeyGuardIdle = _parse([
+  '...kkkkkkk......',
+  '..knnNnNnnk.....',
+  '..knkNnkNnk.....',
+  '..knnNNNnnk.....',
+  '...knoook.......',
+  '....knok........',
+  '..kknnnnnkk.....',
+  '.knnnnnnnnrk....',
+  '.knnynnnynrk....',
+  '.knnnnnnnnrk....',
+  '..knnnnnnrk.....',
+  '..knnnnnnk......',
+  '...knnnnk.......',
+  '...knn.nnk......',
+  '..kkk..kkk......',
+  '................',
+], _monkeyGuardPal);
+
+final _monkeyGuardAtk = _parse([
+  '...kkkkkkk......',
+  '..knnNnNnnk.....',
+  '..knkNnkNnk.....',
+  '..knnNNNnnk.....',
+  '...knoook.......',
+  '....knok........',
+  '.kkknnnnnkkk....',
+  'knnnnnnnnnnrk...',
+  'knnynnnynnnrk...',
+  '.knnnnnnnnnrk...',
+  '..knnnnnnrk.....',
+  '..knnnnnnk......',
+  '...knnnnk.......',
+  '..knn....nnk....',
+  '.kkk.....kkk....',
+  '................',
+], _monkeyGuardPal);
+
+// ── Black Demon ───────────────────────────────────────────────
+final _blackDemonIdle = _parse([
+  '...kR.....Rk....',
+  '...kkR...Rkk....',
+  '..kkddddddddkk..',
+  '..kdkddddkddk...',
+  '..kdddddddddk...',
+  '...kddSSSddk....',
+  '....kdddddk.....',
+  'kkk.kddddddk.kkk',
+  'kddkkdddddddkkddk',
+  'kdSkddddddddkSdk',
+  '.kkkkdddddddkkkk.',
+  '...kdddddddddk..',
+  '....kddddddk....',
+  '....kdd..ddk....',
+  '...kkk...kkk....',
+  '................',
+], _blackDemonPal);
+
+final _blackDemonAtk = _parse([
+  '...kR.....Rk....',
+  '...kkR...Rkk....',
+  '..kkddddddddkk..',
+  '..kdkddddkddk...',
+  '..kdddddddddk...',
+  '...kddSSSddk....',
+  '....kdddddk.....',
+  'kkkkkddddddkkkkkk',
+  'kdddddddddddddddk',
+  'kdSkddddddddkSddk',
+  '.kkkkdddddddkkkk.',
+  '...kdddddddddk..',
+  '....kddddddk....',
+  '...kdd....ddk...',
+  '..kkk.....kkk...',
+  '................',
+], _blackDemonPal);
+
+// ── Iron Dragon ───────────────────────────────────────────────
+final _ironDragonIdle = _parse([
+  '................',
+  '..kk........kk..',
+  '.kSdk......kSdk.',
+  '..kSSkkkkkkkSk..',
+  '...kSSSSSSSSk...',
+  '...kSkSSSkkSk...',
+  '...kSSSSSSSk....',
+  '....kSSrrSk.....',
+  '.....kSSSk......',
+  'kkk.kSSSSSSkkkkk',
+  'kSdkkSSSSSSkkdSk',
+  'kSSkSSSSSSSSkkSk',
+  '.kkkkSSSSSSkkkk.',
+  '....kSS..SSk....',
+  '...kkk...kkk....',
+  '................',
+], _ironDragonPal);
+
+final _ironDragonAtk = _parse([
+  '.......rwr......',
+  '..kk..kwwwk.kk..',
+  '.kSdk..kwk.kSdk.',
+  '..kSSkkkkkkkSk..',
+  '...kSSSSSSSSk...',
+  '...kSkSSSkkSk...',
+  '...kSSSSSSSk....',
+  '....kSSrrSk.....',
+  '.....kSSSk......',
+  'kkkkkSSSSSSkkkkk',
+  'kSdSSSSSSSSSSdSk',
+  'kSSkSSSSSSSSkkSk',
+  '.kkkkSSSSSSkkkk.',
+  '...kSS....SSk...',
+  '..kkk.....kkk...',
+  '................',
+], _ironDragonPal);
+
+// ── Steel Dragon ──────────────────────────────────────────────
+final _steelDragonIdle = _parse([
+  '................',
+  '..kk........kk..',
+  '.kwSk......kwSk.',
+  '..kwwkkkkkkkwk..',
+  '...kwwwwwwwwk...',
+  '...kwkwwwkwwk...',
+  '...kwwwwwwwk....',
+  '....kwwrrwk.....',
+  '.....kwwwk......',
+  'kkk.kwwwwwwkkkkk',
+  'kwSkkwwwwwwkkSwk',
+  'kwwkwwwwwwwwkwwk',
+  '.kkkkwwwwwwkkkk.',
+  '....kww..wwk....',
+  '...kkk...kkk....',
+  '................',
+], _steelDragonPal);
+
+final _steelDragonAtk = _parse([
+  '.......rBr......',
+  '..kk..kBBBk.kk..',
+  '.kwSk..kBk.kwSk.',
+  '..kwwkkkkkkkwk..',
+  '...kwwwwwwwwk...',
+  '...kwkwwwkwwk...',
+  '...kwwwwwwwk....',
+  '....kwwrrwk.....',
+  '.....kwwwk......',
+  'kkkkkwwwwwwkkkkk',
+  'kwSwwwwwwwwwwSwk',
+  'kwwkwwwwwwwwkwwk',
+  '.kkkkwwwwwwkkkk.',
+  '...kww....wwk...',
+  '..kkk.....kkk...',
+  '................',
+], _steelDragonPal);
+
+// ── Barrows Brothers ──────────────────────────────────────────
+final _barrowsIdle = _parse([
+  '.....kkkkk......',
+  '....kdddddk.....',
+  '....kdSSSdk.....',
+  '....kdddddk.....',
+  '.....kSSSk......',
+  '.....kSkSk......',
+  '.....kSSSk......',
+  '......kSk.......',
+  '....kkpppkk.....',
+  '...kPkpppk.k....',
+  '...kPkpppk......',
+  '....kkpppk......',
+  '.....kpppk......',
+  '.....kpkpk......',
+  '......k.k.......',
+  '.....kk.kk......',
+], _barrowsPal);
+
+final _barrowsAtk = _parse([
+  '.....kkkkk......',
+  '....kdddddk.....',
+  '....kdSSSdk.....',
+  '....kdddddk.....',
+  '.....kSSSk......',
+  '.....kSkSk......',
+  '.....kSSSk......',
+  '......kSk.......',
+  '...kkkpppkkk....',
+  '..kPPkpppk.k....',
+  '..krk.kpppk.....',
+  '..kkk.kpppk.....',
+  '.....kpppk......',
+  '.....kpkpk......',
+  '....kk..k.......',
+  '....k...kk......',
+], _barrowsPal);
+
+// ── King Black Dragon ─────────────────────────────────────────
+final _kbdIdle = _parse([
+  'kkk...kkk...kkk.',
+  'krkk.krkk..krkk.',
+  '.kkddkkkddkkk...',
+  '..kkddddddddkk..',
+  '...kddddddddk...',
+  '...kdkdddkddk...',
+  '...kdddddddk....',
+  '....kddrrdk.....',
+  '.....kdddk......',
+  'kkk.kddddddkkkk.',
+  'kSdkkddddddkkdSk',
+  'kdSkddddddddkSdk',
+  '.kkkkddddddkkkk.',
+  '....kdd..dddk...',
+  '...kkk...kkkk...',
+  '................',
+], _kbdPal);
+
+final _kbdAtk = _parse([
+  'kkk..rRr..kkk...',
+  'krkk.kRk.krkk...',
+  '.kkddkkkddkkk...',
+  '..kkddddddddkk..',
+  '...kddddddddk...',
+  '...kdkdddkddk...',
+  '...kdddddddk....',
+  '....kddrrdk.....',
+  '.....kdddk......',
+  'kkkkkddddddkkkkk',
+  'kSdddddddddddSk',
+  'kdSkddddddddkSdk',
+  '.kkkkddddddkkkk.',
+  '...kdd...dddk...',
+  '..kkk....kkkk...',
+  '................',
+], _kbdPal);
+
+// ── Dagannoth Rex ─────────────────────────────────────────────
+final _dagRexIdle = _parse([
+  '..kkkkkkkk......',
+  '.kggGgGggGk.....',
+  '.kgkGgkGgk......',
+  '.kggGGGGgk......',
+  '..kgorGok.......',
+  '...kgggk........',
+  '..kkgGGGGkk.....',
+  '.kGGGGGGGGGk....',
+  '.kGGnGGGnGGk....',
+  '.kGGGGGGGGGk....',
+  '..kGGGGGGGk.....',
+  '..kGnGGGnGk.....',
+  '...kGGGGk.......',
+  '...kGg..gGk.....',
+  '..kkk...kkk.....',
+  '................',
+], _dagRexPal);
+
+final _dagRexAtk = _parse([
+  '..kkkkkkkk......',
+  '.kggGgGggGk.....',
+  '.kgkGgkGgk......',
+  '.kggGGGGgk......',
+  '..kgorGok.......',
+  '...kgggk........',
+  '.kkkgGGGGkkk....',
+  'kGGGGGGGGGGGk...',
+  'kGGnGGGnGGGGk...',
+  '.kGGGGGGGGGk....',
+  '..kGGGGGGGk.....',
+  '..kGnGGGnGk.....',
+  '...kGGGGk.......',
+  '..kGg....gGk....',
+  '.kkk......kkk...',
+  '................',
+], _dagRexPal);
+
+// ── Dagannoth Supreme ─────────────────────────────────────────
+final _dagSupremeIdle = _parse([
+  '..kkkkkkkk......',
+  '.kbbBbBbbBk.....',
+  '.kbkBbkBbk......',
+  '.kbbBBBBbk......',
+  '..kbrBBrk.......',
+  '...kbbbk........',
+  '..kkbBBBBkk.....',
+  '.kBBBBBBBBBk....',
+  '.kBBnBBBnBBk....',
+  '.kBBBBBBBBBk....',
+  '..kBBBBBBBk.....',
+  '..kBnBBBnBk.....',
+  '...kBBBBk.......',
+  '...kBb..bBk.....',
+  '..kkk...kkk.....',
+  '................',
+], _dagSupremePal);
+
+final _dagSupremeAtk = _parse([
+  '..kkkkkkkk......',
+  '.kbbBbBbbBk.....',
+  '.kbkBbkBbk......',
+  '.kbbBBBBbk......',
+  '..kbrBBrk.......',
+  '...kbbbk........',
+  '.kkkbBBBBkkk....',
+  'kBBBBBBBBBBBk...',
+  'kBBnBBBnBBBBk...',
+  '.kBBBBBBBBBk....',
+  '..kBBBBBBBk.....',
+  '..kBnBBBnBk.....',
+  '...kBBBBk.......',
+  '..kBb....bBk....',
+  '.kkk......kkk...',
+  '................',
+], _dagSupremePal);
+
+// ── Dagannoth Prime ───────────────────────────────────────────
+final _dagPrimeIdle = _parse([
+  '..kkkkkkkk......',
+  '.kppPpPppPk.....',
+  '.kpkPpkPpk......',
+  '.kppPPPPpk......',
+  '..kpbPPbk.......',
+  '...kpppk........',
+  '..kkpPPPPkk.....',
+  '.kPPPPPPPPPk....',
+  '.kPPnPPPnPPk....',
+  '.kPPPPPPPPPk....',
+  '..kPPPPPPPk.....',
+  '..kPnPPPnPk.....',
+  '...kPPPPk.......',
+  '...kPp..pPk.....',
+  '..kkk...kkk.....',
+  '................',
+], _dagPrimePal);
+
+final _dagPrimeAtk = _parse([
+  '..kkkkkkkk......',
+  '.kppPpPppPk.....',
+  '.kpkPpkPpk......',
+  '.kppPPPPpk......',
+  '..kpbPPbk.......',
+  '...kpppk........',
+  '.kkkpPPPPkkk....',
+  'kPPPPPPPPPPPk...',
+  'kPPnPPPnPPPPk...',
+  '.kPPPPPPPPPk....',
+  '..kPPPPPPPk.....',
+  '..kPnPPPnPk.....',
+  '...kPPPPk.......',
+  '..kPp....pPk....',
+  '.kkk......kkk...',
+  '................',
+], _dagPrimePal);
+
+// ── Kalphite Queen ────────────────────────────────────────────
+final _kqIdle = _parse([
+  '....kkkkkkk.....',
+  '...kgGyGyGgk....',
+  '..kgGkGGkGGgk...',
+  '..kgGGGGGGGgk...',
+  '...kgGrrGGgk....',
+  '....kgGGGk......',
+  '...kGGGGGGGk....',
+  '..kGGnGGGnGGk...',
+  '..kGGGGGGGGGk...',
+  '...kGGGGGGGk....',
+  '..knGGGGGGnk....',
+  '...kGGGGGk......',
+  '...kGg..gGk.....',
+  '..kkk...kkk.....',
+  '................',
+  '................',
+], _kqPal);
+
+final _kqAtk = _parse([
+  '....kkkkkkk.....',
+  '...kgGyGyGgk....',
+  '..kgGkGGkGGgk...',
+  '..kgGGGGGGGgk...',
+  '...kgGrrGGgk....',
+  '....kgGGGk......',
+  '..kkGGGGGGGkk...',
+  '.kGGGnGGGnGGGk..',
+  '.kGGGGGGGGGGGk..',
+  '..kGGGGGGGGGk...',
+  '..knGGGGGGnk....',
+  '...kGGGGGk......',
+  '..kGg....gGk....',
+  '.kkk......kkk...',
+  '................',
+  '................',
+], _kqPal);
+
+// ── Kree'arra ─────────────────────────────────────────────────
+final _kreeIdle = _parse([
+  '................',
+  '..kkk....kkk....',
+  '.kBbk...kbBk....',
+  '.kBBbkkkBBBk....',
+  '..kBBBBBBBk.....',
+  '..kBkBBkBBk.....',
+  '..kBBBBBBk......',
+  '...kBByyBk......',
+  '....kBBBk.......',
+  '..kkBBBBBBkk....',
+  '.kBBBBBBBBBBk...',
+  '..kBBBBBBBBk....',
+  '...kBBBBBk......',
+  '....kyy.yyk.....',
+  '...kkk..kkk.....',
+  '................',
+], _kreePal);
+
+final _kreeAtk = _parse([
+  '................',
+  '..kkk....kkk....',
+  '.kBbk...kbBk....',
+  '.kBBbkkkBBBk....',
+  '..kBBBBBBBk.....',
+  '..kBkBBkBBk.....',
+  '..kBBBBBBk......',
+  '...kBByyBk......',
+  '....kBBBk.......',
+  '.kkkBBBBBBkkk...',
+  'kBBBBBBBBBBBBk..',
+  '.kBBBBBBBBBBk...',
+  '...kBBBBBk......',
+  '...kyy....yyk...',
+  '..kkk.....kkk...',
+  '................',
+], _kreePal);
+
+// ── Commander Zilyana ─────────────────────────────────────────
+final _zilyIdle = _parse([
+  '.....kkkkk......',
+  '....kwwwwwk.....',
+  '....kwBwBwk.....',
+  '.....kwwwkk.....',
+  '.....kwkwkk.....',
+  '.....kwwwkk.....',
+  '......kwk.......',
+  '....kkwwwkk.....',
+  '...kykwwwk.k....',
+  '...kykwwwk......',
+  '....kkwwwk......',
+  '.....kwwwk......',
+  '.....kwkwk......',
+  '......k.k.......',
+  '.....kk.kk......',
+  '................',
+], _zilyPal);
+
+final _zilyAtk = _parse([
+  '.....kkkkk......',
+  '....kwwwwwk.....',
+  '....kwBwBwk.....',
+  '.....kwwwkk.....',
+  '.....kwkwkk.....',
+  '.....kwwwkk.....',
+  '......kwk.......',
+  '...kkkwwwkkk....',
+  '..kyykwwwk.k....',
+  '..kpk.kwwwk.....',
+  '..kkk.kwwwk.....',
+  '.....kwwwk......',
+  '.....kwkwk......',
+  '....kk..k.......',
+  '....k...kk......',
+  '................',
+], _zilyPal);
+
+// ── General Graardor ──────────────────────────────────────────
+final _graardorIdle = _parse([
+  '..kkkkkkkkk.....',
+  '.knnNnNnNnnk....',
+  '.knkNnkNnnnk....',
+  '.knnNNNNnnk.....',
+  '..knnrrNNk......',
+  '...knnnk........',
+  '.kknNNNNNNkk....',
+  'kNNNNNNNNNNNk...',
+  'kNNSNNNNSNNNk...',
+  'kNNNNNNNNNNNk...',
+  '.kNNNNNNNNNk....',
+  '.kSNNNNNNSk.....',
+  '..kNNNNNNk......',
+  '..kNn..nNk......',
+  '.kkk...kkk......',
+  '................',
+], _graardorPal);
+
+final _graardorAtk = _parse([
+  '..kkkkkkkkk.....',
+  '.knnNnNnNnnk....',
+  '.knkNnkNnnnk....',
+  '.knnNNNNnnk.....',
+  '..knnrrNNk......',
+  '...knnnk........',
+  'kkknNNNNNNkkkk..',
+  'kNNNNNNNNNNNkyk.',
+  'kNNSNNNNSNNkkyk.',
+  '.kNNNNNNNNNNkk..',
+  '.kNNNNNNNNNk....',
+  '.kSNNNNNNSk.....',
+  '..kNNNNNNk......',
+  '.kNn.....nNk....',
+  'kkk.......kkk...',
+  '................',
+], _graardorPal);
+
+// ── K'ril Tsutsaroth ──────────────────────────────────────────
+final _krilIdle = _parse([
+  '...kR.....Rk....',
+  '...kkR...Rkk....',
+  '..kkRRRRRRRkk...',
+  '..kRkRddrkRRk...',
+  '..kRRddddRRRk...',
+  '...kRdooRRRk....',
+  '....kRdddRk.....',
+  'kkk.kRRRRRk.kkk.',
+  'kRRkkRRRRRRkkRRk',
+  'kRdkRRRRRRRRkdRk',
+  '.kkkkRRRRRRkkkk.',
+  '...kRRRRRRRRk...',
+  '....kRdddRk.....',
+  '....kRd.dRk.....',
+  '...kkR..kRkk....',
+  '................',
+], _krilPal);
+
+final _krilAtk = _parse([
+  '...kR.....Rk....',
+  '...kkR...Rkk....',
+  '..kkRRRRRRRkk...',
+  '..kRkRddrkRRk...',
+  '..kRRddddRRRk...',
+  '...kRdooRRRk....',
+  '....kRdddRk.....',
+  'kkkkkRRRRRRkkkkkk',
+  'kRRRRRRRRRRRRRRRk',
+  'kRdRRRRRRRRRRdRk',
+  '.kkkkRRRRRRkkkk.',
+  '...kRRRRRRRRk...',
+  '....kRdddRk.....',
+  '...kRd...dRk....',
+  '..kkR....kRkk...',
+  '................',
+], _krilPal);
+
+// ── Nex ───────────────────────────────────────────────────────
+final _nexIdle = _parse([
+  '..kkk....kkk....',
+  '.kpPk...kPpk....',
+  '.kppPkkkPppk....',
+  '..kpPPPPPpk.....',
+  '..kpkPPkPpk.....',
+  '..kpPPPPPk......',
+  '...kPPrrPk......',
+  '....kPPPk.......',
+  '..kkdPPPPdkk....',
+  '.kdddPPPPdddk...',
+  '..kdPPPPPPdk....',
+  '...kPPPPPPk.....',
+  '....kPPPPk......',
+  '....kPp.pPk.....',
+  '...kkP..kPkk....',
+  '................',
+], _nexPal);
+
+final _nexAtk = _parse([
+  '..kkk....kkk....',
+  '.kpPk...kPpk....',
+  '.kppPkkkPppk....',
+  '..kpPPPPPpk.....',
+  '..kpkPPkPpk.....',
+  '..kpPPPPPk......',
+  '...kPPrrPk......',
+  '....kPPPk.......',
+  '.kkkdPPPPdkkk...',
+  'kdddPPPPPPdddk..',
+  '.kddPPPPPPddk...',
+  '...kPPPPPPk.....',
+  '....kPPPPk......',
+  '...kPp...pPk....',
+  '..kkP....kPkk...',
+  '................',
+], _nexPal);
+
 // ═══════════════════════════════════════════════════════════════
 // MONSTER SPRITE INDEX
 // ═══════════════════════════════════════════════════════════════
 
 final monsterSprites = <String, List<PixelGrid>>{
+  // Regular monsters
   'chicken': [_chickenIdle, _chickenAtk],
   'cow': [_cowIdle, _cowAtk],
   'goblin': [_goblinIdle, _goblinAtk],
+  'giant_rat': [_giantRatIdle, _giantRatAtk],
+  'dark_wizard': [_darkWizardIdle, _darkWizardAtk],
+  'al_kharid_warrior': [_alKharidIdle, _alKharidAtk],
+  'barbarian': [_barbarianIdle, _barbarianAtk],
+  'skeleton': [_skeletonIdle, _skeletonAtk],
   'guard': [_guardIdle, _guardAtk],
   'hill_giant': [_hillGiantIdle, _hillGiantAtk],
+  'hobgoblin': [_hobgoblinIdle, _hobgoblinAtk],
   'moss_giant': [_mossGiantIdle, _mossGiantAtk],
+  'ice_giant': [_iceGiantIdle, _iceGiantAtk],
+  'cyclops': [_cyclopsIdle, _cyclopsAtk],
+  'crocodile': [_crocodileIdle, _crocodileAtk],
+  'green_dragon': [_greenDragonIdle, _greenDragonAtk],
   'lesser_demon': [_lesserDemonIdle, _lesserDemonAtk],
+  'fire_giant': [_fireGiantIdle, _fireGiantAtk],
   'greater_demon': [_greaterDemonIdle, _greaterDemonAtk],
+  'blue_dragon': [_blueDragonIdle, _blueDragonAtk],
+  'spiritual_mage': [_spiritualMageIdle, _spiritualMageAtk],
+  'hellhound': [_hellhoundIdle, _hellhoundAtk],
+  'monkey_guard': [_monkeyGuardIdle, _monkeyGuardAtk],
+  'black_demon': [_blackDemonIdle, _blackDemonAtk],
+  'iron_dragon': [_ironDragonIdle, _ironDragonAtk],
   'black_dragon': [_blackDragonIdle, _blackDragonAtk],
-  'tztok_jad': [_jadIdle, _jadAtk],
+  'steel_dragon': [_steelDragonIdle, _steelDragonAtk],
+  // Slayer monsters
   'dust_devil': [_dustDevilIdle, _dustDevilAtk],
   'wyvern': [_wyvernIdle, _wyvernAtk],
   'abyssal_demon': [_abyssalDemonIdle, _abyssalDemonAtk],
   'cerberus': [_cerberusIdle, _cerberusAtk],
   'hydra': [_hydraIdle, _hydraAtk],
+  // Bosses
+  'barrows': [_barrowsIdle, _barrowsAtk],
+  'king_black_dragon': [_kbdIdle, _kbdAtk],
+  'dagannoth_rex': [_dagRexIdle, _dagRexAtk],
+  'dagannoth_supreme': [_dagSupremeIdle, _dagSupremeAtk],
+  'dagannoth_prime': [_dagPrimeIdle, _dagPrimeAtk],
+  'kalphite_queen': [_kqIdle, _kqAtk],
+  'kreearra': [_kreeIdle, _kreeAtk],
+  'commander_zilyana': [_zilyIdle, _zilyAtk],
+  'general_graardor': [_graardorIdle, _graardorAtk],
+  'kril_tsutsaroth': [_krilIdle, _krilAtk],
+  'tztok_jad': [_jadIdle, _jadAtk],
+  'nex': [_nexIdle, _nexAtk],
 };
 
 // ═══════════════════════════════════════════════════════════════
