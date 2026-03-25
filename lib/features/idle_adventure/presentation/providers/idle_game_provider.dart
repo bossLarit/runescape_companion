@@ -287,6 +287,21 @@ class IdleGameNotifier extends StateNotifier<IdleGameState> {
     return true;
   }
 
+  /// Buy a tool item (axe, pickaxe, etc.) from the shop.
+  bool buyTool(String toolId) {
+    final item = getItemById(toolId);
+    if (item == null || item.buyPrice == null) return false;
+    if (state.gp < item.buyPrice!) return false;
+    // Already own it — tools don't stack, one is enough
+    if ((state.bank[toolId] ?? 0) > 0) return false;
+
+    final newBank = Map<String, int>.from(state.bank);
+    newBank[toolId] = 1;
+    state = state.copyWith(gp: state.gp - item.buyPrice!, bank: newBank);
+    _save();
+    return true;
+  }
+
   void queueSpecialAttack() {
     if (state.specialAttackCooldown > 0) return;
     state = state.copyWith(specialAttackQueued: true);
@@ -371,6 +386,11 @@ class IdleGameNotifier extends StateNotifier<IdleGameState> {
     final resource = getSkillingResourceById(resourceId);
     if (resource == null) return;
     if (state.skillingStats.levelFor(skill) < resource.levelRequired) return;
+    // Strict tool requirement: must own the required tool in bank
+    if (resource.requiredToolId != null &&
+        (state.bank[resource.requiredToolId!] ?? 0) <= 0) {
+      return;
+    }
 
     // Mutual exclusion: stop combat first
     if (state.isRunning) stopCombat();

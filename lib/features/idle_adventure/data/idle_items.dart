@@ -1113,6 +1113,33 @@ const allItems = <LootItem>[
       name: 'Kodai Insignia',
       icon: '🪄',
       category: 'misc'),
+
+  // ── Tools (purchasable for skilling) ─────────────────────────
+  LootItem(id: 'axe', name: 'Axe', icon: '🪓', category: 'tool', buyPrice: 50),
+  LootItem(
+      id: 'pickaxe',
+      name: 'Pickaxe',
+      icon: '⛏️',
+      category: 'tool',
+      buyPrice: 50),
+  LootItem(
+      id: 'fishing_rod',
+      name: 'Fishing Rod',
+      icon: '🎣',
+      category: 'tool',
+      buyPrice: 50),
+  LootItem(
+      id: 'harpoon',
+      name: 'Harpoon',
+      icon: '🔱',
+      category: 'tool',
+      buyPrice: 100),
+  LootItem(
+      id: 'hammer', name: 'Hammer', icon: '🔨', category: 'tool', buyPrice: 20),
+  LootItem(
+      id: 'needle', name: 'Needle', icon: '🪡', category: 'tool', buyPrice: 10),
+  LootItem(
+      id: 'chisel', name: 'Chisel', icon: '🔧', category: 'tool', buyPrice: 10),
 ];
 
 LootItem? getItemById(String id) {
@@ -1321,6 +1348,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 1,
     xpPerAction: 25,
     producesItemId: 'logs',
+    requiredToolId: 'axe',
   ),
   SkillingResource(
     id: 'wc_oak',
@@ -1330,6 +1358,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 15,
     xpPerAction: 38,
     producesItemId: 'oak_logs',
+    requiredToolId: 'axe',
   ),
   SkillingResource(
     id: 'wc_willow',
@@ -1339,6 +1368,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 30,
     xpPerAction: 68,
     producesItemId: 'willow_logs',
+    requiredToolId: 'axe',
   ),
   SkillingResource(
     id: 'wc_maple',
@@ -1348,6 +1378,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 45,
     xpPerAction: 100,
     producesItemId: 'maple_logs',
+    requiredToolId: 'axe',
   ),
   SkillingResource(
     id: 'wc_yew',
@@ -1357,6 +1388,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 60,
     xpPerAction: 175,
     producesItemId: 'yew_logs',
+    requiredToolId: 'axe',
   ),
   SkillingResource(
     id: 'wc_magic',
@@ -1366,6 +1398,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 75,
     xpPerAction: 250,
     producesItemId: 'magic_logs',
+    requiredToolId: 'axe',
   ),
 
   // ── Mining ─────────────────────────────────────────────────────
@@ -1377,6 +1410,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 1,
     xpPerAction: 18,
     producesItemId: 'copper_ore',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_tin',
@@ -1386,6 +1420,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 1,
     xpPerAction: 18,
     producesItemId: 'tin_ore',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_iron',
@@ -1395,6 +1430,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 15,
     xpPerAction: 35,
     producesItemId: 'iron_ore',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_coal',
@@ -1404,6 +1440,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 30,
     xpPerAction: 50,
     producesItemId: 'coal',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_gold',
@@ -1413,6 +1450,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 40,
     xpPerAction: 65,
     producesItemId: 'gold_ore',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_mithril',
@@ -1422,6 +1460,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 55,
     xpPerAction: 80,
     producesItemId: 'mithril_ore',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_adamantite',
@@ -1431,6 +1470,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 70,
     xpPerAction: 95,
     producesItemId: 'adamantite_ore',
+    requiredToolId: 'pickaxe',
   ),
   SkillingResource(
     id: 'mine_runite',
@@ -1440,6 +1480,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 85,
     xpPerAction: 125,
     producesItemId: 'runite_ore',
+    requiredToolId: 'pickaxe',
   ),
 
   // ── Fishing ────────────────────────────────────────────────────
@@ -1451,6 +1492,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 1,
     xpPerAction: 10,
     producesItemId: 'raw_shrimp',
+    requiredToolId: 'fishing_rod',
   ),
   SkillingResource(
     id: 'fish_trout',
@@ -1460,6 +1502,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 20,
     xpPerAction: 50,
     producesItemId: 'raw_trout',
+    requiredToolId: 'fishing_rod',
   ),
   SkillingResource(
     id: 'fish_lobster',
@@ -1469,6 +1512,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 40,
     xpPerAction: 90,
     producesItemId: 'raw_lobster',
+    requiredToolId: 'harpoon',
   ),
   SkillingResource(
     id: 'fish_swordfish',
@@ -1478,6 +1522,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 50,
     xpPerAction: 100,
     producesItemId: 'raw_swordfish',
+    requiredToolId: 'harpoon',
   ),
   SkillingResource(
     id: 'fish_shark',
@@ -1487,6 +1532,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 76,
     xpPerAction: 110,
     producesItemId: 'raw_shark',
+    requiredToolId: 'harpoon',
   ),
   SkillingResource(
     id: 'fish_anglerfish',
@@ -1496,6 +1542,7 @@ const skillingResources = <SkillingResource>[
     levelRequired: 82,
     xpPerAction: 120,
     producesItemId: 'raw_anglerfish',
+    requiredToolId: 'harpoon',
   ),
 
   // ── Cooking ────────────────────────────────────────────────────
@@ -1671,6 +1718,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 63,
     producesItemId: 'bronze_platebody',
     consumesItems: {'bronze_bar': 5},
+    requiredToolId: 'hammer',
   ),
   SkillingResource(
     id: 'smith_iron_plate',
@@ -1681,6 +1729,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 125,
     producesItemId: 'iron_platebody',
     consumesItems: {'iron_bar': 5},
+    requiredToolId: 'hammer',
   ),
   SkillingResource(
     id: 'smith_steel_plate',
@@ -1691,6 +1740,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 188,
     producesItemId: 'steel_platebody',
     consumesItems: {'steel_bar': 5},
+    requiredToolId: 'hammer',
   ),
   SkillingResource(
     id: 'smith_mithril_plate',
@@ -1701,6 +1751,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 250,
     producesItemId: 'mithril_platebody',
     consumesItems: {'mithril_bar': 5},
+    requiredToolId: 'hammer',
   ),
   SkillingResource(
     id: 'smith_adamant_plate',
@@ -1711,6 +1762,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 313,
     producesItemId: 'adamant_platebody',
     consumesItems: {'adamantite_bar': 5},
+    requiredToolId: 'hammer',
   ),
   SkillingResource(
     id: 'smith_rune_plate',
@@ -1721,18 +1773,20 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 375,
     producesItemId: 'rune_platebody',
     consumesItems: {'rune_bar': 5},
+    requiredToolId: 'hammer',
   ),
 
   // ── Crafting ───────────────────────────────────────────────────
   SkillingResource(
     id: 'craft_leather',
     name: 'Tan Leather',
-    icon: '🟫',
+    icon: '�',
     skill: SkillType.crafting,
     levelRequired: 1,
     xpPerAction: 14,
     producesItemId: 'leather',
     consumesItems: {'cowhide': 1},
+    requiredToolId: 'needle',
   ),
   SkillingResource(
     id: 'craft_green_dhide',
@@ -1743,6 +1797,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 186,
     producesItemId: 'green_dhide_body',
     consumesItems: {'green_dhide': 3},
+    requiredToolId: 'needle',
   ),
   SkillingResource(
     id: 'craft_black_dhide',
@@ -1753,6 +1808,7 @@ const skillingResources = <SkillingResource>[
     xpPerAction: 258,
     producesItemId: 'black_dhide_body',
     consumesItems: {'black_dhide': 3},
+    requiredToolId: 'needle',
   ),
 ];
 

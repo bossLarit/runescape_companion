@@ -571,8 +571,24 @@ const slayerMonsterDefs = <MonsterDef>[
       isBoss: true),
 ];
 
-/// Combined selectable list: regular monsters first, then bosses.
-List<MonsterDef> get selectableDefs => [...monsterDefs, ...bossDefs];
+/// Combined selectable list: regular monsters, then slayer monsters, then bosses.
+List<MonsterDef> get selectableDefs =>
+    [...monsterDefs, ...slayerMonsterDefs, ...bossDefs];
+
+/// Index where slayer monsters begin in [selectableDefs].
+int get slayerStartIndex => monsterDefs.length;
+
+/// Index where bosses begin in [selectableDefs].
+int get bossStartIndex => monsterDefs.length + slayerMonsterDefs.length;
+
+/// Find a monster's index in [selectableDefs] by its id. Returns -1 if not found.
+int indexOfMonster(String id) {
+  final all = selectableDefs;
+  for (int i = 0; i < all.length; i++) {
+    if (all[i].id == id) return i;
+  }
+  return -1;
+}
 
 /// Get a monster from the combined selectable list by index.
 MonsterDef getMonster(int index) {

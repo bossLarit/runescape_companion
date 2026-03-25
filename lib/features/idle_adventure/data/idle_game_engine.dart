@@ -327,11 +327,13 @@ IdleGameState processRaidTick(IdleGameState state) {
       // Roll for unique
       final uniqueId = rollRaidUnique(raidDef);
       final bank = Map<String, int>.from(s.bank);
+      String? raidDrop;
       if (uniqueId != null) {
         bank[uniqueId] = (bank[uniqueId] ?? 0) + 1;
         final equipDef = getEquipmentDefById(uniqueId);
         final item = getItemById(uniqueId);
         final name = equipDef?.name ?? item?.name ?? uniqueId;
+        raidDrop = name;
         log = _appendLog(log, '💜 UNIQUE DROP: $name!');
       } else {
         // Common loot: GP
@@ -368,6 +370,7 @@ IdleGameState processRaidTick(IdleGameState state) {
         raidCompletions: completions,
         lastDamageDealt: playerDmg,
         lastDamageTaken: adjustedDmg,
+        lastDrop: raidDrop,
       );
     } else {
       // Advance to next boss
@@ -573,6 +576,8 @@ IdleGameState processTick(IdleGameState state) {
     // Roll loot drops and add to bank
     final lootDrops = rollLootDrops(monster);
     final newBank = addToBank(state.bank, lootDrops);
+    String? rareDrop;
+    int gearDropCount = state.totalGearDrops;
     if (lootDrops.isNotEmpty) {
       final lootSummary = lootDrops.entries.map((e) {
         final item = getItemById(e.key);
@@ -581,6 +586,19 @@ IdleGameState processTick(IdleGameState state) {
         return '$name x${e.value}';
       }).join(', ');
       log = _appendLog(log, '📦 Loot: $lootSummary');
+
+      // Detect rare drops (equipment or items with <2% chance)
+      final table = monsterDropTables[monster.id] ?? [];
+      for (final itemId in lootDrops.keys) {
+        final entry = table.where((e) => e.itemId == itemId).firstOrNull;
+        final isEquip = getEquipmentDefById(itemId) != null;
+        if (isEquip || (entry != null && entry.chance < 0.02)) {
+          final equipDef = getEquipmentDefById(itemId);
+          final item = getItemById(itemId);
+          rareDrop = equipDef?.name ?? item?.name ?? itemId;
+          if (isEquip) gearDropCount++;
+        }
+      }
     }
 
     final result = updated.copyWith(
@@ -592,14 +610,15 @@ IdleGameState processTick(IdleGameState state) {
       prayerXp: state.prayerXp + prayerXpGain,
       lastDamageDealt: playerDmg,
       lastDamageTaken: monsterDmg,
-      clearDrop: true,
+      lastDrop: rareDrop,
+      clearDrop: rareDrop == null,
       combatLog: log,
       slayerXp: state.slayerXp + slayerXpGain,
       currentSlayerTask: updatedTask,
       clearSlayerTask: taskJustCompleted,
       slayerTasksCompleted: tasksCompleted,
       monsterKillCounts: newKillCounts,
-      totalGearDrops: state.totalGearDrops,
+      totalGearDrops: gearDropCount,
       bank: newBank,
     );
 
@@ -609,7 +628,7 @@ IdleGameState processTick(IdleGameState state) {
     // Auto-advance: if the monster died in one tick, move to next monster
     if (afterEat.autoAdvance && playerDmg >= monster.hitpoints) {
       final nextIdx = state.monsterIndex + 1;
-      if (nextIdx < monsterDefs.length) {
+      if (nextIdx < selectableDefs.length) {
         final nextMonster = getMonster(nextIdx);
         afterEat = afterEat.copyWith(
           monsterIndex: nextIdx,

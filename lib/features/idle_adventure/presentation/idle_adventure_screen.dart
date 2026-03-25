@@ -172,6 +172,7 @@ class _SidebarTabs extends StatelessWidget {
                       onSelect: notifier.selectMonster,
                       autoAdvance: game.autoAdvance,
                       onToggleAutoAdvance: notifier.toggleAutoAdvance,
+                      slayerLevel: game.slayerLevel,
                     ),
                     const SizedBox(height: 12),
                     _TrainingStyleSelector(
@@ -192,6 +193,10 @@ class _SidebarTabs extends StatelessWidget {
                       game: game,
                       onGetTask: notifier.getNewSlayerTask,
                       onCancelTask: notifier.cancelSlayerTask,
+                      onFightMonster: (String monsterId) {
+                        final idx = indexOfMonster(monsterId);
+                        if (idx >= 0) notifier.selectMonster(idx);
+                      },
                     ),
                     const SizedBox(height: 12),
                     _PrayerPanel(
@@ -206,6 +211,7 @@ class _SidebarTabs extends StatelessWidget {
                       game: game,
                       onStartSkilling: notifier.startSkilling,
                       onStopSkilling: notifier.stopSkilling,
+                      onBuyTool: notifier.buyTool,
                     ),
                   ],
                 ),
@@ -270,32 +276,93 @@ class _Badge extends StatelessWidget {
   }
 }
 
-// ─── Drop Banner ───────────────────────────────────────────────
+// ─── Drop Banner (animated) ─────────────────────────────────────
 
-class _DropBanner extends StatelessWidget {
+class _DropBanner extends StatefulWidget {
   final String dropName;
   const _DropBanner({required this.dropName});
 
   @override
+  State<_DropBanner> createState() => _DropBannerState();
+}
+
+class _DropBannerState extends State<_DropBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _shimmer;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _shimmer = Tween(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+    _scale = Tween(begin: 0.97, end: 1.02).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [
-          _gold.withValues(alpha: 0.2),
-          _gold.withValues(alpha: 0.05),
-        ]),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _gold.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.star, size: 18, color: _gold),
-          const SizedBox(width: 8),
-          Text('New gear drop: $dropName!',
-              style: const TextStyle(
-                  color: _gold, fontWeight: FontWeight.bold, fontSize: 13)),
-        ],
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, child) => Transform.scale(
+        scale: _scale.value,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [
+              Colors.purpleAccent
+                  .withValues(alpha: 0.15 + _shimmer.value * 0.1),
+              _gold.withValues(alpha: 0.05 + _shimmer.value * 0.1),
+              Colors.purpleAccent
+                  .withValues(alpha: 0.15 + _shimmer.value * 0.1),
+            ]),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: Colors.purpleAccent
+                    .withValues(alpha: 0.3 + _shimmer.value * 0.3)),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    Colors.purpleAccent.withValues(alpha: _shimmer.value * 0.2),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.auto_awesome,
+                  size: 18,
+                  color: Colors.purpleAccent
+                      .withValues(alpha: 0.5 + _shimmer.value * 0.5)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Rare drop: ${widget.dropName}!',
+                    style: TextStyle(
+                        color: Colors.purpleAccent
+                            .withValues(alpha: 0.6 + _shimmer.value * 0.4),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+              ),
+              Icon(Icons.auto_awesome,
+                  size: 14,
+                  color: _gold.withValues(alpha: _shimmer.value * 0.6)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -371,11 +438,13 @@ class _SlayerPanel extends StatelessWidget {
   final IdleGameState game;
   final VoidCallback onGetTask;
   final VoidCallback onCancelTask;
+  final void Function(String monsterId) onFightMonster;
 
   const _SlayerPanel({
     required this.game,
     required this.onGetTask,
     required this.onCancelTask,
+    required this.onFightMonster,
   });
 
   @override
@@ -420,18 +489,36 @@ class _SlayerPanel extends StatelessWidget {
           if (task != null && !task.isComplete) ...[
             _SlayerTaskRow(task: task),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onCancelTask,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red.withValues(alpha: 0.7),
-                  side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => onFightMonster(task.monsterId),
+                    icon: const Icon(Icons.gps_fixed, size: 14),
+                    label: const Text('Fight', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          const Color(0xFF4CAF50).withValues(alpha: 0.8),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                  ),
                 ),
-                child:
-                    const Text('Cancel Task', style: TextStyle(fontSize: 11)),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onCancelTask,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red.withValues(alpha: 0.7),
+                      side:
+                          BorderSide(color: Colors.red.withValues(alpha: 0.3)),
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                    child: const Text('Cancel Task',
+                        style: TextStyle(fontSize: 11)),
+                  ),
+                ),
+              ],
             ),
           ] else ...[
             Text(
@@ -1935,19 +2022,23 @@ class _MonsterSelector extends StatelessWidget {
   final void Function(int index) onSelect;
   final bool autoAdvance;
   final VoidCallback onToggleAutoAdvance;
+  final int slayerLevel;
 
   const _MonsterSelector({
     required this.currentIndex,
     required this.onSelect,
     required this.autoAdvance,
     required this.onToggleAutoAdvance,
+    required this.slayerLevel,
   });
 
   @override
   Widget build(BuildContext context) {
     const monsters = monsterDefs;
+    const slayerMobs = slayerMonsterDefs;
     const bosses = bossDefs;
-    final bossStartIndex = monsters.length;
+    final slayerStart = slayerStartIndex;
+    final bossStart = bossStartIndex;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -2026,6 +2117,43 @@ class _MonsterSelector extends StatelessWidget {
                     isSelected: i == currentIndex,
                     onTap: () => onSelect(i),
                   ),
+                // ── Slayer section ──
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Text('Slayer',
+                          style: TextStyle(
+                              color: const Color(0xFF4CAF50)
+                                  .withValues(alpha: 0.7),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color:
+                              const Color(0xFF4CAF50).withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (int i = 0; i < slayerMobs.length; i++) ...[
+                  Builder(builder: (_) {
+                    final reqLevel = slayerRequirements[slayerMobs[i].id] ?? 1;
+                    final unlocked = slayerLevel >= reqLevel;
+                    return _MonsterTile(
+                      monster: slayerMobs[i],
+                      isSelected: (slayerStart + i) == currentIndex,
+                      onTap: unlocked ? () => onSelect(slayerStart + i) : () {},
+                      isSlayer: true,
+                      locked: !unlocked,
+                      requiredLevel: reqLevel,
+                    );
+                  }),
+                ],
                 // ── Bosses section ──
                 const SizedBox(height: 8),
                 Padding(
@@ -2050,8 +2178,8 @@ class _MonsterSelector extends StatelessWidget {
                 for (int i = 0; i < bosses.length; i++)
                   _MonsterTile(
                     monster: bosses[i],
-                    isSelected: (bossStartIndex + i) == currentIndex,
-                    onTap: () => onSelect(bossStartIndex + i),
+                    isSelected: (bossStart + i) == currentIndex,
+                    onTap: () => onSelect(bossStart + i),
                     isBoss: true,
                   ),
               ],
@@ -2063,60 +2191,223 @@ class _MonsterSelector extends StatelessWidget {
   }
 }
 
-class _MonsterTile extends StatelessWidget {
+class _MonsterTile extends StatefulWidget {
   final MonsterDef monster;
   final bool isSelected;
   final VoidCallback onTap;
   final bool isBoss;
+  final bool isSlayer;
+  final bool locked;
+  final int requiredLevel;
 
   const _MonsterTile({
     required this.monster,
     required this.isSelected,
     required this.onTap,
     this.isBoss = false,
+    this.isSlayer = false,
+    this.locked = false,
+    this.requiredLevel = 1,
   });
 
   @override
+  State<_MonsterTile> createState() => _MonsterTileState();
+}
+
+class _MonsterTileState extends State<_MonsterTile> {
+  bool _expanded = false;
+
+  Color get _nameColor => widget.isSelected
+      ? _gold
+      : widget.isBoss
+          ? Colors.redAccent.withValues(alpha: 0.7)
+          : widget.isSlayer
+              ? const Color(0xFF4CAF50).withValues(alpha: 0.7)
+              : _parchment.withValues(alpha: 0.7);
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? _gold.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: isSelected
-              ? Border.all(color: _gold.withValues(alpha: 0.3))
-              : null,
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: PixelSprite(
-                grid: (monsterSprites[monster.id] ??
-                    monsterSprites['chicken']!)[0],
-                scale: 1,
+    final opacity = widget.locked ? 0.35 : 1.0;
+    final drops = monsterDropTables[widget.monster.id];
+
+    return Opacity(
+      opacity: opacity,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: widget.onTap,
+            onLongPress: drops != null
+                ? () => setState(() => _expanded = !_expanded)
+                : null,
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: widget.isSelected
+                    ? _gold.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: widget.isSelected
+                    ? Border.all(color: _gold.withValues(alpha: 0.3))
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  if (widget.locked)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child:
+                          Icon(Icons.lock, size: 14, color: Color(0xFF757575)),
+                    )
+                  else
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: PixelSprite(
+                        grid: (monsterSprites[widget.monster.id] ??
+                            monsterSprites['chicken']!)[0],
+                        scale: 1,
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.monster.name,
+                            style: TextStyle(color: _nameColor, fontSize: 12)),
+                        if (widget.locked)
+                          Text('Slayer Lvl ${widget.requiredLevel}',
+                              style: TextStyle(
+                                  color: _parchment.withValues(alpha: 0.3),
+                                  fontSize: 9)),
+                      ],
+                    ),
+                  ),
+                  if (drops != null)
+                    GestureDetector(
+                      onTap: () => setState(() => _expanded = !_expanded),
+                      child: Icon(
+                        _expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 14,
+                        color: _parchment.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  Text('HP ${widget.monster.hitpoints}',
+                      style: TextStyle(
+                          color: _parchment.withValues(alpha: 0.4),
+                          fontSize: 11)),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(monster.name,
-                  style: TextStyle(
-                      color: isSelected
-                          ? _gold
-                          : isBoss
-                              ? Colors.redAccent.withValues(alpha: 0.7)
-                              : _parchment.withValues(alpha: 0.7),
-                      fontSize: 12)),
+          ),
+          if (_expanded && drops != null)
+            _DropTableView(
+              drops: drops,
+              gpMin: widget.monster.gpMin,
+              gpMax: widget.monster.gpMax,
             ),
-            Text('HP ${monster.hitpoints}',
+        ],
+      ),
+    );
+  }
+}
+
+class _DropTableView extends StatelessWidget {
+  final List<DropEntry> drops;
+  final int gpMin;
+  final int gpMax;
+
+  const _DropTableView({
+    required this.drops,
+    required this.gpMin,
+    required this.gpMax,
+  });
+
+  String _chanceStr(double chance) {
+    if (chance >= 1.0) return 'Always';
+    if (chance <= 0) return 'Never';
+    final denom = (1 / chance).round();
+    return '1/$denom';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 26, right: 4, bottom: 4),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _gold.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Drop Table',
+              style: TextStyle(
+                  color: _gold.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10)),
+          const SizedBox(height: 4),
+          // GP range
+          Row(
+            children: [
+              Text('Coins',
+                  style: TextStyle(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.6),
+                      fontSize: 10)),
+              const Spacer(),
+              Text('$gpMin–$gpMax gp',
+                  style: TextStyle(
+                      color: _parchment.withValues(alpha: 0.4), fontSize: 10)),
+              const SizedBox(width: 8),
+              Text('Always',
+                  style: TextStyle(
+                      color: _parchment.withValues(alpha: 0.3), fontSize: 9)),
+            ],
+          ),
+          const SizedBox(height: 2),
+          for (final drop in drops) _buildDropRow(drop),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropRow(DropEntry drop) {
+    final item = getItemById(drop.itemId);
+    final equipDef = getEquipmentDefById(drop.itemId);
+    final name = item?.name ?? equipDef?.name ?? drop.itemId;
+    final icon = item?.icon ?? equipDef?.icon ?? '?';
+    final isRare = drop.chance <= 0.01;
+
+    final qtyStr = drop.minQty == drop.maxQty
+        ? (drop.minQty > 1 ? ' (×${drop.minQty})' : '')
+        : ' (${drop.minQty}–${drop.maxQty})';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 10)),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text('$name$qtyStr',
                 style: TextStyle(
-                    color: _parchment.withValues(alpha: 0.4), fontSize: 11)),
-          ],
-        ),
+                    color: isRare
+                        ? const Color(0xFFFF8A80)
+                        : _parchment.withValues(alpha: 0.6),
+                    fontSize: 10)),
+          ),
+          Text(_chanceStr(drop.chance),
+              style: TextStyle(
+                  color: isRare
+                      ? const Color(0xFFFF8A80).withValues(alpha: 0.7)
+                      : _parchment.withValues(alpha: 0.3),
+                  fontSize: 9)),
+        ],
       ),
     );
   }
@@ -2640,11 +2931,13 @@ class _SkillingPanel extends StatelessWidget {
   final IdleGameState game;
   final void Function(SkillType skill, String resourceId) onStartSkilling;
   final VoidCallback onStopSkilling;
+  final bool Function(String toolId) onBuyTool;
 
   const _SkillingPanel({
     required this.game,
     required this.onStartSkilling,
     required this.onStopSkilling,
+    required this.onBuyTool,
   });
 
   @override
@@ -2783,6 +3076,7 @@ class _SkillingPanel extends StatelessWidget {
                 level: stats.levelFor(skill),
                 bank: game.bank,
                 onStart: (resourceId) => onStartSkilling(skill, resourceId),
+                onBuyTool: onBuyTool,
               ),
             ],
           ],
@@ -2870,12 +3164,14 @@ class _SkillResourcePicker extends StatelessWidget {
   final int level;
   final Map<String, int> bank;
   final void Function(String resourceId) onStart;
+  final bool Function(String toolId) onBuyTool;
 
   const _SkillResourcePicker({
     required this.skill,
     required this.level,
     required this.bank,
     required this.onStart,
+    required this.onBuyTool,
   });
 
   @override
@@ -2901,65 +3197,101 @@ class _SkillResourcePicker extends StatelessWidget {
       collapsedIconColor: _parchment.withValues(alpha: 0.3),
       children: [
         for (final r in available)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 1),
-            child: InkWell(
-              onTap: () {
-                // Check if materials are available for processing skills
-                if (r.consumesItems.isNotEmpty) {
-                  bool hasMats = true;
-                  for (final req in r.consumesItems.entries) {
-                    if ((bank[req.key] ?? 0) < req.value) {
-                      hasMats = false;
-                      break;
+          Builder(builder: (_) {
+            final needsTool = r.requiredToolId != null;
+            final hasTool = !needsTool || (bank[r.requiredToolId!] ?? 0) > 0;
+            final toolItem = needsTool ? getItemById(r.requiredToolId!) : null;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: InkWell(
+                onTap: () {
+                  if (!hasTool) return;
+                  // Check if materials are available for processing skills
+                  if (r.consumesItems.isNotEmpty) {
+                    bool hasMats = true;
+                    for (final req in r.consumesItems.entries) {
+                      if ((bank[req.key] ?? 0) < req.value) {
+                        hasMats = false;
+                        break;
+                      }
                     }
+                    if (!hasMats) return;
                   }
-                  if (!hasMats) return; // Can't start without materials
-                }
-                onStart(r.id);
-              },
-              borderRadius: BorderRadius.circular(4),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    Text(r.icon, style: const TextStyle(fontSize: 12)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(r.name,
-                              style: TextStyle(
-                                  color: _parchment.withValues(alpha: 0.7),
-                                  fontSize: 10)),
-                          if (r.consumesItems.isNotEmpty)
-                            Text(
-                              r.consumesItems.entries.map((e) {
-                                final item = getItemById(e.key);
-                                final have = bank[e.key] ?? 0;
-                                return '${item?.name ?? e.key}: $have/${e.value}';
-                              }).join(', '),
-                              style: TextStyle(
-                                  color: _parchment.withValues(alpha: 0.3),
-                                  fontSize: 8),
-                            ),
-                        ],
+                  onStart(r.id);
+                },
+                borderRadius: BorderRadius.circular(4),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(r.icon, style: const TextStyle(fontSize: 12)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r.name,
+                                style: TextStyle(
+                                    color: hasTool
+                                        ? _parchment.withValues(alpha: 0.7)
+                                        : _parchment.withValues(alpha: 0.35),
+                                    fontSize: 10)),
+                            if (!hasTool && toolItem != null)
+                              Text('Need ${toolItem.icon} ${toolItem.name}',
+                                  style: TextStyle(
+                                      color:
+                                          Colors.orange.withValues(alpha: 0.6),
+                                      fontSize: 8)),
+                            if (r.consumesItems.isNotEmpty)
+                              Text(
+                                r.consumesItems.entries.map((e) {
+                                  final item = getItemById(e.key);
+                                  final have = bank[e.key] ?? 0;
+                                  return '${item?.name ?? e.key}: $have/${e.value}';
+                                }).join(', '),
+                                style: TextStyle(
+                                    color: _parchment.withValues(alpha: 0.3),
+                                    fontSize: 8),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Text('+${r.xpPerAction} xp',
-                        style: TextStyle(
-                            color: skillInfo.color.withValues(alpha: 0.6),
-                            fontSize: 9)),
-                  ],
+                      if (!hasTool && toolItem != null)
+                        GestureDetector(
+                          onTap: () => onBuyTool(r.requiredToolId!),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _gold.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                  color: _gold.withValues(alpha: 0.3)),
+                            ),
+                            child: Text('${toolItem.buyPrice} gp',
+                                style: TextStyle(
+                                    color: _gold.withValues(alpha: 0.8),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        )
+                      else
+                        Text('+${r.xpPerAction} xp',
+                            style: TextStyle(
+                                color: skillInfo.color.withValues(alpha: 0.6),
+                                fontSize: 9)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          }),
       ],
     );
   }
@@ -3159,7 +3491,7 @@ class _AchievementRow extends StatelessWidget {
   }
 }
 
-// ─── Collection Log Panel ────────────────────────────────────────
+// ─── Collection Log Panel (OSRS-style) ──────────────────────────
 
 class _CollectionLogPanel extends StatefulWidget {
   final IdleGameState game;
@@ -3171,14 +3503,41 @@ class _CollectionLogPanel extends StatefulWidget {
 
 class _CollectionLogPanelState extends State<_CollectionLogPanel> {
   bool _expanded = false;
+  int _tabIndex = 0; // 0=Monsters, 1=Slayer, 2=Bosses, 3=Raids
+  String? _expandedMonsterId;
+
+  static const _tabLabels = ['Monsters', 'Slayer', 'Bosses', 'Raids'];
+
+  List<MonsterDef> _monstersForTab(int tab) {
+    return switch (tab) {
+      0 => monsterDefs,
+      1 => slayerMonsterDefs,
+      2 => bossDefs,
+      _ => <MonsterDef>[],
+    };
+  }
+
+  /// Count total unique drop items across all monsters & how many are obtained.
+  ({int obtained, int total}) _uniqueItemCounts(IdleGameState game) {
+    int total = 0;
+    int obtained = 0;
+    final seen = <String>{};
+    for (final m in allMonsterDefs) {
+      final drops = monsterDropTables[m.id] ?? [];
+      for (final d in drops) {
+        if (seen.add(d.itemId)) {
+          total++;
+          if ((game.bank[d.itemId] ?? 0) > 0) obtained++;
+        }
+      }
+    }
+    return (obtained: obtained, total: total);
+  }
 
   @override
   Widget build(BuildContext context) {
     final game = widget.game;
-    final allMonsters = allMonsterDefs;
-    final killed =
-        allMonsters.where((m) => (game.monsterKillCounts[m.id] ?? 0) > 0);
-    final discovered = killed.length;
+    final counts = _uniqueItemCounts(game);
 
     return Container(
       decoration: BoxDecoration(
@@ -3189,6 +3548,7 @@ class _CollectionLogPanelState extends State<_CollectionLogPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             borderRadius: BorderRadius.circular(10),
@@ -3202,9 +3562,12 @@ class _CollectionLogPanelState extends State<_CollectionLogPanel> {
                           fontWeight: FontWeight.bold,
                           fontSize: 14)),
                   const Spacer(),
-                  Text('$discovered/${allMonsters.length}',
+                  Text('${counts.obtained}/${counts.total}',
                       style: TextStyle(
-                          color: _parchment.withValues(alpha: 0.5),
+                          color: counts.obtained == counts.total &&
+                                  counts.total > 0
+                              ? const Color(0xFF66BB6A)
+                              : _parchment.withValues(alpha: 0.5),
                           fontSize: 11)),
                   const SizedBox(width: 8),
                   Icon(
@@ -3217,55 +3580,315 @@ class _CollectionLogPanelState extends State<_CollectionLogPanel> {
             ),
           ),
           if (_expanded) ...[
+            // Summary
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Text(
+                '${game.totalKills} total kills · ${game.totalGearDrops} gear drops',
+                style: TextStyle(
+                    color: _parchment.withValues(alpha: 0.35), fontSize: 10),
+              ),
+            ),
+            const SizedBox(height: 6),
+            // Tab bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
                 children: [
-                  Text(
-                    '${game.totalKills} total kills · ${game.totalGearDrops} gear drops',
-                    style: TextStyle(
-                        color: _parchment.withValues(alpha: 0.35),
-                        fontSize: 10),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final m in allMonsters)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Row(
-                        children: [
-                          Text(m.icon, style: const TextStyle(fontSize: 12)),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              m.name,
-                              style: TextStyle(
-                                color: (game.monsterKillCounts[m.id] ?? 0) > 0
-                                    ? _parchment.withValues(alpha: 0.7)
-                                    : _parchment.withValues(alpha: 0.2),
-                                fontSize: 11,
-                              ),
+                  for (int i = 0; i < _tabLabels.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 4),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _tabIndex = i;
+                          _expandedMonsterId = null;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _tabIndex == i
+                                ? _gold.withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.03),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: _tabIndex == i
+                                  ? _gold.withValues(alpha: 0.3)
+                                  : Colors.transparent,
                             ),
                           ),
-                          Text(
-                            '${game.monsterKillCounts[m.id] ?? 0}',
+                          alignment: Alignment.center,
+                          child: Text(
+                            _tabLabels[i],
                             style: TextStyle(
-                              color: (game.monsterKillCounts[m.id] ?? 0) > 0
+                              color: _tabIndex == i
                                   ? _gold
-                                  : _parchment.withValues(alpha: 0.15),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                                  : _parchment.withValues(alpha: 0.4),
+                              fontSize: 9,
+                              fontWeight: _tabIndex == i
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            // Tab content
+            if (_tabIndex == 3)
+              _buildRaidsTab(game)
+            else
+              _buildMonsterTab(game, _monstersForTab(_tabIndex)),
+            const SizedBox(height: 8),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildMonsterTab(IdleGameState game, List<MonsterDef> monsters) {
+    if (monsters.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Text('No monsters in this category.',
+            style: TextStyle(
+                color: _parchment.withValues(alpha: 0.3), fontSize: 10)),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        children: [
+          for (final m in monsters)
+            _CollectionLogEntry(
+              monster: m,
+              kills: game.monsterKillCounts[m.id] ?? 0,
+              bank: game.bank,
+              isExpanded: _expandedMonsterId == m.id,
+              onTap: () => setState(() {
+                _expandedMonsterId = _expandedMonsterId == m.id ? null : m.id;
+              }),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRaidsTab(IdleGameState game) {
+    const raids = allRaidDefs;
+    if (raids.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Text('No raids available.',
+            style: TextStyle(
+                color: _parchment.withValues(alpha: 0.3), fontSize: 10)),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        children: [
+          for (final raid in raids)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: Row(
+                children: [
+                  Text(raid.icon, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(raid.name,
+                            style: TextStyle(
+                                color: (game.raidCompletions[raid.id] ?? 0) > 0
+                                    ? _parchment.withValues(alpha: 0.7)
+                                    : _parchment.withValues(alpha: 0.2),
+                                fontSize: 11)),
+                        // Show unique drops obtained
+                        Wrap(
+                          spacing: 4,
+                          children: [
+                            for (final drop in raid.uniqueDropTable)
+                              Builder(builder: (_) {
+                                final item = getItemById(drop.itemId);
+                                final equip = getEquipmentDefById(drop.itemId);
+                                final icon = item?.icon ?? equip?.icon ?? '?';
+                                final has = (game.bank[drop.itemId] ?? 0) > 0;
+                                return Text(icon,
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: has
+                                            ? null
+                                            : _parchment.withValues(
+                                                alpha: 0.15)));
+                              }),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text('${game.raidCompletions[raid.id] ?? 0}',
+                      style: TextStyle(
+                          color: (game.raidCompletions[raid.id] ?? 0) > 0
+                              ? _gold
+                              : _parchment.withValues(alpha: 0.15),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CollectionLogEntry extends StatelessWidget {
+  final MonsterDef monster;
+  final int kills;
+  final Map<String, int> bank;
+  final bool isExpanded;
+  final VoidCallback onTap;
+
+  const _CollectionLogEntry({
+    required this.monster,
+    required this.kills,
+    required this.bank,
+    required this.isExpanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final drops = monsterDropTables[monster.id] ?? [];
+    final hasKills = kills > 0;
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                Text(monster.icon, style: const TextStyle(fontSize: 12)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(monster.name,
+                      style: TextStyle(
+                          color: hasKills
+                              ? _parchment.withValues(alpha: 0.7)
+                              : _parchment.withValues(alpha: 0.2),
+                          fontSize: 11)),
+                ),
+                // Mini drop icons (quick glance at obtained items)
+                if (drops.isNotEmpty && hasKills)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final d in drops.take(5))
+                        Builder(builder: (_) {
+                          final item = getItemById(d.itemId);
+                          final equip = getEquipmentDefById(d.itemId);
+                          final icon = item?.icon ?? equip?.icon ?? '?';
+                          final has = (bank[d.itemId] ?? 0) > 0;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 1),
+                            child: Text(icon,
+                                style: TextStyle(
+                                    fontSize: 8,
+                                    color: has
+                                        ? null
+                                        : _parchment.withValues(alpha: 0.15))),
+                          );
+                        }),
+                      if (drops.length > 5)
+                        Text('...',
+                            style: TextStyle(
+                                color: _parchment.withValues(alpha: 0.2),
+                                fontSize: 8)),
+                    ],
+                  ),
+                const SizedBox(width: 6),
+                Text('$kills',
+                    style: TextStyle(
+                        color: hasKills
+                            ? _gold
+                            : _parchment.withValues(alpha: 0.15),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+                if (drops.isNotEmpty)
+                  Icon(isExpanded ? Icons.expand_less : Icons.expand_more,
+                      size: 14, color: _parchment.withValues(alpha: 0.2)),
+              ],
+            ),
+          ),
+        ),
+        // Expanded drop table
+        if (isExpanded && drops.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(left: 20, bottom: 4),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final d in drops)
+                  Builder(builder: (_) {
+                    final item = getItemById(d.itemId);
+                    final equip = getEquipmentDefById(d.itemId);
+                    final icon = item?.icon ?? equip?.icon ?? '?';
+                    final name = item?.name ?? equip?.name ?? d.itemId;
+                    final owned = bank[d.itemId] ?? 0;
+                    final has = owned > 0;
+                    final isRare = d.chance < 0.02;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 1),
+                      child: Row(
+                        children: [
+                          Text(icon, style: const TextStyle(fontSize: 10)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(name,
+                                style: TextStyle(
+                                    color: has
+                                        ? (isRare
+                                            ? Colors.purpleAccent
+                                                .withValues(alpha: 0.8)
+                                            : _parchment.withValues(alpha: 0.6))
+                                        : _parchment.withValues(alpha: 0.2),
+                                    fontSize: 9)),
+                          ),
+                          if (has)
+                            Text('x$owned',
+                                style: TextStyle(
+                                    color: _gold.withValues(alpha: 0.6),
+                                    fontSize: 8))
+                          else
+                            Text(
+                                d.chance < 1.0
+                                    ? '1/${(1 / d.chance).round()}'
+                                    : 'Always',
+                                style: TextStyle(
+                                    color: _parchment.withValues(alpha: 0.15),
+                                    fontSize: 8)),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

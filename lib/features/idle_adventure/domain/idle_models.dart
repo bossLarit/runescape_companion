@@ -271,13 +271,15 @@ class LootItem {
   final String name;
   final String icon;
   final String
-      category; // 'ore', 'bar', 'log', 'fish_raw', 'fish_cooked', 'hide', 'bone', 'rune', 'misc'
+      category; // 'ore', 'bar', 'log', 'fish_raw', 'fish_cooked', 'hide', 'bone', 'rune', 'misc', 'tool'
+  final int? buyPrice; // non-null = purchasable from shop
 
   const LootItem({
     required this.id,
     required this.name,
     required this.icon,
     required this.category,
+    this.buyPrice,
   });
 }
 
@@ -432,6 +434,7 @@ class SkillingResource {
   final int producesQty;
   final Map<String, int> consumesItems; // itemId → qty consumed per action
   final double successRate; // 1.0 = always succeeds, lower = can fail/burn
+  final String? requiredToolId; // tool item that must be in bank to start
 
   const SkillingResource({
     required this.id,
@@ -444,6 +447,7 @@ class SkillingResource {
     this.producesQty = 1,
     this.consumesItems = const {},
     this.successRate = 1.0,
+    this.requiredToolId,
   });
 }
 
