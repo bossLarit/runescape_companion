@@ -1079,6 +1079,46 @@ const allItems = <LootItem>[
       icon: '🛡️',
       category: 'misc'),
 
+  // ── Boss Unique Drops ───────────────────────────────────────
+  LootItem(id: 'bolt_rack', name: 'Bolt Rack', icon: '➡️', category: 'misc'),
+  LootItem(
+      id: 'dragon_chainbody',
+      name: 'Dragon Chainbody',
+      icon: '🐉',
+      category: 'misc'),
+  LootItem(
+      id: 'dragon_med_helm',
+      name: 'Dragon Med Helm',
+      icon: '🐉',
+      category: 'misc'),
+  LootItem(
+      id: 'dragon_spear', name: 'Dragon Spear', icon: '🐉', category: 'misc'),
+  LootItem(
+      id: 'shield_left_half',
+      name: 'Shield Left Half',
+      icon: '🛡️',
+      category: 'misc'),
+  LootItem(
+      id: 'staff_of_the_dead',
+      name: 'Staff of the Dead',
+      icon: '💀',
+      category: 'misc'),
+  LootItem(
+      id: 'zamorakian_spear',
+      name: 'Zamorakian Spear',
+      icon: '😈',
+      category: 'misc'),
+  LootItem(
+      id: 'steam_battlestaff',
+      name: 'Steam Battlestaff',
+      icon: '💨',
+      category: 'misc'),
+  LootItem(
+      id: 'mud_battlestaff',
+      name: 'Mud Battlestaff',
+      icon: '🌊',
+      category: 'misc'),
+
   // ── Slayer Unique Drops ──────────────────────────────────────
   LootItem(
       id: 'dust_battlestaff',
@@ -1274,6 +1314,46 @@ const monsterDropTables = <String, List<DropEntry>>{
     DropEntry(itemId: 'archers_ring', chance: 0.0078),
     DropEntry(itemId: 'seers_ring', chance: 0.0078),
     DropEntry(itemId: 'dragon_scimitar', chance: 0.01),
+  ],
+  'dagannoth_supreme': [
+    DropEntry(itemId: 'dragon_bones', chance: 1.0),
+    DropEntry(itemId: 'archers_ring', chance: 0.0078),
+    DropEntry(itemId: 'seers_ring', chance: 0.0078),
+    DropEntry(itemId: 'dragon_med_helm', chance: 0.01),
+    DropEntry(itemId: 'adamantite_ore', chance: 0.4, minQty: 3, maxQty: 6),
+    DropEntry(itemId: 'runite_ore', chance: 0.15, minQty: 1, maxQty: 3),
+  ],
+  'dagannoth_prime': [
+    DropEntry(itemId: 'dragon_bones', chance: 1.0),
+    DropEntry(itemId: 'seers_ring', chance: 0.0078),
+    DropEntry(itemId: 'mud_battlestaff', chance: 0.0078),
+    DropEntry(itemId: 'dragon_spear', chance: 0.01),
+    DropEntry(itemId: 'runite_ore', chance: 0.2, minQty: 2, maxQty: 5),
+    DropEntry(itemId: 'raw_shark', chance: 0.5, minQty: 3, maxQty: 8),
+  ],
+  'barrows': [
+    DropEntry(itemId: 'bolt_rack', chance: 0.8, minQty: 20, maxQty: 50),
+    DropEntry(itemId: 'chaos_rune', chance: 0.8, minQty: 50, maxQty: 150),
+    DropEntry(itemId: 'ahrims_robetop', chance: 0.018),
+    DropEntry(itemId: 'barrows_gloves', chance: 0.018),
+    DropEntry(itemId: 'dragon_med_helm', chance: 0.02),
+    DropEntry(itemId: 'runite_ore', chance: 0.3, minQty: 2, maxQty: 5),
+  ],
+  'kalphite_queen': [
+    DropEntry(itemId: 'dragon_bones', chance: 1.0, minQty: 2, maxQty: 4),
+    DropEntry(itemId: 'dragon_chainbody', chance: 0.0078),
+    DropEntry(itemId: 'dragon_med_helm', chance: 0.01),
+    DropEntry(itemId: 'shield_left_half', chance: 0.005),
+    DropEntry(itemId: 'runite_ore', chance: 0.4, minQty: 3, maxQty: 7),
+    DropEntry(itemId: 'adamantite_ore', chance: 0.5, minQty: 5, maxQty: 10),
+  ],
+  'kril_tsutsaroth': [
+    DropEntry(itemId: 'dragon_bones', chance: 1.0, minQty: 2, maxQty: 4),
+    DropEntry(itemId: 'staff_of_the_dead', chance: 0.0078),
+    DropEntry(itemId: 'zamorakian_spear', chance: 0.0078),
+    DropEntry(itemId: 'steam_battlestaff', chance: 0.01),
+    DropEntry(itemId: 'runite_ore', chance: 0.5, minQty: 3, maxQty: 8),
+    DropEntry(itemId: 'raw_shark', chance: 0.4, minQty: 5, maxQty: 10),
   ],
   'general_graardor': [
     DropEntry(itemId: 'dragon_bones', chance: 1.0, minQty: 2, maxQty: 4),
